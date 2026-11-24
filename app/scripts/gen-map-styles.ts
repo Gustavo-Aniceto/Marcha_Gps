@@ -3,7 +3,15 @@
 import { writeFileSync } from 'node:fs';
 import { buildMapStyle, type MapTheme } from '../src/lib/mapStyle.ts';
 
+// visão inicial só pra prévia no Maputnik (o app controla a câmera sozinho)
+const preview: Record<MapTheme, object> = {
+  noite: { center: [-46.5333, -23.4628], zoom: 15.6, pitch: 58, bearing: -20 }, // centro de Guarulhos
+  dia: { center: [-46.5333, -23.4628], zoom: 15.6, pitch: 58, bearing: -20 },
+  cena: { center: [-46.53, -23.49], zoom: 10.6, pitch: 0, bearing: 0 }, // SP + Guarulhos + Itaquá
+};
+
 for (const t of ['noite', 'dia', 'cena'] as MapTheme[]) {
-  writeFileSync(new URL(`../map-styles/${t}.json`, import.meta.url), JSON.stringify(buildMapStyle(t), null, 2) + '\n');
+  const style = { ...buildMapStyle(t), ...preview[t] };
+  writeFileSync(new URL(`../map-styles/${t}.json`, import.meta.url), JSON.stringify(style, null, 2) + '\n');
   console.log(`map-styles/${t}.json`);
 }

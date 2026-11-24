@@ -312,5 +312,12 @@
         "text-halo-width": 1.5
       }
     }
-  ]
+  ],
+  "center": [
+    -46.53,
+    -23.49
+  ],
+  "zoom": 10.6,
+  "pitch": 0,
+  "bearing": 0
 }
