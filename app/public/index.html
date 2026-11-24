@@ -24,5 +24,23 @@
   <body>
     <noscript>Ative o JavaScript pra usar o Marcha GPS.</noscript>
     <div id="root"></div>
+    <script>
+      // Se algo quebrar antes do app abrir, mostra o motivo em vez de tela preta.
+      (function () {
+        function show(msg) {
+          var el = document.getElementById('erro-app');
+          if (!el) {
+            el = document.createElement('pre');
+            el.id = 'erro-app';
+            el.style.cssText = 'position:fixed;left:0;right:0;bottom:0;margin:0;padding:12px;max-height:45%;overflow:auto;' +
+              'background:#1c1206;color:#ffb070;font:12px/1.4 monospace;white-space:pre-wrap;z-index:99999';
+            document.body.appendChild(el);
+          }
+          el.textContent = 'Algo deu errado ao abrir o Marcha GPS. Manda um print disso pro suporte:\n\n' + msg + '\n\n' + el.textContent.replace(/^Algo deu errado[\s\S]*?\n\n/, '');
+        }
+        window.addEventListener('error', function (e) { show(String(e.message) + (e.error && e.error.stack ? '\n' + e.error.stack : '')); });
+        window.addEventListener('unhandledrejection', function (e) { var r = e.reason; show('Promise: ' + (r && (r.stack || r.message) || String(r))); });
+      })();
+    </script>
   </body>
 </html>
