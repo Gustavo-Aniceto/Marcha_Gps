@@ -2,7 +2,12 @@
 // O Worker só baixa o texto e repassa: quem lê, filtra e junta duplicados é o banco
 // (função import_osm_obstacles), pra caber no limite de CPU do Worker.
 
-export const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
+// Servidores públicos do Overpass: se um falhar ou estiver lotado, tenta o próximo.
+export const OVERPASS_URLS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+];
 
 export const CITIES: Record<string, string> = {
   sao_paulo: 'São Paulo',

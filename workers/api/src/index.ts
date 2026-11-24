@@ -7,7 +7,7 @@ import { preflight, withCors } from '../../fotos/src/cors';
 import { normalizeQuery, parsePhoton, photonUrl } from './geocode';
 import { RouteError, parseValhalla, validPoint, valhallaBody, VALHALLA_URL } from './route';
 import { RateLimiter } from './limits';
-import { CITIES, OVERPASS_URL, cityForMinute, neonSqlUrl, overpassQuery } from './obstacles';
+import { CITIES, OVERPASS_URLS, cityForMinute, neonSqlUrl, overpassQuery } from './obstacles';
 
 interface Env {
   CLERK_ISSUER: string;
@@ -108,13 +108,23 @@ async function handle(req: Request, env: Env, ctx: ExecutionContext): Promise<Re
 
 async function importCity(city: string, env: Env): Promise<void> {
   if (!env.IMPORT_DATABASE_URL) return;
-  const res = await fetch(OVERPASS_URL, {
-    method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded', 'user-agent': UA },
-    body: new URLSearchParams({ data: overpassQuery(CITIES[city]) }),
-  });
-  if (!res.ok) { console.log(`overpass ${city}: ${res.status}`); return; }
-  const csv = await res.text();
+  let csv: string | null = null;
+  for (const server of OVERPASS_URLS) {
+    try {
+      const res = await fetch(server, {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded', 'user-agent': UA },
+        body: new URLSearchParams({ data: overpassQuery(CITIES[city]) }),
+      });
+      const text = await res.text();
+      // o Overpass às vezes responde 200 com erro no texto; CSV bom começa com node/way
+      if (res.ok && (text === '' || /^(node|way)\t/.test(text))) { csv = text; break; }
+      console.log(`overpass ${city} ${server}: ${res.status} ${text.slice(0, 120)}`);
+    } catch (e) {
+      console.log(`overpass ${city} ${server}: ${(e as Error).message}`);
+    }
+  }
+  if (csv == null) return;
   const db = await fetch(neonSqlUrl(env.IMPORT_DATABASE_URL), {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'Neon-Connection-String': env.IMPORT_DATABASE_URL },
