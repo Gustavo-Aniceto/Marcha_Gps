@@ -41,6 +41,7 @@ function Gate() {
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="cena" />
       <Stack.Screen name="radar" options={{ presentation: 'modal' }} />
       <Stack.Screen name="camera-mapa" options={{ presentation: 'modal' }} />
       <Stack.Screen name="visibilidade" options={{ presentation: 'modal' }} />

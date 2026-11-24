@@ -17,6 +17,10 @@ Leia `docs/decisoes.md` antes de mudar regra de produto.
 - Toda tabela nova precisa de RLS ligado e policies.
 - Testes: `./db/tests/run.sh` sobe um Postgres local imitando o Neon (`auth.user_id()`, papéis `authenticated`/`anonymous`) e roda `db/tests/*.sql`.
 
+## Mapa
+- MapLibre + OpenFreeMap (grátis). Estilos só em `app/src/lib/mapStyle.ts` (noite, dia, cena). Não usar Mapbox (pago).
+- Navegação = 3D só com a equipe; Cena ao vivo (`app/app/cena.tsx`) = 2D cinza com todos que `visible_cars()` liberar.
+
 ## App
 - Expo + expo-router + TypeScript. Lógica pura fica em `app/src/lib/` com testes em `app/src/lib/__tests__/` (`npm test`).
 - Cores e fontes em `app/src/theme/`. Não espalhar cor solta pelas telas.

@@ -15,7 +15,7 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 - **Garagem** em 3D: altura, tipo de suspensão, aro, posição da roda, cambagem, cor, vidro, aerofólio, neon. Checa fitment e monta a lista de peças da base (marca "Serve" / "Atenção").
 
 ## Mapa
-- Visual holográfico, câmera alta, carro 3D por cima. O usuário escolhe 3D/2D, ângulo (20–88°) e raio de visão (40–220 m).
+- Navegação em 3D "meio 2D" (prédios em bloco), câmera alta, carro por cima. Visual noite (azul-escuro) ou dia (claro). O usuário escolhe 3D/2D, ângulo (20–88°) e raio de visão (40–220 m).
 - **Cena ao vivo**: mapa de SP, Guarulhos e Itaquá com o carrinho montado de quem escolheu aparecer. Filtro por cidade e por tipo (Todos / Minhas equipes / Em encontro).
 - Visibilidade: **Fantasma** / **Só minhas equipes** / **Cena ao vivo**. Na Cena ao vivo: posição aproximada (~500 m) por padrão para quem não é da equipe, atraso opcional, some ao parar 10 min, só membros verificados veem, zonas privadas (casa/trabalho) escondem até da equipe.
 
@@ -36,6 +36,7 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 - Nada que premie racha/velocidade na rua (ranking por velocidade, "puxada" entre carros). Competição só no Modo Pista, em local autorizado.
 
 ## Tech
-- App: React Native (Expo), Mapbox (`@rnmapbox/maps`).
+- App: React Native (Expo).
+- Mapa: **MapLibre** (`@maplibre/maplibre-react-native`) + mapas gratuitos do **OpenFreeMap**. Mapbox descartado por custo. Dois visuais: navegação 3D com prédios em bloco (noite azul ou dia claro) e **Cena ao vivo em 2D cinza-escuro** pra ver os carros. Plano B se o OpenFreeMap sair do ar: hospedar os próprios tiles (PMTiles) só da região.
 - Banco: **Neon** (Postgres, região São Paulo) com a Data API; fotos no Neon Object Storage (próxima fase).
 - Login: **Clerk** (`@clerk/expo`), código no e-mail. Escolhido porque o login do próprio Neon ainda não suporta app de celular (depende de cookie de navegador).

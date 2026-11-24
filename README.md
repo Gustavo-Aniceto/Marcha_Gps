@@ -24,7 +24,7 @@ docs/           Decisões e notas do produto
 
 - **Neon**: banco Postgres + Data API (REST). Projeto `marcha-gps`, região São Paulo.
 - **Clerk**: login por código no e-mail. O token dele é o que a Data API usa pra saber quem é o usuário.
-- **Mapbox**: mapa.
+- **Mapa**: MapLibre (biblioteca aberta) com os mapas gratuitos do **OpenFreeMap** (dados do OpenStreetMap). Sem conta, sem chave e sem cobrança. Estilos próprios em `app/src/lib/mapStyle.ts`: **noite** (3D azul), **dia** (3D claro) e **cena** (2D cinza-escuro, pra ver a galera).
 
 ## Configurando
 
@@ -64,7 +64,7 @@ Rode o `carga.sql` no SQL Editor do Neon (como dono do banco).
 
 ```bash
 cd app
-cp .env.example .env      # chave pública do Clerk, URL da Data API do Neon, token do Mapbox
+cp .env.example .env      # chave pública do Clerk e URL da Data API do Neon
 npm install
 npx expo install --fix    # alinha as versões das libs com o SDK do Expo instalado
 npm run typecheck
@@ -72,7 +72,7 @@ npm test                  # testes da lógica (fitment, tema, pontos)
 npx expo run:android      # ou run:ios
 ```
 
-Precisa de build de desenvolvimento (Mapbox e a tela de login nativa do Clerk não rodam no Expo Go).
+Precisa de build de desenvolvimento (o mapa MapLibre e a tela de login nativa do Clerk não rodam no Expo Go).
 
 ## O que já está pronto (fase 1)
 
@@ -87,7 +87,8 @@ Precisa de build de desenvolvimento (Mapbox e a tela de login nativa do Clerk n�
 
 - Cadastro do carro por fotos (reconhecimento por IA) e garagem em 3D.
 - Feed da equipe e geral, eventos no app e tela de "fazer a mídia" com a câmera.
-- Visual holográfico do mapa (estilo próprio no Mapbox Studio) e modelo 3D do carro no lugar do ícone.
+- Modelo 3D do carro no lugar do ícone.
+- Mapas próprios: gerar um arquivo PMTiles só de SP, Guarulhos e Itaquá e hospedar no nosso armazenamento (deixa de depender do OpenFreeMap; o estilo continua o mesmo, só muda `TILES_URL`).
 - Rotina chamando `expire_reports()` a cada 5 minutos (pg_cron no Neon ou função agendada).
 - Fotos (carro e mídia) no Neon Object Storage.
 - Trocar as caixas das cidades por polígonos oficiais do IBGE.

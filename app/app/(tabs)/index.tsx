@@ -1,8 +1,9 @@
-// Mapa: câmera de jogo, carros da galera (via visible_cars) e avisos do Radar.
+// Mapa de navegação: 3D (noite ou dia), câmera de jogo, carros da equipe e avisos do Radar.
+// Mapa gratuito: MapLibre + OpenFreeMap (ver src/lib/mapStyle.ts).
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import Mapbox, { Camera, FillExtrusionLayer, MapView, MarkerView } from '@rnmapbox/maps';
+import { Camera, Map as MapView, Marker } from '@maplibre/maplibre-react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { CarMarker } from '../../src/components/CarMarker';
 import { db, type VisibleCar } from '../../src/lib/db';
@@ -13,9 +14,8 @@ import { cameraFor } from '../../src/lib/mapCamera.ts';
 import { clearanceFor } from '../../src/lib/fitment.ts';
 import { kindInfo, type ReportKind } from '../../src/lib/reports.ts';
 import { haversineM } from '../../src/lib/geo.ts';
+import { buildMapStyle } from '../../src/lib/mapStyle.ts';
 import { colors, fonts } from '../../src/theme/tokens.ts';
-
-Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '');
 
 interface Report { id: string; kind: ReportKind; lat: number; lon: number; base_risk: number; status: string }
 interface MyCar { color: string; neon: string | null; ride_height_cm: number; suspension: string }
@@ -30,6 +30,7 @@ export default function Mapa() {
   const [reports, setReports] = useState<Report[]>([]);
   const [myCar, setMyCar] = useState<MyCar | null>(null);
   const cam = cameraFor(camera);
+  const mapStyle = useMemo(() => buildMapStyle(camera.theme), [camera.theme]);
 
   useFocusEffect(useCallback(() => {
     if (!profile) return;
@@ -78,50 +79,35 @@ export default function Mapa() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <MapView style={{ flex: 1 }} styleURL="mapbox://styles/mapbox/dark-v11"
-               compassEnabled={false} scaleBarEnabled={false} logoPosition={{ bottom: 8, left: 8 }}>
+      <MapView style={{ flex: 1 }} mapStyle={mapStyle} logo={false} compass={false}
+           attribution attributionPosition={{ bottom: 8, left: 8 }}>
         <Camera
-          followUserLocation
-          followZoomLevel={cam.zoom}
-          followPitch={cam.pitch}
-          followUserMode={camera.threeD ? 'course' : 'normal'}
-          animationDuration={600}
+          trackUserLocation={camera.threeD ? 'course' : 'default'}
+          zoom={cam.zoom}
+          pitch={cam.pitch}
+          duration={600}
         />
-        {camera.threeD && (
-          <FillExtrusionLayer
-            id="predios-holo"
-            sourceID="composite"
-            sourceLayerID="building"
-            minZoomLevel={14}
-            style={{
-              fillExtrusionColor: '#1B2A44',
-              fillExtrusionHeight: ['get', 'height'],
-              fillExtrusionBase: ['get', 'min_height'],
-              fillExtrusionOpacity: 0.85,
-            }}
-          />
-        )}
 
         {reports.map((r) => (
-          <MarkerView key={r.id} coordinate={[r.lon, r.lat]} allowOverlap>
+          <Marker key={r.id} id={`aviso-${r.id}`} lngLat={[r.lon, r.lat]}>
             <View style={[s.report, r.status === 'unconfirmed' && { opacity: 0.55 }]}
                   accessibilityLabel={`${kindInfo(r.kind).label}${r.status === 'unconfirmed' ? ', não confirmado' : ''}`}>
               <Text style={s.reportText}>{kindInfo(r.kind).label.toUpperCase()}</Text>
             </View>
-          </MarkerView>
+          </Marker>
         ))}
 
-        {cars.map((c) => (
-          <MarkerView key={c.user_id} coordinate={[c.lon, c.lat]} allowOverlap>
+        {cars.filter((c) => c.same_crew).map((c) => (
+          <Marker key={c.user_id} id={`carro-${c.user_id}`} lngLat={[c.lon, c.lat]}>
             <CarMarker color={c.car?.color} neon={c.car?.neon} heading={c.heading} label={`@${c.username}`}
                        sameCrew={c.same_crew} approximate={c.approximate} />
-          </MarkerView>
+          </Marker>
         ))}
 
         {position && (
-          <MarkerView coordinate={[position.lon, position.lat]} allowOverlap>
+          <Marker id="meu-carro" lngLat={[position.lon, position.lat]}>
             <CarMarker me color={myCar?.color} neon={myCar?.neon} heading={position.heading} />
-          </MarkerView>
+          </Marker>
         )}
       </MapView>
 
@@ -129,7 +115,7 @@ export default function Mapa() {
         <View style={s.chip}>
           <Text style={s.chipText}>
             {share ? (profile?.visibility === 'scene' ? 'VISÍVEL NA CENA' : 'VISÍVEL PRA EQUIPE') : 'MODO FANTASMA'}
-            {' · '}{cars.length} NO MAPA
+            {' · '}{cars.filter((c) => c.same_crew).length} DA EQUIPE
           </Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -160,6 +146,11 @@ export default function Mapa() {
         </View>
       )}
 
+      <Pressable style={s.cenaBtn} onPress={() => router.push('/cena')} accessibilityRole="button"
+                 accessibilityLabel="Abrir a Cena ao vivo">
+        <Text style={s.chipText}>CENA AO VIVO · {cars.length}</Text>
+      </Pressable>
+
       <Pressable style={s.reportBtn} onPress={() => router.push('/radar')} accessibilityRole="button"
                  accessibilityLabel="Avisar buraco, lombada, blitz">
         <Text style={{ color: colors.ink, fontWeight: '800', fontSize: 13 }}>AVISAR</Text>
@@ -181,6 +172,8 @@ const s = StyleSheet.create({
   bannerText: { color: colors.warnText, fontSize: 13 },
   report: { backgroundColor: colors.warn, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 3 },
   reportText: { fontFamily: fonts.mono, fontSize: 10, color: colors.ink },
+  cenaBtn: { position: 'absolute', left: 16, bottom: 24, minHeight: 44, paddingHorizontal: 12, justifyContent: 'center',
+             borderRadius: 6, borderWidth: 1, borderColor: colors.lineStrong, backgroundColor: 'rgba(6,12,22,0.9)' },
   reportBtn: { position: 'absolute', right: 16, bottom: 24, width: 72, height: 72, borderRadius: 10,
                backgroundColor: colors.warn, alignItems: 'center', justifyContent: 'center' },
 });

@@ -8,14 +8,15 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "test": "node --test \"src/lib/__tests__/*.test.ts\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "styles": "node scripts/gen-map-styles.ts"
   },
   "dependencies": {
     "@clerk/expo": "^4.0.0",
     "@expo-google-fonts/chakra-petch": "^0.4.1",
     "@expo-google-fonts/share-tech-mono": "^0.4.1",
+    "@maplibre/maplibre-react-native": "^11.3.3",
     "@react-native-async-storage/async-storage": "^2.1.2",
-    "@rnmapbox/maps": "^10.1.39",
     "@supabase/postgrest-js": "^1.19.4",
     "expo": "~54.0.0",
     "expo-camera": "~17.0.0",
