@@ -28,6 +28,7 @@ export default function Equipes() {
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', city: 'sao_paulo', instagram: '', count: '' });
   const [formSent, setFormSent] = useState(false);
+  const [master, setMaster] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!profile) return;
@@ -46,6 +47,10 @@ export default function Equipes() {
     const { data: r } = await db.from('crew_requests')
       .select('id, name, city_id, instagram, member_count, status').order('created_at', { ascending: false });
     setRequests((r ?? []) as Request[]);
+    // só volta alguém pra quem é dono de equipe
+    const { data: mc } = await db.rpc('master_contact');
+    const names = (mc ?? []) as { username: string }[];
+    setMaster(profile.is_master ? null : names[0]?.username ?? null);
   }, [profile, selected]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -150,6 +155,13 @@ export default function Equipes() {
       )}
 
       <ErrorText>{error}</ErrorText>
+
+      {master && (
+        <Card>
+          <Label>Adm Master</Label>
+          <Body dim>Só donos de equipe veem isso. Fale com @{master} pra liberar equipe ou resolver problema.</Body>
+        </Card>
+      )}
 
       {profile?.is_master && (
         <>

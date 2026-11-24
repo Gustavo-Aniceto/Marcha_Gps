@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import { ClerkProvider } from '@clerk/expo';
-import { tokenCache } from '@clerk/expo/token-cache';
+import { tokenCache } from '../src/lib/clerkTokenCache';
 import { ChakraPetch_700Bold } from '@expo-google-fonts/chakra-petch';
 import { ShareTechMono_400Regular } from '@expo-google-fonts/share-tech-mono';
 import { SessionProvider, useSession } from '../src/lib/session';

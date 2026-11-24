@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Camera, Map as MapView, Marker } from '@maplibre/maplibre-react-native';
+import { Camera, Map as MapView, Marker } from '../../src/map';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { CarMarker } from '../../src/components/CarMarker';
 import { db, type VisibleCar } from '../../src/lib/db';
@@ -86,6 +86,7 @@ export default function Mapa() {
           zoom={cam.zoom}
           pitch={cam.pitch}
           duration={600}
+          follow={position}
         />
 
         {reports.map((r) => (

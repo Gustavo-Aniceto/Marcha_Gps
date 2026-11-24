@@ -28,11 +28,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const loadProfile = useCallback(async () => {
     if (!isSignedIn || !userId) { setProfile(null); setProfileLoaded(true); return; }
-    const { data } = await db
-      .from('profiles')
-      .select('id, username, is_master, invites_left, visibility, precise_for_scene, delay_minutes')
-      .eq('id', userId)
-      .maybeSingle();
+    // o próprio perfil vem por função: a tabela só mostra nome e id dos outros
+    const { data } = await db.rpc('my_profile').maybeSingle();
     setProfile((data as Profile | null) ?? null);
     setProfileLoaded(true);
   }, [isSignedIn, userId]);

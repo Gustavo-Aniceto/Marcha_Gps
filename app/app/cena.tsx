@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Camera, Map as MapView, Marker } from '@maplibre/maplibre-react-native';
+import { Camera, Map as MapView, Marker } from '../src/map';
 import { CarMarker } from '../src/components/CarMarker';
 import { db, type VisibleCar } from '../src/lib/db';
 import { buildMapStyle, REGION_VIEW } from '../src/lib/mapStyle.ts';

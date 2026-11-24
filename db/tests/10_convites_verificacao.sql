@@ -47,13 +47,13 @@ select t.throws(format($$ select public.review_crew_request(%L, 'rejected') $$, 
 
 select t.login(:'founder');
 select t.ok(public.is_crew_admin(:'crew'), 'fundador vira admin verificado');
-select t.ok((select invites_left from public.profiles where id = auth.user_id()) = 5, 'fundador ganha 5 convites');
+select t.ok((select invites_left from public.my_profile()) = 5, 'fundador ganha 5 convites');
 
 -- convites da equipe
 select public.create_invite(:'crew') as code_a \gset
 select public.create_invite(:'crew') as code_b \gset
 select public.create_invite(:'crew') as code_n \gset
-select t.ok((select invites_left from public.profiles where id = auth.user_id()) = 2, 'convites descontados');
+select t.ok((select invites_left from public.my_profile()) = 2, 'convites descontados');
 select t.throws(format($$ select public.redeem_invite(%L, 'eu.mesmo') $$, :'code_a'), 'own_invite');
 
 select t.login(:'a');  select public.redeem_invite(:'code_a', 'membro.a');
@@ -72,7 +72,7 @@ select t.throws(format($$ select public.admin_checkin(%L, %L) $$, :'crew', :'b')
 select t.throws($$ update public.profiles set invites_left = 99 where id = auth.user_id() $$, 'permission denied');
 select t.throws($$ update public.profiles set is_master = true where id = auth.user_id() $$, 'permission denied');
 update public.profiles set visibility = 'scene', delay_minutes = 2 where id = auth.user_id();
-select t.ok((select visibility from public.profiles where id = auth.user_id()) = 'scene', 'muda a própria visibilidade');
+select t.ok((select visibility from public.my_profile()) = 'scene', 'muda a própria visibilidade');
 
 -- equipe nova: só o fundador está verificado, então 1 confirmação + check-in bastam
 select t.login(:'founder');

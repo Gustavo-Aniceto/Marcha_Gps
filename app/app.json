@@ -37,6 +37,16 @@
         }
       ]
     ],
-    "newArchEnabled": true
+    "newArchEnabled": true,
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./public/favicon.png",
+      "name": "Marcha GPS",
+      "shortName": "Marcha GPS",
+      "lang": "pt-BR",
+      "themeColor": "#070B12",
+      "backgroundColor": "#070B12"
+    }
   }
 }
