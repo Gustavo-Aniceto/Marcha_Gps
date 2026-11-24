@@ -45,7 +45,7 @@ export default {
     return withCors(await handle(req, env, ctx));
   },
 
-  // De hora em hora: importa a primeira faixa que está vencida (6 dias). Se o Overpass falhar,
+  // De hora em hora: importa o primeiro quadrado que está vencida (6 dias). Se o Overpass falhar,
   // tenta de novo na hora seguinte. Quase sempre não há nada a fazer e só consulta o banco.
   async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
     ctx.waitUntil(importNextTile(env));

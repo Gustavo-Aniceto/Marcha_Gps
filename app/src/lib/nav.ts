@@ -176,8 +176,10 @@ export function navStep(route: Route, prev: NavState, fix: Fix): NavUpdate {
   const wrongWayCount = wrongWay && !isOff ? prev.wrongWayCount + 1 : 0;
 
   const remaining_m = Math.max(0, route.total_m - snap.along);
+  // perto do ponto final só conta se também estiver no fim da rota: quando a rota dá a volta no
+  // quarteirão ela passa do lado do destino antes de chegar nele
   const arrived = !isOff && (remaining_m < ARRIVE_M
-    || distM(fix, route.coords[route.coords.length - 1]) < ARRIVE_M);
+    || (distM(fix, route.coords[route.coords.length - 1]) < ARRIVE_M && remaining_m < ARRIVE_M * 4));
 
   const needsReroute = !arrived && (snap.off > FAR_OFF_ROUTE_M || offCount >= OFF_ROUTE_FIXES
     || wrongWayCount >= WRONG_WAY_FIXES);

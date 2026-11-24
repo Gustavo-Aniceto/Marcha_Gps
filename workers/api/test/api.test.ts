@@ -68,15 +68,21 @@ test('limite por pessoa por minuto', () => {
   assert.ok(l.allow('a', 60_001));
 });
 
-test('importação: faixas cobrem as 3 cidades e a consulta do Overpass é por caixa', () => {
+test('importação: 12 quadrados cobrem as 3 cidades e a consulta do Overpass é curta', () => {
   const q = overpassQuery(TILES[0]);
-  assert.match(q, /\[bbox:-24\.0100,-46\.8300,-23\.2900,-46\.6400\]/);
+  assert.equal(TILES.length, 12);
+  assert.match(q, /\[bbox:-23\.4700,-46\.8300,-23\.2900,-46\.6400\]/);
+  assert.match(q, /\[timeout:25\]/);
   assert.match(q, /out:csv\(::type,::id,::lat,::lon,traffic_calming,highway,hazard,maxspeed;false;"\\t"\)/);
   assert.match(q, /out center;/);
-  // juntas, as faixas cobrem de -46.83 a -46.30 sem buraco
-  for (let i = 1; i < TILES.length; i++) assert.equal(TILES[i].west, TILES[i - 1].east);
-  assert.equal(TILES[0].west, -46.83);
-  assert.equal(TILES[TILES.length - 1].east, -46.30);
+  // juntos, os quadrados cobrem a caixa toda sem buraco nem sobra (área = soma das áreas)
+  const area = TILES.reduce((s, t) => s + (t.north - t.south) * (t.east - t.west), 0);
+  assert.ok(Math.abs(area - (24.01 - 23.29) * (46.83 - 46.30)) < 1e-9);
+  assert.equal(Math.min(...TILES.map((t) => t.west)), -46.83);
+  assert.equal(Math.max(...TILES.map((t) => t.east)), -46.30);
+  assert.equal(Math.min(...TILES.map((t) => t.south)), -24.01);
+  assert.equal(Math.max(...TILES.map((t) => t.north)), -23.29);
+  assert.equal(new Set(TILES.map((t) => t.id)).size, 12);
   for (const t of TILES) assert.match(t.id, /^[a-z_]{1,30}$/);
   assert.equal(neonSqlUrl('postgresql://importador:segredo@ep-x-123-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require'),
     'https://ep-x-123.c-2.sa-east-1.aws.neon.tech/sql');
