@@ -3,7 +3,7 @@ import React, { useCallback, useState } from 'react';
 import { Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Body, Card, Mono, Pills, Screen, Title } from '../../src/components/ui';
-import { supabase } from '../../src/lib/supabase';
+import { db } from '../../src/lib/db';
 import { useSession } from '../../src/lib/session';
 import { readableAccent } from '../../src/lib/contrast.ts';
 import { colors } from '../../src/theme/tokens.ts';
@@ -20,7 +20,7 @@ export default function Ranks() {
 
   useFocusEffect(useCallback(() => {
     if (!profile) return;
-    supabase.from('crew_members').select('crews(id, name, color)').eq('user_id', profile.id).eq('status', 'verified')
+    db.from('crew_members').select('crews(id, name, color)').eq('user_id', profile.id).eq('status', 'verified')
       .then(({ data }) => {
         const list = (data ?? []).map((r: any) => r.crews).filter(Boolean) as Crew[];
         setCrews(list);
@@ -30,8 +30,8 @@ export default function Ranks() {
 
   useFocusEffect(useCallback(() => {
     const q = tab === 'geral'
-      ? supabase.rpc('radar_leaderboard', { p_limit: 50 })
-      : crewId ? supabase.rpc('crew_leaderboard', { p_crew: crewId }) : null;
+      ? db.rpc('radar_leaderboard', { p_limit: 50 })
+      : crewId ? db.rpc('crew_leaderboard', { p_crew: crewId }) : null;
     if (!q) { setRows([]); return; }
     q.then(({ data }) => setRows((data ?? []) as Row[]));
   }, [tab, crewId]));

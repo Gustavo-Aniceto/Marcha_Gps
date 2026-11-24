@@ -21,13 +21,14 @@ insert into public.cities (id, name, priority, lat_min, lat_max, lon_min, lon_ma
 
 -- ---------------------------------------------------------------------------
 -- Perfis (só existe perfil quem entrou por convite: ver redeem_invite)
+-- id = ID do usuário no Clerk (claim "sub" do token, ex.: user_2abc...)
 -- ---------------------------------------------------------------------------
 create table public.profiles (
-  id                uuid primary key references auth.users (id) on delete cascade,
+  id                text primary key check (length(id) between 1 and 128),
   username          text not null unique check (username ~ '^[a-z0-9._]{3,24}$'),
   is_master         boolean not null default false,
   invites_left      integer not null default 0 check (invites_left >= 0),
-  invited_by        uuid references public.profiles (id) on delete set null,
+  invited_by        text references public.profiles (id) on delete set null,
   -- visibilidade no mapa
   visibility        text not null default 'ghost' check (visibility in ('ghost', 'crew', 'scene')),
   precise_for_scene boolean not null default false,  -- false = mostra só a região (~500 m) pra quem não é da equipe
@@ -37,7 +38,7 @@ create table public.profiles (
 
 create table public.private_zones (
   id        uuid primary key default gen_random_uuid(),
-  user_id   uuid not null references public.profiles (id) on delete cascade,
+  user_id   text not null references public.profiles (id) on delete cascade,
   label     text not null default 'Casa',
   lat       double precision not null check (lat between -90 and 90),
   lon       double precision not null check (lon between -180 and 180),
@@ -61,10 +62,10 @@ create table public.crews (
 
 create table public.crew_members (
   crew_id      uuid not null references public.crews (id) on delete cascade,
-  user_id      uuid not null references public.profiles (id) on delete cascade,
+  user_id      text not null references public.profiles (id) on delete cascade,
   role         text not null default 'member' check (role in ('founder', 'admin', 'member')),
   status       text not null default 'pending' check (status in ('pending', 'verified')),
-  sponsor_id   uuid references public.profiles (id) on delete set null,  -- padrinho
+  sponsor_id   text references public.profiles (id) on delete set null,  -- padrinho
   xp           integer not null default 0 check (xp >= 0),
   joined_at    timestamptz not null default now(),
   verified_at  timestamptz,
@@ -76,8 +77,8 @@ create index on public.crew_members (user_id);
 create table public.invites (
   code        text primary key,
   crew_id     uuid references public.crews (id) on delete cascade,
-  created_by  uuid not null references public.profiles (id) on delete cascade,
-  used_by     uuid references public.profiles (id) on delete set null,
+  created_by  text not null references public.profiles (id) on delete cascade,
+  used_by     text references public.profiles (id) on delete set null,
   used_at     timestamptz,
   expires_at  timestamptz not null default now() + interval '7 days',
   created_at  timestamptz not null default now()
@@ -86,8 +87,8 @@ create table public.invites (
 -- Verificação: 2 membros confirmam que conhecem + 1 check-in presencial feito por admin
 create table public.member_vouches (
   crew_id     uuid not null,
-  member_id   uuid not null,
-  voucher_id  uuid not null references public.profiles (id) on delete cascade,
+  member_id   text not null,
+  voucher_id  text not null references public.profiles (id) on delete cascade,
   created_at  timestamptz not null default now(),
   primary key (crew_id, member_id, voucher_id),
   check (member_id <> voucher_id),
@@ -97,8 +98,8 @@ create table public.member_vouches (
 create table public.member_checkins (
   id          uuid primary key default gen_random_uuid(),
   crew_id     uuid not null,
-  member_id   uuid not null,
-  admin_id    uuid not null references public.profiles (id) on delete cascade,
+  member_id   text not null,
+  admin_id    text not null references public.profiles (id) on delete cascade,
   event_id    uuid,
   created_at  timestamptz not null default now(),
   foreign key (crew_id, member_id) references public.crew_members (crew_id, user_id) on delete cascade
@@ -107,7 +108,7 @@ create table public.member_checkins (
 -- Pedido de equipe nova, analisado pelo Adm Master
 create table public.crew_requests (
   id                  uuid primary key default gen_random_uuid(),
-  requester_id        uuid not null references public.profiles (id) on delete cascade,
+  requester_id        text not null references public.profiles (id) on delete cascade,
   name                text not null check (length(name) between 2 and 40),
   city_id             text not null references public.cities (id),
   instagram           text,
@@ -116,7 +117,7 @@ create table public.crew_requests (
   accepts_video_call  boolean not null default false,
   status              text not null default 'pending' check (status in ('pending', 'more_info', 'approved', 'rejected')),
   master_note         text,
-  reviewed_by         uuid references public.profiles (id),
+  reviewed_by         text references public.profiles (id),
   reviewed_at         timestamptz,
   crew_id             uuid references public.crews (id),
   created_at          timestamptz not null default now()
@@ -127,7 +128,7 @@ create table public.crew_requests (
 -- ---------------------------------------------------------------------------
 create table public.cars (
   id              uuid primary key default gen_random_uuid(),
-  owner_id        uuid not null references public.profiles (id) on delete cascade,
+  owner_id        text not null references public.profiles (id) on delete cascade,
   make            text not null,
   model           text not null,
   year            integer check (year between 1950 and 2100),
@@ -164,7 +165,7 @@ create table public.events (
   radius_m       integer not null default 200 check (radius_m between 50 and 2000),
   visibility     text not null default 'crew' check (visibility in ('crew', 'invited', 'open')),
   verified_only  boolean not null default true,
-  created_by     uuid not null references public.profiles (id),
+  created_by     text not null references public.profiles (id),
   created_at     timestamptz not null default now(),
   check (ends_at > starts_at)
 );
@@ -179,7 +180,7 @@ create table public.event_guest_crews (
 create table public.event_media (
   id          uuid primary key default gen_random_uuid(),
   event_id    uuid not null references public.events (id) on delete cascade,
-  user_id     uuid not null references public.profiles (id) on delete cascade,
+  user_id     text not null references public.profiles (id) on delete cascade,
   photo_path  text not null,
   lat         double precision not null,
   lon         double precision not null,
@@ -201,7 +202,7 @@ create table public.reports (
   city_id       text not null references public.cities (id),
   source        text not null default 'user' check (source in ('user', 'osm', 'antt')),
   source_ref    text,
-  author_id     uuid references public.profiles (id) on delete set null,
+  author_id     text references public.profiles (id) on delete set null,
   status        text not null default 'unconfirmed' check (status in ('unconfirmed', 'confirmed', 'rejected', 'expired')),
   base_risk     smallint not null default 2 check (base_risk between 0 and 3),
   speed_limit   integer,
@@ -214,7 +215,7 @@ create unique index reports_source_ref on public.reports (source, source_ref) wh
 
 create table public.report_votes (
   report_id    uuid not null references public.reports (id) on delete cascade,
-  user_id      uuid not null references public.profiles (id) on delete cascade,
+  user_id      text not null references public.profiles (id) on delete cascade,
   exists_vote  boolean not null,                -- true = o obstáculo está lá
   clearance    text check (clearance in ('passa', 'raspa', 'nao_passa')),
   created_at   timestamptz not null default now(),
@@ -223,7 +224,7 @@ create table public.report_votes (
 
 create table public.points_ledger (
   id          bigserial primary key,
-  user_id     uuid not null references public.profiles (id) on delete cascade,
+  user_id     text not null references public.profiles (id) on delete cascade,
   delta       integer not null,
   reason      text not null check (reason in ('report_confirmed', 'confirmed_other', 'false_report')),
   report_id   uuid references public.reports (id) on delete set null,
@@ -236,7 +237,7 @@ create index on public.points_ledger (user_id);
 -- Localização (ninguém lê direto: só pela função visible_cars)
 -- ---------------------------------------------------------------------------
 create table public.live_locations (
-  user_id         uuid primary key references public.profiles (id) on delete cascade,
+  user_id         text primary key references public.profiles (id) on delete cascade,
   lat             double precision not null,
   lon             double precision not null,
   heading         smallint check (heading between 0 and 359),
@@ -247,7 +248,7 @@ create table public.live_locations (
 -- guarda só os últimos 15 minutos (pra mostrar posição com atraso)
 create table public.location_history (
   id           bigserial primary key,
-  user_id      uuid not null references public.profiles (id) on delete cascade,
+  user_id      text not null references public.profiles (id) on delete cascade,
   lat          double precision not null,
   lon          double precision not null,
   recorded_at  timestamptz not null default now()

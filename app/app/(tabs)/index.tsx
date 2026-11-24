@@ -5,7 +5,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import Mapbox, { Camera, FillExtrusionLayer, MapView, MarkerView } from '@rnmapbox/maps';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { CarMarker } from '../../src/components/CarMarker';
-import { supabase, type VisibleCar } from '../../src/lib/supabase';
+import { db, type VisibleCar } from '../../src/lib/db';
 import { useSession } from '../../src/lib/session';
 import { useMapSettings } from '../../src/lib/mapSettings';
 import { useLocationSharing } from '../../src/lib/useLocationSharing';
@@ -33,7 +33,7 @@ export default function Mapa() {
 
   useFocusEffect(useCallback(() => {
     if (!profile) return;
-    supabase.from('cars').select('color, neon, ride_height_cm, suspension')
+    db.from('cars').select('color, neon, ride_height_cm, suspension')
       .eq('owner_id', profile.id).eq('is_active', true).maybeSingle()
       .then(({ data }) => setMyCar(data as MyCar | null));
   }, [profile]));
@@ -42,7 +42,7 @@ export default function Mapa() {
   useEffect(() => {
     let alive = true;
     const load = async () => {
-      const { data, error } = await supabase.rpc('visible_cars', { p_city: null });
+      const { data, error } = await db.rpc('visible_cars', { p_city: null });
       if (alive && !error) setCars((data ?? []) as VisibleCar[]);
     };
     load();
@@ -55,7 +55,7 @@ export default function Mapa() {
   useEffect(() => {
     if (lat == null || lon == null) return;
     const d = 0.03;
-    supabase.from('reports').select('id, kind, lat, lon, base_risk, status')
+    db.from('reports').select('id, kind, lat, lon, base_risk, status')
       .gte('lat', lat - d).lte('lat', lat + d).gte('lon', lon - d).lte('lon', lon + d)
       .limit(500)
       .then(({ data }) => setReports((data ?? []) as Report[]));

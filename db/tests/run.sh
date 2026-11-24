@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Sobe um Postgres temporário, aplica as migrations e roda os testes.
-# Uso: ./supabase/tests/run.sh
+# Uso: ./db/tests/run.sh
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 PGBIN="${PGBIN:-$(ls -d /usr/lib/postgresql/*/bin 2>/dev/null | sort -V | tail -1)}"
@@ -19,13 +19,13 @@ $AS initdb -D "$WORK/data" -U postgres --auth=trust >/dev/null
 $AS pg_ctl -D "$WORK/data" -o "-p $PORT -k $WORK -c listen_addresses=''" -l "$WORK/log" -w start >/dev/null
 PSQL=(psql -h "$WORK" -p "$PORT" -U postgres -d postgres -v ON_ERROR_STOP=1 -q -X)
 
-"${PSQL[@]}" -f "$ROOT/supabase/tests/00_auth_stub.sql"
-for f in "$ROOT"/supabase/migrations/*.sql; do
+"${PSQL[@]}" -f "$ROOT/db/tests/00_auth_stub.sql"
+for f in "$ROOT"/db/migrations/*.sql; do
   echo "migration: $(basename "$f")"
   "${PSQL[@]}" -f "$f"
 done
 fail=0
-for t in "$ROOT"/supabase/tests/[1-9]*.sql; do
+for t in "$ROOT"/db/tests/[1-9]*.sql; do
   if "${PSQL[@]}" -o /dev/null -f "$t"; then echo "ok    $(basename "$t")"; else echo "FALHOU $(basename "$t")"; fail=1; fi
 done
 # carga do script de importação (fixtures), rodada duas vezes pra garantir que não duplica

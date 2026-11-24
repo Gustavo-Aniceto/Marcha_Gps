@@ -1,5 +1,5 @@
 // Tipos de aviso do Radar. Pontos e validade precisam bater com
-// report_points() e report_ttl() em supabase/migrations/*_functions.sql.
+// report_points() e report_ttl() em db/migrations/*_functions.sql.
 
 export type ReportKind =
   | 'buraco' | 'lombada' | 'valeta' | 'rua_ruim' | 'rampa'

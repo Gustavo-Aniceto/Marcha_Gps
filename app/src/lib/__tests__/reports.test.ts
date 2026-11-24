@@ -6,7 +6,7 @@ import { join, dirname } from 'node:path';
 import { REPORT_KINDS, pointsText } from '../reports.ts';
 import { friendlyError } from '../errors.ts';
 
-const migrations = join(dirname(fileURLToPath(import.meta.url)), '../../../../supabase/migrations');
+const migrations = join(dirname(fileURLToPath(import.meta.url)), '../../../../db/migrations');
 const sql = readdirSync(migrations).map((f) => readFileSync(join(migrations, f), 'utf8')).join('\n');
 
 test('pontos do app batem com report_points() do banco', () => {

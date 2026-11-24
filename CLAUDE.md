@@ -9,10 +9,13 @@ Leia `docs/decisoes.md` antes de mudar regra de produto.
 - Avisos de segurança (lombada, blitz etc.) ficam sempre na cor laranja; o tema da equipe não muda eles.
 - Área de lançamento: São Paulo, Guarulhos, Itaquaquecetuba (`cities`).
 
-## Banco
-- Migrations em `supabase/migrations/`, numeradas. Nunca edite uma migration já aplicada; crie outra.
+## Banco (Neon) e login (Clerk)
+- Banco no Neon (projeto `marcha-gps`, região São Paulo). O app fala com ele pela **Data API** (PostgREST) mandando o token do Clerk.
+- Usuário atual no SQL: `auth.user_id()` (texto, claim `sub` do Clerk, ex.: `user_2abc...`). IDs de usuário são `text`, nunca `uuid`.
+- O token do Clerk precisa ter `"role": "authenticated"` (Clerk > Sessions > Customize session token). Sem isso a Data API roda como `anonymous` e nada funciona.
+- Migrations em `db/migrations/`, numeradas. Nunca edite uma migration já aplicada; crie outra. Depois de aplicar, atualize o cache da Data API (Console > Data API > Refresh schema cache).
 - Toda tabela nova precisa de RLS ligado e policies.
-- Testes: `./supabase/tests/run.sh` sobe um Postgres local com um `auth` falso e roda `supabase/tests/*.sql`.
+- Testes: `./db/tests/run.sh` sobe um Postgres local imitando o Neon (`auth.user_id()`, papéis `authenticated`/`anonymous`) e roda `db/tests/*.sql`.
 
 ## App
 - Expo + expo-router + TypeScript. Lógica pura fica em `app/src/lib/` com testes em `app/src/lib/__tests__/` (`npm test`).

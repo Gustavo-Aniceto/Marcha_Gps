@@ -1,7 +1,7 @@
 // Primeiro acesso: usa o código de convite e escolhe o nome de usuário.
 import React, { useState } from 'react';
 import { Body, Button, ErrorText, Field, Screen, Title } from '../../src/components/ui';
-import { supabase } from '../../src/lib/supabase';
+import { db } from '../../src/lib/db';
 import { useSession } from '../../src/lib/session';
 import { friendlyError } from '../../src/lib/errors.ts';
 
@@ -14,7 +14,7 @@ export default function Convite() {
 
   async function redeem() {
     setError(null); setBusy(true);
-    const { error: e } = await supabase.rpc('redeem_invite', {
+    const { error: e } = await db.rpc('redeem_invite', {
       p_code: code.trim().toUpperCase(),
       p_username: username.trim().toLowerCase(),
     });

@@ -3,7 +3,7 @@ import React, { useCallback, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { Body, Button, Card, ErrorText, Field, Label, Mono, Pills, Screen, Title, Warning } from '../../src/components/ui';
 import { CarMarker } from '../../src/components/CarMarker';
-import { supabase } from '../../src/lib/supabase';
+import { db } from '../../src/lib/db';
 import { useSession } from '../../src/lib/session';
 import { checkFitment, tireFor, type Suspension, type WheelPosition } from '../../src/lib/fitment.ts';
 import { friendlyError } from '../../src/lib/errors.ts';
@@ -35,7 +35,7 @@ export default function Garagem() {
 
   useFocusEffect(useCallback(() => {
     if (!profile) return;
-    supabase.from('cars').select('*').eq('owner_id', profile.id).eq('is_active', true).maybeSingle()
+    db.from('cars').select('*').eq('owner_id', profile.id).eq('is_active', true).maybeSingle()
       .then(({ data }) => {
         if (data) setCar({ ...EMPTY, ...data, year: data.year ? String(data.year) : '', camber_deg: Number(data.camber_deg) });
       });
@@ -57,8 +57,8 @@ export default function Garagem() {
       tint: car.tint, spoiler: car.spoiler, neon: car.neon, updated_at: new Date().toISOString(),
     };
     const q = car.id
-      ? supabase.from('cars').update(row).eq('id', car.id).select('id').single()
-      : supabase.from('cars').insert(row).select('id').single();
+      ? db.from('cars').update(row).eq('id', car.id).select('id').single()
+      : db.from('cars').insert(row).select('id').single();
     const { data, error: e } = await q;
     setBusy(false);
     if (e) { setError(friendlyError(e)); return; }

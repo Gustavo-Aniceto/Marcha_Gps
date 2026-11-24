@@ -4,6 +4,8 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
+import { ClerkProvider } from '@clerk/expo';
+import { tokenCache } from '@clerk/expo/token-cache';
 import { ChakraPetch_700Bold } from '@expo-google-fonts/chakra-petch';
 import { ShareTechMono_400Regular } from '@expo-google-fonts/share-tech-mono';
 import { SessionProvider, useSession } from '../src/lib/session';
@@ -12,21 +14,21 @@ import { colors } from '../src/theme/tokens.ts';
 
 // Manda cada um pro lugar certo: sem login -> entrar; logado sem convite -> convite; senão -> abas.
 function Gate() {
-  const { loading, session, profile } = useSession();
+  const { loading, signedIn, profile } = useSession();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
     if (loading) return;
     const inAuth = segments[0] === '(auth)';
-    if (!session) {
+    if (!signedIn) {
       if (!inAuth || segments[1] !== 'entrar') router.replace('/(auth)/entrar');
     } else if (!profile) {
       if (!inAuth || segments[1] !== 'convite') router.replace('/(auth)/convite');
     } else if (inAuth) {
       router.replace('/(tabs)');
     }
-  }, [loading, session, profile, segments, router]);
+  }, [loading, signedIn, profile, segments, router]);
 
   if (loading) {
     return (
@@ -46,6 +48,9 @@ function Gate() {
   );
 }
 
+const clerkKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
+if (!clerkKey) throw new Error('Configure EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY no app/.env');
+
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     'ChakraPetch-Bold': ChakraPetch_700Bold,
@@ -56,11 +61,13 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <StatusBar style="light" />
-      <SessionProvider>
-        <MapSettingsProvider>
-          <Gate />
-        </MapSettingsProvider>
-      </SessionProvider>
+      <ClerkProvider publishableKey={clerkKey} tokenCache={tokenCache}>
+        <SessionProvider>
+          <MapSettingsProvider>
+            <Gate />
+          </MapSettingsProvider>
+        </SessionProvider>
+      </ClerkProvider>
     </SafeAreaProvider>
   );
 }

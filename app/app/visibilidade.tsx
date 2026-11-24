@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { Body, Button, Card, ErrorText, Label, Mono, Pills, Screen, Title } from '../src/components/ui';
-import { supabase, type Profile } from '../src/lib/supabase';
+import { db, type Profile } from '../src/lib/db';
 import { useSession } from '../src/lib/session';
 import { friendlyError } from '../src/lib/errors.ts';
 
@@ -25,7 +25,7 @@ export default function Visibilidade() {
   const [zones, setZones] = useState<{ id: string; label: string }[]>([]);
 
   const loadZones = () => {
-    supabase.from('private_zones').select('id, label').then(({ data }) => setZones(data ?? []));
+    db.from('private_zones').select('id, label').then(({ data }) => setZones(data ?? []));
   };
   useEffect(loadZones, []);
 
@@ -34,7 +34,7 @@ export default function Visibilidade() {
     setError(null);
     try {
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const { error: e } = await supabase.from('private_zones').insert({
+      const { error: e } = await db.from('private_zones').insert({
         user_id: profile.id, label, lat: loc.coords.latitude, lon: loc.coords.longitude, radius_m: 1000,
       });
       if (e) setError(friendlyError(e)); else loadZones();
@@ -44,14 +44,14 @@ export default function Visibilidade() {
   }
 
   async function removeZone(id: string) {
-    await supabase.from('private_zones').delete().eq('id', id);
+    await db.from('private_zones').delete().eq('id', id);
     loadZones();
   }
 
   async function save() {
     if (!profile) return;
     setBusy(true); setError(null);
-    const { error: e } = await supabase.from('profiles')
+    const { error: e } = await db.from('profiles')
       .update({ visibility: mode, precise_for_scene: precise, delay_minutes: delay })
       .eq('id', profile.id);
     setBusy(false);

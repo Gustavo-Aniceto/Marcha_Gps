@@ -3,7 +3,7 @@ import React, { useCallback, useState } from 'react';
 import { Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Body, Button, Card, ErrorText, Field, Label, Mono, Pills, Screen, Title } from '../../src/components/ui';
-import { supabase } from '../../src/lib/supabase';
+import { db } from '../../src/lib/db';
 import { useSession } from '../../src/lib/session';
 import { friendlyError } from '../../src/lib/errors.ts';
 import { readableAccent } from '../../src/lib/contrast.ts';
@@ -30,19 +30,19 @@ export default function Equipes() {
 
   const load = useCallback(async () => {
     if (!profile) return;
-    const { data } = await supabase.from('crew_members')
+    const { data } = await db.from('crew_members')
       .select('role, status, crews(id, name, color, button_shape, city_id)').eq('user_id', profile.id);
     const list = (data ?? []) as unknown as MyMembership[];
     setMine(list);
     const crewId = selected ?? list[0]?.crews.id ?? null;
     setSelected(crewId);
     if (crewId) {
-      const { data: m } = await supabase.from('crew_members')
+      const { data: m } = await db.from('crew_members')
         .select('user_id, role, status, xp, profiles!crew_members_user_id_fkey(username)').eq('crew_id', crewId)
         .order('status').order('xp', { ascending: false });
       setMembers((m ?? []) as unknown as Member[]);
     }
-    const { data: r } = await supabase.from('crew_requests')
+    const { data: r } = await db.from('crew_requests')
       .select('id, name, city_id, instagram, member_count, status').order('created_at', { ascending: false });
     setRequests((r ?? []) as Request[]);
   }, [profile, selected]);
@@ -56,7 +56,7 @@ export default function Equipes() {
 
   async function call(fn: string, args: Record<string, unknown>) {
     setError(null);
-    const { data, error: e } = await supabase.rpc(fn, args);
+    const { data, error: e } = await db.rpc(fn, args);
     if (e) { setError(friendlyError(e)); return null; }
     await load();
     return data;
@@ -70,7 +70,7 @@ export default function Equipes() {
   async function sendRequest() {
     if (!profile) return;
     setError(null);
-    const { error: e } = await supabase.from('crew_requests').insert({
+    const { error: e } = await db.from('crew_requests').insert({
       requester_id: profile.id, name: form.name.trim(), city_id: form.city,
       instagram: form.instagram.trim() || null, member_count: Number(form.count) || 1, accepts_video_call: true,
     });

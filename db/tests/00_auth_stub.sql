@@ -1,18 +1,17 @@
--- Imitação mínima do Supabase pra rodar os testes num Postgres comum.
--- NÃO aplicar no Supabase de verdade.
+-- Imitação mínima do Neon (Data API + pg_session_jwt) pra rodar os testes num Postgres comum.
+-- NÃO aplicar no Neon de verdade: lá o schema auth vem da Data API.
 do $$ begin
-  if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon nologin; end if;
+  if not exists (select 1 from pg_roles where rolname = 'anonymous') then create role anonymous nologin; end if;
   if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated nologin; end if;
 end $$;
 
 create schema if not exists auth;
-create table if not exists auth.users (id uuid primary key);
-create or replace function auth.uid() returns uuid language sql stable as $$
-  select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid;
+create or replace function auth.user_id() returns text language sql stable as $$
+  select nullif(current_setting('request.jwt.claim.sub', true), '');
 $$;
-grant usage on schema auth to anon, authenticated;
-grant execute on function auth.uid() to anon, authenticated;
-grant usage on schema public to anon, authenticated;
+grant usage on schema auth to anonymous, authenticated;
+grant execute on function auth.user_id() to anonymous, authenticated;
+grant usage on schema public to anonymous, authenticated;
 
 -- Ajudantes dos testes
 create schema if not exists t;
@@ -30,11 +29,11 @@ exception when others then
     raise exception 'FALHOU: esperava "%" mas veio "%" em: %', expected, sqlerrm, q;
   end if;
 end $$;
-create or replace function t.login(u uuid) returns void language sql as $$
-  select set_config('request.jwt.claim.sub', u::text, true);
+create or replace function t.login(u text) returns void language sql as $$
+  select set_config('request.jwt.claim.sub', u, true);
 $$;
-grant usage on schema t to anon, authenticated;
-grant execute on all functions in schema t to anon, authenticated;
+grant usage on schema t to anonymous, authenticated;
+grant execute on all functions in schema t to anonymous, authenticated;
 
 -- Montagem rápida de cenário (chamar antes de "set role")
 create or replace function t.crew(p_name text, p_city text default 'sao_paulo') returns uuid language plpgsql as $$
@@ -43,11 +42,10 @@ begin
   insert into public.crews (name, city_id) values (p_name, p_city) returning id into v;
   return v;
 end $$;
-create or replace function t.user(p_id uuid, p_username text, p_crew uuid default null,
-                                  p_status text default 'verified', p_role text default 'member') returns uuid
+create or replace function t.user(p_id text, p_username text, p_crew uuid default null,
+                                  p_status text default 'verified', p_role text default 'member') returns text
 language plpgsql as $$
 begin
-  insert into auth.users (id) values (p_id) on conflict do nothing;
   insert into public.profiles (id, username) values (p_id, p_username) on conflict do nothing;
   if p_crew is not null then
     insert into public.crew_members (crew_id, user_id, role, status) values (p_crew, p_id, p_role, p_status);

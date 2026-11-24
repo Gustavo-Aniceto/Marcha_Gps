@@ -2,6 +2,8 @@
 
 const MESSAGES: Record<string, string> = {
   not_authenticated: 'Entre na sua conta de novo.',
+  'JWT expired': 'Sua sessão venceu. Entre de novo.',
+  'jwt expired': 'Sua sessão venceu. Entre de novo.',
   no_profile: 'Você ainda não entrou com um convite.',
   forbidden: 'Você não tem permissão pra isso.',
   invite_not_found: 'Código de convite não encontrado.',

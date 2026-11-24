@@ -1,4 +1,5 @@
 -- Marcha GPS — funções
+-- Usuário atual: auth.user_id() (texto, vem do token do Clerk; no Neon é a extensão pg_session_jwt).
 -- Toda escrita sensível passa por aqui (security definer), nunca direto na tabela.
 -- Erros sobem como exceção com um código curto em inglês (o app traduz).
 
@@ -21,34 +22,34 @@ returns text language sql stable set search_path = public as $$
   order by priority limit 1;
 $$;
 
-create or replace function public.has_profile(p_uid uuid default auth.uid())
+create or replace function public.has_profile(p_uid text default auth.user_id())
 returns boolean language sql stable security definer set search_path = public as $$
   select exists (select 1 from public.profiles where id = p_uid);
 $$;
 
-create or replace function public.is_master(p_uid uuid default auth.uid())
+create or replace function public.is_master(p_uid text default auth.user_id())
 returns boolean language sql stable security definer set search_path = public as $$
   select coalesce((select is_master from public.profiles where id = p_uid), false);
 $$;
 
-create or replace function public.is_crew_member(p_crew uuid, p_uid uuid default auth.uid())
+create or replace function public.is_crew_member(p_crew uuid, p_uid text default auth.user_id())
 returns boolean language sql stable security definer set search_path = public as $$
   select exists (select 1 from public.crew_members where crew_id = p_crew and user_id = p_uid);
 $$;
 
-create or replace function public.is_verified_in(p_crew uuid, p_uid uuid default auth.uid())
+create or replace function public.is_verified_in(p_crew uuid, p_uid text default auth.user_id())
 returns boolean language sql stable security definer set search_path = public as $$
   select exists (select 1 from public.crew_members
                  where crew_id = p_crew and user_id = p_uid and status = 'verified');
 $$;
 
-create or replace function public.is_verified_anywhere(p_uid uuid default auth.uid())
+create or replace function public.is_verified_anywhere(p_uid text default auth.user_id())
 returns boolean language sql stable security definer set search_path = public as $$
   select exists (select 1 from public.crew_members cm join public.crews c on c.id = cm.crew_id
                  where cm.user_id = p_uid and cm.status = 'verified' and c.status = 'active');
 $$;
 
-create or replace function public.is_crew_admin(p_crew uuid, p_uid uuid default auth.uid())
+create or replace function public.is_crew_admin(p_crew uuid, p_uid text default auth.user_id())
 returns boolean language sql stable security definer set search_path = public as $$
   select exists (select 1 from public.crew_members
                  where crew_id = p_crew and user_id = p_uid
@@ -62,8 +63,8 @@ returns uuid language sql stable security definer set search_path = public as $$
 $$;
 
 create or replace function public.require_profile()
-returns uuid language plpgsql stable security definer set search_path = public as $$
-declare v_uid uuid := auth.uid();
+returns text language plpgsql stable security definer set search_path = public as $$
+declare v_uid text := auth.user_id();
 begin
   if v_uid is null then raise exception 'not_authenticated'; end if;
   if not public.has_profile(v_uid) then raise exception 'no_profile'; end if;
@@ -76,7 +77,7 @@ end $$;
 create or replace function public.create_invite(p_crew uuid default null)
 returns text language plpgsql security definer set search_path = public as $$
 declare
-  v_uid  uuid := public.require_profile();
+  v_uid  text := public.require_profile();
   v_code text;
 begin
   if p_crew is null then
@@ -110,7 +111,7 @@ end $$;
 create or replace function public.redeem_invite(p_code text, p_username text default null)
 returns uuid language plpgsql security definer set search_path = public as $$
 declare
-  v_uid uuid := auth.uid();
+  v_uid text := auth.user_id();
   v_inv public.invites;
 begin
   if v_uid is null then raise exception 'not_authenticated'; end if;
@@ -142,7 +143,7 @@ end $$;
 -- ---------------------------------------------------------------------------
 -- Verificação dos membros
 -- ---------------------------------------------------------------------------
-create or replace function public.try_verify(p_crew uuid, p_member uuid)
+create or replace function public.try_verify(p_crew uuid, p_member text)
 returns text language plpgsql security definer set search_path = public as $$
 declare
   v_m      public.crew_members;
@@ -169,9 +170,9 @@ begin
   return 'pending';
 end $$;
 
-create or replace function public.vouch_member(p_crew uuid, p_member uuid)
+create or replace function public.vouch_member(p_crew uuid, p_member text)
 returns text language plpgsql security definer set search_path = public as $$
-declare v_uid uuid := public.require_profile();
+declare v_uid text := public.require_profile();
 begin
   if v_uid = p_member then raise exception 'cannot_vouch_self'; end if;
   if not public.is_verified_in(p_crew, v_uid) then raise exception 'forbidden'; end if;
@@ -181,9 +182,9 @@ begin
   return public.try_verify(p_crew, p_member);
 end $$;
 
-create or replace function public.admin_checkin(p_crew uuid, p_member uuid, p_event uuid default null)
+create or replace function public.admin_checkin(p_crew uuid, p_member text, p_event uuid default null)
 returns text language plpgsql security definer set search_path = public as $$
-declare v_uid uuid := public.require_profile();
+declare v_uid text := public.require_profile();
 begin
   if not public.is_crew_admin(p_crew, v_uid) then raise exception 'forbidden'; end if;
   if not public.is_crew_member(p_crew, p_member) then raise exception 'member_not_found'; end if;
@@ -201,7 +202,7 @@ end $$;
 create or replace function public.review_crew_request(p_request uuid, p_decision text, p_note text default null)
 returns uuid language plpgsql security definer set search_path = public as $$
 declare
-  v_uid  uuid := public.require_profile();
+  v_uid  text := public.require_profile();
   v_req  public.crew_requests;
   v_crew uuid;
 begin
@@ -234,9 +235,9 @@ begin
   update public.crews set color = upper(p_color), button_shape = p_shape where id = p_crew;
 end $$;
 
-create or replace function public.set_member_role(p_crew uuid, p_member uuid, p_role text)
+create or replace function public.set_member_role(p_crew uuid, p_member text, p_role text)
 returns void language plpgsql security definer set search_path = public as $$
-declare v_uid uuid := public.require_profile();
+declare v_uid text := public.require_profile();
 begin
   if not exists (select 1 from public.crew_members where crew_id = p_crew and user_id = v_uid
                    and role = 'founder' and status = 'verified')
@@ -259,7 +260,7 @@ create or replace function public.submit_event_media(p_event uuid, p_photo_path 
                                                      p_lat double precision, p_lon double precision)
 returns uuid language plpgsql security definer set search_path = public as $$
 declare
-  v_uid uuid := public.require_profile();
+  v_uid text := public.require_profile();
   v_ev  public.events;
   v_id  uuid;
 begin
@@ -354,7 +355,7 @@ end $$;
 create or replace function public.vote_report(p_report uuid, p_exists boolean, p_clearance text default null)
 returns text language plpgsql security definer set search_path = public as $$
 declare
-  v_uid uuid := public.require_profile();
+  v_uid text := public.require_profile();
   v_r   public.reports;
   v_yes integer;
   v_no  integer;
@@ -401,7 +402,7 @@ end $$;
 create or replace function public.create_report(p_kind text, p_lat double precision, p_lon double precision)
 returns uuid language plpgsql security definer set search_path = public as $$
 declare
-  v_uid  uuid := public.require_profile();
+  v_uid  text := public.require_profile();
   v_city text := public.city_for(p_lat, p_lon);
   v_id   uuid;
 begin
@@ -435,7 +436,7 @@ begin
   return v_id;
 end $$;
 
--- rodar de tempos em tempos (pg_cron no Supabase: a cada 5 min)
+-- rodar de tempos em tempos (a cada 5 min: pg_cron ou função agendada)
 create or replace function public.expire_reports()
 returns integer language sql security definer set search_path = public as $$
   with x as (
@@ -463,7 +464,7 @@ end $$;
 
 -- Rank interno: só membro da equipe vê
 create or replace function public.crew_leaderboard(p_crew uuid)
-returns table (rank_pos bigint, user_id uuid, username text, role text, xp integer)
+returns table (rank_pos bigint, user_id text, username text, role text, xp integer)
 language plpgsql stable security definer set search_path = public as $$
 #variable_conflict use_column
 begin
@@ -482,7 +483,7 @@ end $$;
 create or replace function public.update_my_location(p_lat double precision, p_lon double precision,
                                                      p_heading integer default null, p_active_crew uuid default null)
 returns void language plpgsql security definer set search_path = public as $$
-declare v_uid uuid := public.require_profile();
+declare v_uid text := public.require_profile();
 begin
   if p_active_crew is not null and not public.is_verified_in(p_active_crew, v_uid) then
     p_active_crew := null;
@@ -498,7 +499,7 @@ end $$;
 
 create or replace function public.stop_sharing_location()
 returns void language plpgsql security definer set search_path = public as $$
-declare v_uid uuid := public.require_profile();
+declare v_uid text := public.require_profile();
 begin
   delete from public.live_locations where user_id = v_uid;
   delete from public.location_history where user_id = v_uid;
@@ -513,12 +514,12 @@ end $$;
 --   * "cena": só quem é verificado em alguma equipe vê; posição com o atraso escolhido
 --     e arredondada pra ~500 m, a não ser que a pessoa libere a posição exata
 create or replace function public.visible_cars(p_city text default null)
-returns table (user_id uuid, username text, lat double precision, lon double precision,
+returns table (user_id text, username text, lat double precision, lon double precision,
                heading smallint, approximate boolean, same_crew boolean, car jsonb, updated_at timestamptz)
 language plpgsql stable security definer set search_path = public as $$
 #variable_conflict use_column
 declare
-  v_uid       uuid := public.require_profile();
+  v_uid       text := public.require_profile();
   v_viewer_ok boolean := public.is_verified_anywhere(v_uid);
   r           record;
   v_lat       double precision;
@@ -597,10 +598,10 @@ end $$;
 -- ---------------------------------------------------------------------------
 -- Permissões das funções
 -- ---------------------------------------------------------------------------
-revoke execute on all functions in schema public from public, anon;
+revoke execute on all functions in schema public from public, anonymous;
 
 -- internas: ninguém chama direto
-revoke execute on function public.try_verify(uuid, uuid) from authenticated;
+revoke execute on function public.try_verify(uuid, text) from authenticated;
 revoke execute on function public.confirm_report(uuid) from authenticated;
 revoke execute on function public.expire_reports() from authenticated;
 revoke execute on function public.require_profile() from authenticated;
@@ -608,12 +609,12 @@ revoke execute on function public.require_profile() from authenticated;
 grant execute on function
   public.haversine_m(double precision, double precision, double precision, double precision),
   public.city_for(double precision, double precision),
-  public.has_profile(uuid), public.is_master(uuid), public.is_crew_member(uuid, uuid), public.event_crew_id(uuid),
-  public.is_verified_in(uuid, uuid), public.is_verified_anywhere(uuid), public.is_crew_admin(uuid, uuid),
+  public.has_profile(text), public.is_master(text), public.is_crew_member(uuid, text), public.event_crew_id(uuid),
+  public.is_verified_in(uuid, text), public.is_verified_anywhere(text), public.is_crew_admin(uuid, text),
   public.create_invite(uuid), public.redeem_invite(text, text),
-  public.vouch_member(uuid, uuid), public.admin_checkin(uuid, uuid, uuid),
+  public.vouch_member(uuid, text), public.admin_checkin(uuid, text, uuid),
   public.review_crew_request(uuid, text, text), public.set_crew_theme(uuid, text, text),
-  public.set_member_role(uuid, uuid, text),
+  public.set_member_role(uuid, text, text),
   public.submit_event_media(uuid, text, double precision, double precision),
   public.contest_event_media(uuid),
   public.report_points(text), public.report_ttl(text),

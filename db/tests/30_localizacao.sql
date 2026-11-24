@@ -70,7 +70,7 @@ select t.ok((select array_agg(username order by username) from public.visible_ca
 -- ninguém lê a tabela de localização dos outros direto
 select t.ok((select count(*) from public.live_locations) = 0, 'viewer não tem posição e não vê a dos outros');
 select t.ok((select count(*) from public.location_history) = 0, 'histórico alheio invisível');
-select t.throws($$ insert into public.live_locations (user_id, lat, lon) values (auth.uid(), 0, 0) $$, 'permission denied');
+select t.throws($$ insert into public.live_locations (user_id, lat, lon) values (auth.user_id(), 0, 0) $$, 'permission denied');
 
 -- pendente não vê ninguém
 select t.login(:'p');

@@ -72,7 +72,7 @@ select t.ok((select count(*) from public.reports where id = :'blitz') = 0, 'blit
 select t.ok((select points from public.radar_leaderboard() where username = 'membro.a') = 10, 'A: 15 - 5 = 10');
 select t.ok((select rank_pos from public.radar_leaderboard() where username = 'membro.a') = 1, 'A em 1º');
 select t.ok((select count(*) from public.points_ledger) = 1
-            and not exists (select 1 from public.points_ledger where user_id <> auth.uid()),
+            and not exists (select 1 from public.points_ledger where user_id <> auth.user_id()),
             'cada um só vê os próprios pontos (B tem só o +3)');
 
 rollback;

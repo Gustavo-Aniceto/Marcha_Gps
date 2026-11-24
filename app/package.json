@@ -11,11 +11,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@clerk/expo": "^4.0.0",
     "@expo-google-fonts/chakra-petch": "^0.4.1",
     "@expo-google-fonts/share-tech-mono": "^0.4.1",
     "@react-native-async-storage/async-storage": "^2.1.2",
     "@rnmapbox/maps": "^10.1.39",
-    "@supabase/supabase-js": "^2.49.4",
+    "@supabase/postgrest-js": "^1.19.4",
     "expo": "~54.0.0",
     "expo-camera": "~17.0.0",
     "expo-constants": "~18.0.0",
@@ -23,6 +24,7 @@
     "expo-linking": "~8.0.0",
     "expo-location": "~19.0.0",
     "expo-router": "~6.0.0",
+    "expo-secure-store": "~15.0.0",
     "expo-status-bar": "~3.0.0",
     "react": "19.1.0",
     "react-native": "0.81.4",

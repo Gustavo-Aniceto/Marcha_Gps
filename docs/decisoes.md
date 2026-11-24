@@ -36,4 +36,6 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 - Nada que premie racha/velocidade na rua (ranking por velocidade, "puxada" entre carros). Competição só no Modo Pista, em local autorizado.
 
 ## Tech
-React Native (Expo), Mapbox (`@rnmapbox/maps`), Supabase (login, equipes, feed, localização em tempo real).
+- App: React Native (Expo), Mapbox (`@rnmapbox/maps`).
+- Banco: **Neon** (Postgres, região São Paulo) com a Data API; fotos no Neon Object Storage (próxima fase).
+- Login: **Clerk** (`@clerk/expo`), código no e-mail. Escolhido porque o login do próprio Neon ainda não suporta app de celular (depende de cookie de navegador).

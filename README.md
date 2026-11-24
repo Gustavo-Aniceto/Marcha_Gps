@@ -13,52 +13,66 @@ Decisões do produto: [docs/decisoes.md](docs/decisoes.md)
 ## Estrutura
 
 ```
-app/                 App mobile (Expo + React Native + TypeScript)
-supabase/migrations/ Banco de dados (Postgres/Supabase): tabelas, regras de acesso (RLS) e funções
-supabase/tests/      Testes do banco (rodam num Postgres local)
-scripts/             Importação de lombadas/radares (OpenStreetMap + ANTT)
-docs/                Decisões e notas do produto
+app/            App mobile (Expo + React Native + TypeScript)
+db/migrations/  Banco (Postgres no Neon): tabelas, regras de acesso (RLS) e funções
+db/tests/       Testes do banco (rodam num Postgres local)
+scripts/        Importação de lombadas/radares (OpenStreetMap + ANTT)
+docs/           Decisões e notas do produto
 ```
 
-## Rodando
+## Serviços
 
-### Banco (Supabase)
+- **Neon**: banco Postgres + Data API (REST). Projeto `marcha-gps`, região São Paulo.
+- **Clerk**: login por código no e-mail. O token dele é o que a Data API usa pra saber quem é o usuário.
+- **Mapbox**: mapa.
 
-1. Crie um projeto no [Supabase](https://supabase.com).
-2. Rode as migrations em ordem (`supabase db push` com a CLI, ou cole os arquivos de `supabase/migrations/` no SQL Editor).
-3. Crie seu usuário e se marque como Adm Master:
+## Configurando
+
+### 1. Clerk
+
+1. Crie uma aplicação em [clerk.com](https://clerk.com).
+2. **User & authentication**: e-mail com **Email verification code**.
+3. **Native applications**: ligue a **Native API**.
+4. **Sessions > Customize session token**: `{ "role": "authenticated" }` (obrigatório: sem isso o banco trata todo mundo como visitante).
+
+### 2. Neon
+
+1. Data API ligada com provedor externo, JWKS do Clerk: `https://<seu-dominio-clerk>/.well-known/jwks.json`.
+2. Rode as migrations de `db/migrations/` em ordem (SQL Editor do Neon ou `psql`).
+3. **Refresh schema cache** na página da Data API.
+4. Entre uma vez no app e se marque como Adm Master (o ID é o do Clerk, `user_...`):
    ```sql
-   update public.profiles set is_master = true where id = '<seu user id>';
+   insert into public.profiles (id, username, is_master) values ('user_...', 'seu.nome', true);
    ```
 
-Testes do banco num Postgres local (sem Supabase):
+Testes do banco num Postgres local:
 
 ```bash
-./supabase/tests/run.sh
+./db/tests/run.sh
 ```
 
-### Obstáculos e radares
+### 3. Obstáculos e radares
 
 ```bash
-python3 scripts/import_obstacles.py                 # baixa do OpenStreetMap
+python3 scripts/import_obstacles.py --sql carga.sql                 # OpenStreetMap
 python3 scripts/import_obstacles.py --antt radares.csv --sql carga.sql
 ```
 
-Gera um GeoJSON e, com `--sql`, um arquivo pronto pra carregar na tabela `reports`.
+Rode o `carga.sql` no SQL Editor do Neon (como dono do banco).
 
-### App
+### 4. App
 
 ```bash
 cd app
-cp .env.example .env      # preencha a URL e a chave pública do Supabase e o token do Mapbox
+cp .env.example .env      # chave pública do Clerk, URL da Data API do Neon, token do Mapbox
 npm install
 npx expo install --fix    # alinha as versões das libs com o SDK do Expo instalado
 npm run typecheck
 npm test                  # testes da lógica (fitment, tema, pontos)
-npx expo start
+npx expo run:android      # ou run:ios
 ```
 
-O mapa usa `@rnmapbox/maps`, que precisa de um build de desenvolvimento (`npx expo run:android` / `run:ios`), não roda no Expo Go.
+Precisa de build de desenvolvimento (Mapbox e a tela de login nativa do Clerk não rodam no Expo Go).
 
 ## O que já está pronto (fase 1)
 
@@ -74,5 +88,6 @@ O mapa usa `@rnmapbox/maps`, que precisa de um build de desenvolvimento (`npx ex
 - Cadastro do carro por fotos (reconhecimento por IA) e garagem em 3D.
 - Feed da equipe e geral, eventos no app e tela de "fazer a mídia" com a câmera.
 - Visual holográfico do mapa (estilo próprio no Mapbox Studio) e modelo 3D do carro no lugar do ícone.
-- Rotina no Supabase (pg_cron) chamando `expire_reports()` a cada 5 minutos.
+- Rotina chamando `expire_reports()` a cada 5 minutos (pg_cron no Neon ou função agendada).
+- Fotos (carro e mídia) no Neon Object Storage.
 - Trocar as caixas das cidades por polígonos oficiais do IBGE.

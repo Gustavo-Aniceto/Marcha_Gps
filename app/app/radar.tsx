@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { Body, Button, ErrorText, Pills, Screen, Title, Warning } from '../src/components/ui';
-import { supabase } from '../src/lib/supabase';
+import { db } from '../src/lib/db';
 import { friendlyError } from '../src/lib/errors.ts';
 import { REPORT_KINDS, pointsText, type ReportKind } from '../src/lib/reports.ts';
 
@@ -18,7 +18,7 @@ export default function Radar() {
     setError(null); setBusy(true);
     try {
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-      const { error: e } = await supabase.rpc('create_report', {
+      const { error: e } = await db.rpc('create_report', {
         p_kind: kind, p_lat: loc.coords.latitude, p_lon: loc.coords.longitude,
       });
       if (e) setError(friendlyError(e)); else setDone(true);

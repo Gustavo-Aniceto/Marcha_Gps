@@ -16,11 +16,22 @@
     },
     "android": {
       "package": "br.com.marchagps.app",
-      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION", "CAMERA"]
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA"
+      ]
     },
     "plugins": [
       "expo-router",
-      ["@rnmapbox/maps", { "RNMapboxMapsDownloadToken": "" }],
+      "expo-secure-store",
+      "@clerk/expo",
+      [
+        "@rnmapbox/maps",
+        {
+          "RNMapboxMapsDownloadToken": ""
+        }
+      ],
       "expo-location",
       "expo-camera"
     ]
