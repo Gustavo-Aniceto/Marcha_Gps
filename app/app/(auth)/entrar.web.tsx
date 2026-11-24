@@ -3,6 +3,7 @@ import React from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { SignIn } from '@clerk/expo/web';
 import { colors, fonts } from '../../src/theme/tokens.ts';
+import { InviteBadge } from '../../src/components/InviteBadge';
 
 export default function Entrar() {
   return (
@@ -14,6 +15,7 @@ export default function Entrar() {
         </Text>
         <Text style={{ color: colors.textMuted, fontSize: 14 }}>O GPS da cena rebaixada. Aqui só entra quem é convidado.</Text>
       </View>
+      <View style={{ width: '100%', maxWidth: 420 }}><InviteBadge /></View>
       {/* Depois do login, o Gate do _layout leva pro convite ou pro mapa */}
       <SignIn
         routing="hash"

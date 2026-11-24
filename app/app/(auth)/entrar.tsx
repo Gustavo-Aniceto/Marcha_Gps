@@ -1,9 +1,10 @@
-// Login: tela nativa do Clerk (código no e-mail, configurado no painel do Clerk).
+// Login: tela nativa do Clerk (Google, Apple, Facebook ou código no e-mail). Vem depois do convite.
 import React from 'react';
 import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthView } from '@clerk/expo/native';
 import { colors, fonts } from '../../src/theme/tokens.ts';
+import { InviteBadge } from '../../src/components/InviteBadge';
 
 export default function Entrar() {
   return (
@@ -13,6 +14,7 @@ export default function Entrar() {
           MARCHA <Text style={{ color: colors.text }}>GPS</Text>
         </Text>
         <Text style={{ color: colors.textMuted, fontSize: 14 }}>O GPS da cena rebaixada. Aqui só entra quem é convidado.</Text>
+        <InviteBadge />
       </View>
       {/* Depois do login, o Gate do _layout leva pro convite ou pro mapa */}
       <View style={{ flex: 1 }}>

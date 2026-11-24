@@ -11,6 +11,8 @@ import { ChakraPetch_700Bold } from '@expo-google-fonts/chakra-petch';
 import { ShareTechMono_400Regular } from '@expo-google-fonts/share-tech-mono';
 import { SessionProvider, useSession } from '../src/lib/session';
 import { NavigationProvider } from '../src/lib/navigation';
+import { clearPendingInvite, loadPendingInvite } from '../src/lib/pendingInvite';
+import { db } from '../src/lib/db';
 import { MapSettingsProvider } from '../src/lib/mapSettings';
 import { colors } from '../src/theme/tokens.ts';
 
@@ -22,11 +24,26 @@ function Gate() {
   const router = useRouter();
   const inside = signedIn && !!profile;
 
+  // Ordem: convite (inicio) -> login com a conta que preferir (entrar) -> nome de usuário (convite) -> app
   useEffect(() => {
     if (loading || inside) return;
-    const want = signedIn ? 'convite' : 'entrar';
-    if (segments[0] !== '(auth)' || segments[1] !== want) router.replace(`/(auth)/${want}`);
+    const here = segments[0] === '(auth)' ? segments[1] : null;
+    if (signedIn) {
+      if (here !== 'convite') router.replace('/(auth)/convite');
+    } else if (here !== 'inicio' && here !== 'entrar') {
+      router.replace('/(auth)/inicio');
+    }
   }, [loading, inside, signedIn, segments, router]);
+
+  // membro que já tem conta e entrou com convite de outra equipe: entra nela sozinho
+  useEffect(() => {
+    if (!inside) return;
+    loadPendingInvite().then(async (p) => {
+      if (!p) return;
+      await db.rpc('redeem_invite', { p_code: p.code, p_username: null });
+      await clearPendingInvite();
+    });
+  }, [inside]);
 
   if (loading) {
     return (
