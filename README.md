@@ -32,6 +32,14 @@ docs/           Decisões e notas do produto
 
 ### 1. Clerk
 
+**Já configurado (24/11/2026):**
+- Clerk: aplicação "Marcha GPS" (desenvolvimento, domínio `great-aphid-3258.clerk.accounts.dev`), token com `{ "role": "authenticated" }`, Native API ligada, app Android `br.com.marchagps.app` registrado. Falta registrar o iOS (precisa do Team ID da Apple).
+- Neon: Data API ligada com o JWKS do Clerk; migrations 0001–0004 aplicadas; cache atualizado.
+
+Pra recriar do zero em outro ambiente:
+
+### 1. Clerk
+
 1. Crie uma aplicação em [clerk.com](https://clerk.com).
 2. **User & authentication**: e-mail com **Email verification code**.
 3. **Native applications**: ligue a **Native API**.
@@ -55,8 +63,8 @@ Testes do banco num Postgres local:
 
 ### 3. Fotos (Cloudflare)
 
-1. Já feito: bucket R2 `marcha-gps-fotos` criado e Worker publicado em `https://marcha-gps-fotos.guuhaniceto2.workers.dev` (uploads respondem 503 até o `CLERK_ISSUER` ser preenchido).
-2. Em `workers/fotos/wrangler.toml`, preencha `CLERK_ISSUER` com o domínio do Clerk (ex.: `https://xxx.clerk.accounts.dev`).
+1. Já feito: bucket R2 `marcha-gps-fotos` e Worker publicado em `https://marcha-gps-fotos.guuhaniceto2.workers.dev`, aceitando só o login do Clerk.
+2. `CLERK_ISSUER` em `workers/fotos/wrangler.toml` é o domínio do Clerk.
 3. `cd workers/fotos && npm install && npm test && npx wrangler deploy`
 4. Coloque a URL do Worker em `EXPO_PUBLIC_FOTOS_URL` no `app/.env`.
 5. O app reduz as fotos (lado maior 1600 px, JPEG 70%) antes de enviar, pra caber folgado na cota grátis.
