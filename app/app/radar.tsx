@@ -6,6 +6,10 @@ import { Body, Button, ErrorText, Pills, Screen, Title, Warning } from '../src/c
 import { db } from '../src/lib/db';
 import { friendlyError } from '../src/lib/errors.ts';
 import { REPORT_KINDS, pointsText, type ReportKind } from '../src/lib/reports.ts';
+import { lastKnownPosition } from '../src/lib/lastPosition';
+
+// velocidades de placa mais comuns em SP (0 = não sei)
+const SPEEDS = [0, 30, 40, 50, 60, 70, 80, 90, 100, 110];
 
 export default function Radar() {
   const router = useRouter();
@@ -13,13 +17,23 @@ export default function Radar() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [speed, setSpeed] = useState(0);
 
   async function send() {
     setError(null); setBusy(true);
     try {
-      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      // GPS na hora; se o navegador não der, usa a última posição que o mapa leu
+      let at: { lat: number; lon: number } | null = null;
+      try {
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+        at = { lat: loc.coords.latitude, lon: loc.coords.longitude };
+      } catch {
+        at = lastKnownPosition();
+      }
+      if (!at) throw new Error('sem_gps');
       const { error: e } = await db.rpc('create_report', {
-        p_kind: kind, p_lat: loc.coords.latitude, p_lon: loc.coords.longitude,
+        p_kind: kind, p_lat: at.lat, p_lon: at.lon,
+        p_speed_limit: kind === 'radar' && speed > 0 ? speed : null,
       });
       if (e) setError(friendlyError(e)); else setDone(true);
     } catch {
@@ -38,6 +52,16 @@ export default function Radar() {
         value={kind}
         onChange={(v) => { setKind(v); setDone(false); }}
       />
+      {kind === 'radar' && (
+        <>
+          <Body>Qual a velocidade da placa?</Body>
+          <Pills
+            options={SPEEDS.map((v) => ({ value: v, label: v === 0 ? 'Não sei' : `${v} km/h` }))}
+            value={speed}
+            onChange={(v) => { setSpeed(v); setDone(false); }}
+          />
+        </>
+      )}
       <Warning>{pointsText(kind)}</Warning>
       <ErrorText>{error}</ErrorText>
       {done

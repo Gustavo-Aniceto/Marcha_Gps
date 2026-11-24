@@ -12,6 +12,8 @@ import { formatArrival, formatDistance, formatDuration, nextObstacle, obstaclesO
 import Svg, { Circle, Path } from 'react-native-svg';
 import { CarMarker } from '../../src/components/CarMarker';
 import { ReportIcon } from '../../src/components/ReportIcon';
+import { Speedometer } from '../../src/components/Speedometer';
+import { isOverLimit, radarAhead, smoothKmh } from '../../src/lib/speed.ts';
 import { db, type VisibleCar } from '../../src/lib/db';
 import { useSession } from '../../src/lib/session';
 import { useMapSettings } from '../../src/lib/mapSettings';
@@ -134,6 +136,21 @@ export default function Mapa() {
     return best;
   }, [navigating, position, reports, myCar]);
   const alert = routeAlert ?? nearAlert;
+
+  // velocímetro: sua velocidade (suavizada) e o radar com velocidade logo à frente
+  const [kmh, setKmh] = useState<number | null>(null);
+  useEffect(() => { if (position) setKmh((k) => smoothKmh(k, position.speed)); }, [position]);
+  const speedRadar = useMemo(() => {
+    if (!position) return null;
+    const along = nav.update?.snap.along;
+    if (route && along != null && nav.status === 'navigating') {
+      const n = nextObstacle(routeReports.filter((o) => o.item.kind === 'radar' && o.item.speed_limit != null), along, 500);
+      return n ? { limit: n.item.speed_limit as number, dist: n.distance_m } : null;
+    }
+    const r = radarAhead(reports, position, position.heading, 400);
+    return r ? { limit: r.radar.speed_limit as number, dist: r.dist } : null;
+  }, [position, route, routeReports, nav.update, nav.status, reports]);
+  const over = isOverLimit(kmh, speedRadar?.limit);
 
   // navegando com o mapa solto: volta pro carro sozinho depois de 15 s sem mexer (igual ao Waze)
   useEffect(() => {
@@ -338,6 +355,12 @@ export default function Mapa() {
         </View>
       )}
 
+      {position && (
+        <View style={[s.speedo, { bottom: navigating ? 162 : 80 }]} pointerEvents="none">
+          <Speedometer kmh={kmh} limit={speedRadar?.limit} over={over} radarDist={speedRadar?.dist} />
+        </View>
+      )}
+
       {!navigating && (
         <Pressable style={s.cenaBtn} onPress={() => router.push('/cena')} accessibilityRole="button"
                    accessibilityLabel="Abrir a Cena ao vivo">
@@ -386,6 +409,7 @@ const s = StyleSheet.create({
   navBtn: { minWidth: 56, height: 48, borderRadius: 6, borderWidth: 1, borderColor: colors.lineStrong, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
   navStop: { backgroundColor: colors.danger, borderColor: colors.danger },
   navStopText: { color: colors.ink, fontWeight: '800', fontSize: 13 },
+  speedo: { position: 'absolute', left: 16 },
   carLabel: { fontFamily: fonts.mono, fontSize: 10, color: colors.holo, backgroundColor: 'rgba(6,12,22,0.88)',
               borderWidth: 1, borderColor: colors.lineStrong, paddingHorizontal: 5, paddingVertical: 1 },
   carLabelCrew: { color: colors.neon, borderColor: colors.neon },

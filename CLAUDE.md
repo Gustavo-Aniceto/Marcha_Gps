@@ -30,7 +30,7 @@ Leia `docs/decisoes.md` antes de mudar regra de produto.
 
 ## Mapa
 - MapLibre + OpenFreeMap (grátis). Estilos só em `app/src/lib/mapStyle.ts` (noite, dia, cena). Não usar Mapbox (pago).
-- Mapa principal (navegação 3D) e Cena ao vivo (`app/app/cena.tsx`, 2D cinza) mostram todos que `visible_cars()` liberar. Avisos aparecem como ícone (`src/components/ReportIcon.tsx`). Arrastar o mapa solta a câmera (`following` no `Camera`).
+- Mapa principal (navegação 3D) e Cena ao vivo (`app/app/cena.tsx`, 2D cinza) mostram todos que `visible_cars()` liberar. Avisos aparecem como ícone (`src/components/ReportIcon.tsx`). Arrastar o mapa solta a câmera (`following` no `Camera`). Velocímetro e radar à frente: `src/lib/speed.ts` (velocidade nunca vai pro banco).
 
 ## App
 - Roda primeiro como **site instalável (PWA)** na Vercel (`app/vercel.json`, projeto `marcha-gps`; push na `main` publica). O mesmo código gera o app nativo.

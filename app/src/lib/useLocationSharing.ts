@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { db } from './db';
 import { bearing, distM } from './nav.ts';
 import { startWatch } from './watchLocation';
+import { estimateSpeedMs, type SpeedFix } from './speed.ts';
 
+/** speed em m/s (do GPS ou calculada pelo movimento quando o navegador não manda) */
 export interface Position { lat: number; lon: number; heading: number | null; accuracy: number | null; speed: number | null }
 
 /** `fast`: durante a navegação lê o GPS a cada segundo (senão a cada 5 s / 15 m). */
@@ -12,6 +14,7 @@ export function useLocationSharing(share: boolean, activeCrew: string | null, fa
   const [attempt, setAttempt] = useState(0);
   const [position, setPosition] = useState<Position | null>(null);
   const prev = useRef<Position | null>(null);
+  const prevFix = useRef<SpeedFix | null>(null);
   const [permission, setPermission] = useState<'unknown' | 'granted' | 'denied' | 'unavailable'>('unknown');
   const lastSent = useRef(0);
   const live = useRef({ share, activeCrew });
@@ -31,7 +34,10 @@ export function useLocationSharing(share: boolean, activeCrew: string | null, fa
       if (heading == null && last) {
         heading = distM(last, here) > 6 ? Math.round(bearing(last, here)) % 360 : last.heading;
       }
-      const p: Position = { ...here, heading, accuracy: raw.accuracy, speed: raw.speed };
+      const fix: SpeedFix = { ...here, t: Date.now(), speed: raw.speed, accuracy: raw.accuracy };
+      const speed = estimateSpeedMs(prevFix.current, fix);
+      prevFix.current = fix;
+      const p: Position = { ...here, heading, accuracy: raw.accuracy, speed };
       prev.current = p;
       setPosition(p);
       const now = Date.now();

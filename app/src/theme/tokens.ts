@@ -18,6 +18,9 @@ export const colors = {
   warnText: '#FFD9B5',
   danger: '#FF4D4D',
   target: '#FFC233', // mira amarela em volta dos carros
+  // placa de velocidade (igual à da rua: fundo branco, aro vermelho, número preto)
+  signFace: '#FFFFFF',
+  signRing: '#E11D1D',
 } as const;
 
 // carregadas no app/_layout.tsx; o resto usa a fonte do sistema

@@ -5,6 +5,7 @@ import { View } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { colors } from '../theme/tokens.ts';
 import { kindInfo, type ReportKind } from '../lib/reports.ts';
+import { SpeedSign } from './SpeedSign';
 
 const INK = colors.ink;
 
@@ -72,7 +73,7 @@ export function ReportIcon({ kind, size = 30, unconfirmed, speedLimit }: {
   kind: ReportKind; size?: number; unconfirmed?: boolean; speedLimit?: number | null;
 }) {
   const label = `${kindInfo(kind).label}${speedLimit ? ` ${speedLimit} km/h` : ''}${unconfirmed ? ', não confirmado' : ''}`;
-  return (
+  const icon = (
     <View accessibilityLabel={label} accessibilityRole="image"
           style={{
             width: size, height: size, borderRadius: size / 2, backgroundColor: colors.warn,
@@ -81,6 +82,16 @@ export function ReportIcon({ kind, size = 30, unconfirmed, speedLimit }: {
             shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 3, shadowOffset: { width: 0, height: 1 },
           }}>
       <Svg width={size * 0.66} height={size * 0.66} viewBox="0 0 24 24"><Glyph kind={kind} /></Svg>
+    </View>
+  );
+  if (kind !== 'radar' || !speedLimit) return icon;
+  // radar com velocidade: a placa com o limite fica colada no ícone
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      {icon}
+      <View style={{ marginLeft: -size * 0.18, opacity: unconfirmed ? 0.75 : 1 }}>
+        <SpeedSign limit={speedLimit} size={Math.round(size * 0.85)} />
+      </View>
     </View>
   );
 }

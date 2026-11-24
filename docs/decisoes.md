@@ -27,6 +27,8 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 - **Mapa solto como no Waze:** arrastar, girar ou dar zoom solta a câmera do carro e aparece "Voltar pro carro". Navegando, volta sozinho depois de 15 s sem mexer. Botão "ver a rota inteira" mostra o caminho todo na tela.
 - O mapa principal mostra **todo mundo que `visible_cars()` libera** (não só a equipe): o banco já aplica fantasma, só-equipe, posição aproximada, atraso e zonas privadas. Nome da equipe em verde, os outros em azul.
 - Avisos no mapa são **ícones** (radar, lombada, valeta, buraco, blitz, alagamento etc.) num círculo laranja, não etiqueta de texto. Não confirmado fica meio apagado.
+- **Velocímetro** no canto do mapa com a sua velocidade (do GPS ou calculada pelo movimento). Com radar à frente (até 400 m; navegando, até 500 m na rota) aparece a placa com o limite e a distância; passou do limite, o velocímetro fica vermelho. Só aparece pra própria pessoa: velocidade não é guardada nem comparada (regra de não premiar velocidade).
+- Radar no mapa mostra a placa com a velocidade ao lado do ícone. Quem avisa um radar escolhe a velocidade da placa (ou "não sei"); radar sem velocidade ganha a de quem confirmar depois.
 - Durante a rota, o alerta laranja mostra o próximo obstáculo **em cima da rota** que pega no seu carro (pela altura da garagem) e radares com a velocidade.
 - Fontes gratuitas do OpenStreetMap: busca pelo Photon (Komoot) e rotas pelo Valhalla (FOSSGIS), passando pelo nosso serviço com login, cache e limite. Se o uso crescer, a troca é só no serviço (Valhalla próprio ou pago), sem atualizar o app.
 - Próximo passo: rota que **desvia** de lombada/valeta onde o carro não passa (o Valhalla aceita pontos a evitar).
