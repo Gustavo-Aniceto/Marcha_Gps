@@ -33,6 +33,11 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 - **Tema da equipe**: cor e formato dos botões. Aparece na tela/feed/rank da equipe e nas etiquetas do mapa. Cor escura é clareada automaticamente para leitura. Avisos de segurança continuam laranja para todos.
 - **Prova de presença: "fazer a mídia"**: foto pela câmera do app (galeria não vale), no local e no horário do evento; o app confere se o carro bate com a garagem. Vale +50 XP na equipe; admin pode contestar em 24 h.
 
+## Feed (rede social da cena)
+- Posts com texto e foto, no **Geral** ou só pra equipe. Cada post mostra a foto de perfil, o @ e o carro do autor (da garagem).
+- Curtir (muda na hora), comentar (tela do post), compartilhar, apagar o próprio post; o dono do post pode apagar comentários nele.
+- Perfil de cada um: foto, carro montado e posts. Próximos eventos em cartões no topo do feed.
+
 ## Ranks
 - **Rank de patente é interno de cada equipe** (só a equipe vê; sem disputa entre equipes). XP vem de: evento com mídia +50, rolê em comboio +30, convidado verificado +40.
 - **Radar é soma geral** de todo mundo nas 3 cidades: pontos só por aviso confirmado por 3 pessoas. Buraco/Lombada alta/Valeta +15, Blitz/Rua ruim/Alagamento +10, Radar +5, confirmar aviso de outro +3. Aviso falso tira pontos. Blitz expira em 1 h, alagamento em 6 h, o resto em 7 dias sem confirmação.
