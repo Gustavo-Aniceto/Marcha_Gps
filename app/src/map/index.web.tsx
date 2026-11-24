@@ -2,9 +2,10 @@
 // Mesma API usada pelas telas no app nativo: <Map>, <Camera>, <Marker>.
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { View, type ViewStyle, type StyleProp } from 'react-native';
+import { Text, View, type ViewStyle, type StyleProp } from 'react-native';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { colors } from '../theme/tokens.ts';
 
 const MapCtx = createContext<maplibregl.Map | null>(null);
 
@@ -22,18 +23,26 @@ interface MapProps {
 export function Map({ style, mapStyle, compass, onPress, children }: MapProps) {
   const holder = useRef<View>(null);
   const [map, setMap] = useState<maplibregl.Map | null>(null);
+  const [failed, setFailed] = useState(false);
   const press = useRef(onPress);
   press.current = onPress;
 
   useEffect(() => {
     const el = holder.current as unknown as HTMLElement | null;
     if (!el) return;
-    const m = new maplibregl.Map({
-      container: el,
-      style: mapStyle as maplibregl.StyleSpecification,
-      attributionControl: { compact: true },
-      pitchWithRotate: true,
-    });
+    let m: maplibregl.Map;
+    try {
+      m = new maplibregl.Map({
+        container: el,
+        style: mapStyle as maplibregl.StyleSpecification,
+        attributionControl: { compact: true },
+        pitchWithRotate: true,
+      });
+    } catch {
+      // navegador sem WebGL (aceleração de vídeo desligada, modo economia extrema etc.)
+      setFailed(true);
+      return;
+    }
     if (compass) m.addControl(new maplibregl.NavigationControl({ showZoom: false }), 'top-right');
     m.on('click', (e) => {
       // clique em cima de um carrinho não fecha o card
@@ -53,6 +62,17 @@ export function Map({ style, mapStyle, compass, onPress, children }: MapProps) {
     styleUsed.current = mapStyle;
     map.setStyle(mapStyle as maplibregl.StyleSpecification);
   }, [map, mapStyle]);
+
+  if (failed) {
+    return (
+      <View style={[{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: colors.bg }, style]}>
+        <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700', textAlign: 'center' }}>Mapa não abriu neste navegador</Text>
+        <Text style={{ color: colors.textMuted, fontSize: 13, textAlign: 'center', marginTop: 6 }}>
+          Ele precisa de aceleração gráfica (WebGL). Tente pelo Chrome ou Safari atualizado, fora do modo economia de bateria.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View ref={holder} style={[{ flex: 1, overflow: 'hidden' }, style]}>

@@ -13,22 +13,18 @@ import { MapSettingsProvider } from '../src/lib/mapSettings';
 import { colors } from '../src/theme/tokens.ts';
 
 // Manda cada um pro lugar certo: sem login -> entrar; logado sem convite -> convite; senão -> abas.
+// As telas do app só existem (Stack.Protected) pra quem já entrou com convite: o mapa nem monta antes disso.
 function Gate() {
   const { loading, signedIn, profile } = useSession();
   const segments = useSegments();
   const router = useRouter();
+  const inside = signedIn && !!profile;
 
   useEffect(() => {
-    if (loading) return;
-    const inAuth = segments[0] === '(auth)';
-    if (!signedIn) {
-      if (!inAuth || segments[1] !== 'entrar') router.replace('/(auth)/entrar');
-    } else if (!profile) {
-      if (!inAuth || segments[1] !== 'convite') router.replace('/(auth)/convite');
-    } else if (inAuth) {
-      router.replace('/(tabs)');
-    }
-  }, [loading, signedIn, profile, segments, router]);
+    if (loading || inside) return;
+    const want = signedIn ? 'convite' : 'entrar';
+    if (segments[0] !== '(auth)' || segments[1] !== want) router.replace(`/(auth)/${want}`);
+  }, [loading, inside, signedIn, segments, router]);
 
   if (loading) {
     return (
@@ -39,17 +35,21 @@ function Gate() {
   }
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="cena" />
-      <Stack.Screen name="midia/[id]" />
-      <Stack.Screen name="evento/[id]" />
-      <Stack.Screen name="meu-qr" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="escanear" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="evento-novo" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="radar" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="camera-mapa" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="visibilidade" options={{ presentation: 'modal' }} />
+      <Stack.Protected guard={!inside}>
+        <Stack.Screen name="(auth)" />
+      </Stack.Protected>
+      <Stack.Protected guard={inside}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="cena" />
+        <Stack.Screen name="midia/[id]" />
+        <Stack.Screen name="evento/[id]" />
+        <Stack.Screen name="meu-qr" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="escanear" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="evento-novo" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="radar" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="camera-mapa" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="visibilidade" options={{ presentation: 'modal' }} />
+      </Stack.Protected>
     </Stack>
   );
 }
