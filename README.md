@@ -30,8 +30,6 @@ docs/           Decisões e notas do produto
 
 ## Configurando
 
-### 1. Clerk
-
 **Já configurado (24/11/2026):**
 - Clerk: aplicação "Marcha GPS" (desenvolvimento, domínio `great-aphid-3258.clerk.accounts.dev`), token com `{ "role": "authenticated" }`, Native API ligada, app Android `br.com.marchagps.app` registrado. Falta registrar o iOS (precisa do Team ID da Apple).
 - Neon: Data API ligada com o JWKS do Clerk; migrations 0001–0004 aplicadas; cache atualizado.
