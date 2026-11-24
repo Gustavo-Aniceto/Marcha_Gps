@@ -14,6 +14,11 @@ export function setTokenGetter(fn: TokenGetter) {
   getToken = fn;
 }
 
+/** Token do Clerk pra outros serviços (ex.: fotos). */
+export function authToken(): Promise<string | null> {
+  return getToken();
+}
+
 async function authFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const token = await getToken();
   const headers = new Headers(init?.headers);

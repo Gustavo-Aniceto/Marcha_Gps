@@ -1,0 +1,7 @@
+{
+  "compilerOptions": {
+    "strict": true, "target": "ES2022", "module": "NodeNext", "moduleResolution": "NodeNext",
+    "allowImportingTsExtensions": true, "noEmit": true, "skipLibCheck": true, "lib": ["ES2022", "DOM"]
+  },
+  "include": ["src/jwt.ts", "src/uploads.ts"]
+}

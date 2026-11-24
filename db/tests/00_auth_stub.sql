@@ -29,6 +29,9 @@ exception when others then
     raise exception 'FALHOU: esperava "%" mas veio "%" em: %', expected, sqlerrm, q;
   end if;
 end $$;
+create or replace function t.key() returns text language sql volatile as $$
+  select 'media/' || auth.user_id() || '/' || gen_random_uuid()::text || '.jpg';
+$$;
 create or replace function t.login(u text) returns void language sql as $$
   select set_config('request.jwt.claim.sub', u, true);
 $$;

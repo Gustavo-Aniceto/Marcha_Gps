@@ -38,5 +38,6 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 ## Tech
 - App: React Native (Expo).
 - Mapa: **MapLibre** (`@maplibre/maplibre-react-native`) + mapas gratuitos do **OpenFreeMap**. Mapbox descartado por custo. Dois visuais: navegação 3D com prédios em bloco (noite azul ou dia claro) e **Cena ao vivo em 2D cinza-escuro** pra ver os carros. Plano B se o OpenFreeMap sair do ar: hospedar os próprios tiles (PMTiles) só da região.
-- Banco: **Neon** (Postgres, região São Paulo) com a Data API; fotos no Neon Object Storage (próxima fase).
+- Banco: **Neon** (Postgres, região São Paulo) com a Data API.
+- Fotos: **Cloudflare R2** com um Worker que confere o login do Clerk (o armazenamento do Neon não existe na região de São Paulo).
 - Login: **Clerk** (`@clerk/expo`), código no e-mail. Escolhido porque o login do próprio Neon ainda não suporta app de celular (depende de cookie de navegador).

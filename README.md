@@ -16,6 +16,7 @@ Decisões do produto: [docs/decisoes.md](docs/decisoes.md)
 app/            App mobile (Expo + React Native + TypeScript)
 db/migrations/  Banco (Postgres no Neon): tabelas, regras de acesso (RLS) e funções
 db/tests/       Testes do banco (rodam num Postgres local)
+workers/fotos/  Serviço de fotos (Cloudflare Worker + R2): confere o login do Clerk e guarda a imagem
 scripts/        Importação de lombadas/radares (OpenStreetMap + ANTT)
 docs/           Decisões e notas do produto
 ```
@@ -24,6 +25,7 @@ docs/           Decisões e notas do produto
 
 - **Neon**: banco Postgres + Data API (REST). Projeto `marcha-gps`, região São Paulo.
 - **Clerk**: login por código no e-mail. O token dele é o que a Data API usa pra saber quem é o usuário.
+- **Fotos**: Cloudflare R2 (10 GB grátis, sem custo de download) via `workers/fotos`. O armazenamento do Neon ainda não existe na região de São Paulo.
 - **Mapa**: MapLibre (biblioteca aberta) com os mapas gratuitos do **OpenFreeMap** (dados do OpenStreetMap). Sem conta, sem chave e sem cobrança. Estilos próprios em `app/src/lib/mapStyle.ts`: **noite** (3D azul), **dia** (3D claro) e **cena** (2D cinza-escuro, pra ver a galera).
 
 ## Configurando
@@ -51,7 +53,14 @@ Testes do banco num Postgres local:
 ./db/tests/run.sh
 ```
 
-### 3. Obstáculos e radares
+### 3. Fotos (Cloudflare)
+
+1. Crie o bucket R2 `marcha-gps-fotos`.
+2. Em `workers/fotos/wrangler.toml`, preencha `CLERK_ISSUER` com o domínio do Clerk (ex.: `https://xxx.clerk.accounts.dev`).
+3. `cd workers/fotos && npm install && npm test && npx wrangler deploy`
+4. Coloque a URL do Worker em `EXPO_PUBLIC_FOTOS_URL` no `app/.env`.
+
+### 4. Obstáculos e radares
 
 ```bash
 python3 scripts/import_obstacles.py --sql carga.sql                 # OpenStreetMap
@@ -60,11 +69,11 @@ python3 scripts/import_obstacles.py --antt radares.csv --sql carga.sql
 
 Rode o `carga.sql` no SQL Editor do Neon (como dono do banco).
 
-### 4. App
+### 5. App
 
 ```bash
 cd app
-cp .env.example .env      # chave pública do Clerk e URL da Data API do Neon
+cp .env.example .env      # chave pública do Clerk, URL da Data API do Neon e URL do serviço de fotos
 npm install
 npx expo install --fix    # alinha as versões das libs com o SDK do Expo instalado
 npm run typecheck
@@ -83,10 +92,15 @@ Precisa de build de desenvolvimento (o mapa MapLibre e a tela de login nativa do
   avisar obstáculo, alerta de lombada que raspa no seu carro, garagem, ranks, equipes (convite, verificação,
   tema, pedido de equipe, painel do Adm Master) e "quem vê meu carro".
 
+## Fase 2 (pronta)
+
+- Feed da equipe e geral, com foto e curtida.
+- Eventos: criar (admin), lista de próximos, "vou" e **fazer a mídia** pela câmera do app (foto conferida pelo serviço de fotos, local e horário conferidos no banco, +50 XP).
+
 ## Próximas fases
 
 - Cadastro do carro por fotos (reconhecimento por IA) e garagem em 3D.
-- Feed da equipe e geral, eventos no app e tela de "fazer a mídia" com a câmera.
+- Galeria de mídias do evento e contestação pelo admin no app.
 - Modelo 3D do carro no lugar do ícone.
 - Mapas próprios: gerar um arquivo PMTiles só de SP, Guarulhos e Itaquá e hospedar no nosso armazenamento (deixa de depender do OpenFreeMap; o estilo continua o mesmo, só muda `TILES_URL`).
 - Rotina chamando `expire_reports()` a cada 5 minutos (pg_cron no Neon ou função agendada).

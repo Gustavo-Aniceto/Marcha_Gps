@@ -1,7 +1,7 @@
 // Equipes: minhas equipes, membros, verificação, convites, tema; pedido de equipe nova; painel do Adm Master.
 import React, { useCallback, useState } from 'react';
 import { Text, View } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Body, Button, Card, ErrorText, Field, Label, Mono, Pills, Screen, Title } from '../../src/components/ui';
 import { db } from '../../src/lib/db';
 import { useSession } from '../../src/lib/session';
@@ -18,6 +18,7 @@ interface Request { id: string; name: string; city_id: string; instagram: string
 const THEME_COLORS = ['#C6FF3D', '#3FA0FF', '#FF4D6D', '#FF8A1F', '#FFD233', '#B36BFF', '#29E0C8', '#FF5FC8', '#EDEFF2'];
 
 export default function Equipes() {
+  const router = useRouter();
   const { profile, refreshProfile } = useSession();
   const [mine, setMine] = useState<MyMembership[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
@@ -125,6 +126,11 @@ export default function Equipes() {
           )}
         </Card>
       ))}
+
+      {current && isAdmin && (
+        <Button title="Criar evento" color={current.crews.color} shape={current.crews.button_shape}
+                onPress={() => router.push({ pathname: '/evento-novo', params: { crew: current.crews.id } })} />
+      )}
 
       {current && isAdmin && (
         <Card>

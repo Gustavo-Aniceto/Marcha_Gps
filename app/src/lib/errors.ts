@@ -25,6 +25,9 @@ const MESSAGES: Record<string, string> = {
   outside_event_time: 'Fora do horário do evento.',
   outside_event_area: 'Você precisa estar no local do evento.',
   already_submitted: 'Você já fez a mídia desse evento.',
+  invalid_photo: 'Foto inválida. Tira de novo pelo app.',
+  upload_failed: 'Não deu pra enviar a foto. Confere a internet e tenta de novo.',
+  photo_too_big: 'Foto muito grande (máximo 8 MB).',
   contest_window_closed: 'Passou o prazo de 24 h pra contestar.',
 };
 

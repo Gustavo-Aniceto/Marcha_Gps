@@ -1,0 +1,11 @@
+name = "marcha-gps-fotos"
+main = "src/index.ts"
+compatibility_date = "2026-11-01"
+
+[[r2_buckets]]
+binding = "FOTOS"
+bucket_name = "marcha-gps-fotos"
+
+[vars]
+# Domínio do Clerk (Frontend API), sem barra no final. Ex.: https://xxx.clerk.accounts.dev
+CLERK_ISSUER = ""

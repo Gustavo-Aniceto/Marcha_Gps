@@ -17,6 +17,10 @@ Leia `docs/decisoes.md` antes de mudar regra de produto.
 - Toda tabela nova precisa de RLS ligado e policies.
 - Testes: `./db/tests/run.sh` sobe um Postgres local imitando o Neon (`auth.user_id()`, papéis `authenticated`/`anonymous`) e roda `db/tests/*.sql`.
 
+## Fotos
+- Sempre pelo `workers/fotos` (R2). Chave = `<tipo>/<user_id do Clerk>/<uuid>.<ext>`; o banco só aceita chave da própria pessoa (`check_own_photo_key`).
+- Mídia de evento: o app chama `submit_event_media_checked`, nunca `submit_event_media`.
+
 ## Mapa
 - MapLibre + OpenFreeMap (grátis). Estilos só em `app/src/lib/mapStyle.ts` (noite, dia, cena). Não usar Mapbox (pago).
 - Navegação = 3D só com a equipe; Cena ao vivo (`app/app/cena.tsx`) = 2D cinza com todos que `visible_cars()` liberar.

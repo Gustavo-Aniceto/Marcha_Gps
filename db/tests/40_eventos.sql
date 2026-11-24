@@ -26,14 +26,14 @@ returning id as ev \gset
 -- quem é de outra equipe não vê evento fechado
 select t.login(:'o');
 select t.ok((select count(*) from public.events) = 0, 'evento só da equipe');
-select t.throws(format($$ select public.submit_event_media(%L, 'p.jpg', -23.46, -46.53) $$, :'ev'), 'not_crew_member');
+select t.throws(format($$ select public.submit_event_media_checked(%L, t.key(), -23.46, -46.53) $$, :'ev'), 'not_crew_member');
 select t.throws(format($$ select public.crew_leaderboard(%L) $$, :'x'), 'forbidden');
 
 select t.login(:'m');
-select t.throws(format($$ select public.submit_event_media(%L, 'p.jpg', -23.4700, -46.5300) $$, :'ev'), 'outside_event_area');
-select public.submit_event_media(:'ev', 'midia/m.jpg', -23.4605, -46.5302) as media \gset
+select t.throws(format($$ select public.submit_event_media_checked(%L, t.key(), -23.4700, -46.5300) $$, :'ev'), 'outside_event_area');
+select public.submit_event_media_checked(:'ev', t.key(), -23.4605, -46.5302) as media \gset
 select t.ok((select xp from public.crew_members where crew_id = :'x' and user_id = auth.user_id()) = 50, 'mídia vale 50 XP');
-select t.throws(format($$ select public.submit_event_media(%L, 'p2.jpg', -23.46, -46.53) $$, :'ev'), 'already_submitted');
+select t.throws(format($$ select public.submit_event_media_checked(%L, t.key(), -23.46, -46.53) $$, :'ev'), 'already_submitted');
 select t.throws(format($$ select public.contest_event_media(%L) $$, :'media'), 'forbidden');
 select t.ok((select rank_pos from public.crew_leaderboard(:'x') where username = 'membro.x') = 1, 'rank interno');
 
@@ -49,7 +49,7 @@ update public.events set starts_at = now() - interval '5 hours', ends_at = now()
 delete from public.event_media where id = :'media';
 set local role authenticated;
 select t.login(:'m');
-select t.throws(format($$ select public.submit_event_media(%L, 'p.jpg', -23.46, -46.53) $$, :'ev'), 'outside_event_time');
+select t.throws(format($$ select public.submit_event_media_checked(%L, t.key(), -23.46, -46.53) $$, :'ev'), 'outside_event_time');
 
 -- evento aberto: verificado de outra equipe vê
 select t.login(:'adm');
