@@ -3,7 +3,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Camera, Map as MapView, Marker } from '../../src/map';
+import { Camera, Map as MapView, Marker, RouteLine } from '../../src/map';
+import { ManeuverIcon } from '../../src/components/ManeuverIcon';
+import { useNavigation } from '../../src/lib/navigation';
+import { rememberPosition } from '../../src/lib/lastPosition';
+import { formatArrival, formatDistance, formatDuration, nextObstacle, obstaclesOnRoute } from '../../src/lib/nav.ts';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { CarMarker } from '../../src/components/CarMarker';
 import { db, type VisibleCar } from '../../src/lib/db';
@@ -17,7 +21,7 @@ import { haversineM } from '../../src/lib/geo.ts';
 import { buildMapStyle } from '../../src/lib/mapStyle.ts';
 import { colors, fonts } from '../../src/theme/tokens.ts';
 
-interface Report { id: string; kind: ReportKind; lat: number; lon: number; base_risk: number; status: string }
+interface Report { id: string; kind: ReportKind; lat: number; lon: number; base_risk: number; status: string; speed_limit: number | null }
 interface MyCar { color: string; neon: string | null; ride_height_cm: number; suspension: string }
 
 export default function Mapa() {
@@ -25,7 +29,10 @@ export default function Mapa() {
   const { profile } = useSession();
   const { camera } = useMapSettings();
   const share = !!profile && profile.visibility !== 'ghost';
-  const { position, permission } = useLocationSharing(share, null);
+  const nav = useNavigation();
+  const navigating = nav.status !== 'idle';
+  const { position, permission } = useLocationSharing(share, null, navigating);
+  const [routeReports, setRouteReports] = useState<{ item: Report; along: number }[]>([]);
   const [cars, setCars] = useState<VisibleCar[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [myCar, setMyCar] = useState<MyCar | null>(null);
@@ -56,15 +63,54 @@ export default function Mapa() {
   useEffect(() => {
     if (lat == null || lon == null) return;
     const d = 0.03;
-    db.from('reports').select('id, kind, lat, lon, base_risk, status')
+    db.from('reports').select('id, kind, lat, lon, base_risk, status, speed_limit')
       .gte('lat', lat - d).lte('lat', lat + d).gte('lon', lon - d).lte('lon', lon + d)
       .limit(500)
       .then(({ data }) => setReports((data ?? []) as Report[]));
   }, [lat == null ? null : Math.round(lat * 200), lon == null ? null : Math.round(lon * 200)]);
 
+  // cada leitura do GPS vai pra navegação (segue a rota, recalcula se sair)
+  useEffect(() => {
+    if (!position) return;
+    rememberPosition(position);
+    nav.onFix(position);
+  }, [position]);
+
+  // obstáculos e radares em cima da rota inteira
+  const route = nav.route;
+  useEffect(() => {
+    if (!route) { setRouteReports([]); return; }
+    let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+    for (const c of route.coords) {
+      minLat = Math.min(minLat, c.lat); maxLat = Math.max(maxLat, c.lat);
+      minLon = Math.min(minLon, c.lon); maxLon = Math.max(maxLon, c.lon);
+    }
+    const m = 0.002;
+    db.from('reports').select('id, kind, lat, lon, base_risk, status, speed_limit')
+      .gte('lat', minLat - m).lte('lat', maxLat + m).gte('lon', minLon - m).lte('lon', maxLon + m)
+      .limit(5000)
+      .then(({ data }) => setRouteReports(obstaclesOnRoute(route, (data ?? []) as Report[])));
+  }, [route]);
+
+  // na navegação: o próximo obstáculo da rota (até 300 m) que pega no meu carro, ou radar
+  const routeAlert = useMemo(() => {
+    const along = nav.update?.snap.along;
+    if (!route || along == null) return null;
+    const ahead = routeReports.filter((o) => {
+      if (o.item.kind === 'radar' || o.item.kind === 'blitz') return true;
+      if (!myCar) return o.item.base_risk >= 2;
+      return clearanceFor(myCar.ride_height_cm, o.item.base_risk, [], myCar.suspension as never) !== 'passa';
+    });
+    const n = nextObstacle(ahead, along, 300);
+    if (!n) return null;
+    const c = n.item.kind === 'radar' || n.item.kind === 'blitz' ? 'aviso'
+      : myCar ? clearanceFor(myCar.ride_height_cm, n.item.base_risk, [], myCar.suspension as never) : 'raspa';
+    return { r: n.item, dist: n.distance_m, c };
+  }, [route, routeReports, nav.update, myCar]);
+
   // aviso mais perto (até 250 m) que pega no meu carro
-  const alert = useMemo(() => {
-    if (!position || !myCar) return null;
+  const nearAlert = useMemo(() => {
+    if (navigating || !position || !myCar) return null;
     let best: { r: Report; dist: number; c: string } | null = null;
     for (const r of reports) {
       if (r.kind === 'radar' || r.kind === 'blitz') continue;
@@ -75,19 +121,23 @@ export default function Mapa() {
       if (!best || dist < best.dist) best = { r, dist, c };
     }
     return best;
-  }, [position, reports, myCar]);
+  }, [navigating, position, reports, myCar]);
+  const alert = routeAlert ?? nearAlert;
+  const next = nav.update?.next;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <MapView style={{ flex: 1 }} mapStyle={mapStyle} logo={false} compass={false}
            attribution attributionPosition={{ bottom: 8, left: 8 }}>
         <Camera
-          trackUserLocation={camera.threeD ? 'course' : 'default'}
-          zoom={cam.zoom}
+          trackUserLocation={camera.threeD || navigating ? 'course' : 'default'}
+          zoom={navigating ? Math.max(cam.zoom, 16.5) : cam.zoom}
           pitch={cam.pitch}
           duration={600}
           follow={position}
         />
+
+        {route && <RouteLine coords={route.coords} />}
 
         {reports.map((r) => (
           <Marker key={r.id} id={`aviso-${r.id}`} lngLat={[r.lon, r.lat]}>
@@ -112,6 +162,7 @@ export default function Mapa() {
         )}
       </MapView>
 
+      {!navigating && (
       <View style={s.topBar} pointerEvents="box-none">
         <View style={s.chip}>
           <Text style={s.chipText}>
@@ -130,29 +181,97 @@ export default function Mapa() {
                      accessibilityLabel="Câmera do mapa"><Text style={s.iconText}>3D</Text></Pressable>
         </View>
       </View>
+      )}
+
+      {!navigating && (
+        <Pressable style={s.searchBar} onPress={() => router.push('/destino')} accessibilityRole="search"
+                   accessibilityLabel="Para onde? Buscar destino">
+          <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.holo} strokeWidth={2}>
+            <Circle cx={11} cy={11} r={7} /><Path d="m20 20-3.5-3.5" />
+          </Svg>
+          <Text style={s.searchText}>Para onde?</Text>
+        </Pressable>
+      )}
+
+      {navigating && (
+        <View style={s.maneuver} accessibilityLiveRegion="polite">
+          {nav.status === 'routing' || !next ? (
+            <Text style={s.maneuverText}>{nav.status === 'routing' ? (nav.error ?? 'Calculando a rota…') : nav.status === 'arrived' ? 'Você chegou' : 'Siga a rota'}</Text>
+          ) : (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View style={s.maneuverIcon}><ManeuverIcon kind={next.maneuver.kind} /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.maneuverDist}>{formatDistance(next.distance_m)}</Text>
+                <Text style={s.maneuverText} numberOfLines={2}>{next.maneuver.text}</Text>
+              </View>
+            </View>
+          )}
+          {nav.status === 'rerouting' && <Text style={s.rerouting}>RECALCULANDO A ROTA…</Text>}
+          {nav.status === 'navigating' && nav.update?.after && next && next.distance_m < 400 && (
+            <Text style={s.after} numberOfLines={1}>Depois: {nav.update.after.text}</Text>
+          )}
+        </View>
+      )}
 
       {permission === 'denied' && (
-        <View style={[s.banner, { top: 110 }]}>
+        <View style={[s.banner, { top: 160 }]}>
           <Text style={s.bannerText}>Sem permissão de localização. Libere nas configurações do celular pra usar o mapa.</Text>
         </View>
       )}
 
       {alert && (
-        <View style={[s.banner, { top: 110 }]} accessibilityLiveRegion="polite">
-          <Text style={s.bannerTitle}>{kindInfo(alert.r.kind).label} em {Math.round(alert.dist)} m</Text>
+        <View style={[s.banner, { top: navigating ? 196 : 160 }]} accessibilityLiveRegion="polite">
+          <Text style={s.bannerTitle}>
+            {kindInfo(alert.r.kind).label}{alert.r.kind === 'radar' && alert.r.speed_limit ? ` ${alert.r.speed_limit} km/h` : ''} em {formatDistance(alert.dist)}
+          </Text>
           <Text style={s.bannerText}>
-            {alert.c === 'nao_passa' ? 'Seu carro não passa aqui. Desvie.' : myCar?.suspension === 'ar'
+            {alert.c === 'aviso' ? (alert.r.kind === 'blitz' ? 'Blitz avisada pela comunidade.' : 'Respeite a velocidade da via.')
+              : alert.c === 'nao_passa' ? 'Seu carro não passa aqui. Desvie.' : myCar?.suspension === 'ar'
               ? 'Raspa: sobe a suspensão antes.' : 'Seu carro raspa aqui. Passa devagar ou desvia.'}
           </Text>
         </View>
       )}
 
-      <Pressable style={s.cenaBtn} onPress={() => router.push('/cena')} accessibilityRole="button"
-                 accessibilityLabel="Abrir a Cena ao vivo">
-        <Text style={s.chipText}>CENA AO VIVO · {cars.length}</Text>
-      </Pressable>
+      {!!nav.error && nav.status !== 'routing' && (
+        <Pressable style={[s.info, { top: navigating ? 196 : 160 }]} onPress={() => nav.stop()} accessibilityRole="alert">
+          <Text style={s.infoText}>{nav.error}</Text>
+        </Pressable>
+      )}
 
-      <Pressable style={s.reportBtn} onPress={() => router.push('/radar')} accessibilityRole="button"
+      {navigating && (
+        <View style={s.navPanel}>
+          {nav.status === 'arrived' ? (
+            <View style={{ flex: 1 }}>
+              <Text style={s.navBig}>Chegou!</Text>
+              <Text style={s.navSmall} numberOfLines={1}>{nav.destination?.name}</Text>
+            </View>
+          ) : (
+            <View style={{ flex: 1 }}>
+              <Text style={s.navBig}>
+                {nav.update ? formatDuration(nav.update.remaining_s) : '—'}
+                <Text style={s.navSmall}>  {nav.update ? `${formatDistance(nav.update.remaining_m)} · chega ${formatArrival(new Date(), nav.update.remaining_s)}` : ''}</Text>
+              </Text>
+              <Text style={s.navSmall} numberOfLines={1}>{nav.destination?.name}</Text>
+            </View>
+          )}
+          <Pressable style={s.navBtn} onPress={() => nav.setVoice(!nav.voice)} accessibilityRole="switch"
+                     accessibilityState={{ checked: nav.voice }} accessibilityLabel="Voz da navegação">
+            <Text style={s.iconText}>{nav.voice ? 'VOZ' : 'MUDO'}</Text>
+          </Pressable>
+          <Pressable style={[s.navBtn, s.navStop]} onPress={nav.stop} accessibilityRole="button" accessibilityLabel="Encerrar navegação">
+            <Text style={s.navStopText}>{nav.status === 'arrived' ? 'FECHAR' : 'SAIR'}</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {!navigating && (
+        <Pressable style={s.cenaBtn} onPress={() => router.push('/cena')} accessibilityRole="button"
+                   accessibilityLabel="Abrir a Cena ao vivo">
+          <Text style={s.chipText}>CENA AO VIVO · {cars.length}</Text>
+        </Pressable>
+      )}
+
+      <Pressable style={[s.reportBtn, navigating && { bottom: 104 }]} onPress={() => router.push('/radar')} accessibilityRole="button"
                  accessibilityLabel="Avisar buraco, lombada, blitz">
         <Text style={{ color: colors.ink, fontWeight: '800', fontSize: 13 }}>AVISAR</Text>
       </Pressable>
@@ -171,6 +290,26 @@ const s = StyleSheet.create({
             borderColor: colors.warn, backgroundColor: 'rgba(28,18,6,0.94)', gap: 2 },
   bannerTitle: { color: '#FFB070', fontFamily: fonts.display, fontSize: 17 },
   bannerText: { color: colors.warnText, fontSize: 13 },
+  searchBar: { position: 'absolute', top: 108, left: 16, right: 16, minHeight: 46, flexDirection: 'row', alignItems: 'center', gap: 10,
+               paddingHorizontal: 14, borderRadius: 6, borderWidth: 1, borderColor: colors.lineStrong, backgroundColor: 'rgba(6,12,22,0.94)' },
+  searchText: { color: colors.textDim, fontSize: 16 },
+  maneuver: { position: 'absolute', top: 48, left: 12, right: 12, padding: 12, borderRadius: 8, backgroundColor: colors.panel,
+              borderWidth: 1, borderColor: colors.lineStrong, gap: 6 },
+  maneuverIcon: { width: 60, height: 60, borderRadius: 8, backgroundColor: colors.neon, alignItems: 'center', justifyContent: 'center' },
+  maneuverDist: { color: colors.text, fontFamily: fonts.display, fontSize: 28 },
+  maneuverText: { color: colors.textDim, fontSize: 16 },
+  rerouting: { color: colors.holo, fontFamily: fonts.mono, fontSize: 12, letterSpacing: 1 },
+  after: { color: colors.textMuted, fontSize: 13 },
+  info: { position: 'absolute', left: 16, right: 16, padding: 12, borderRadius: 6, borderWidth: 1, borderColor: colors.lineStrong,
+          backgroundColor: colors.panel },
+  infoText: { color: colors.text, fontSize: 14 },
+  navPanel: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24,
+              flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.panel, borderTopWidth: 1, borderColor: colors.lineStrong },
+  navBig: { color: colors.neon, fontFamily: fonts.display, fontSize: 24 },
+  navSmall: { color: colors.textMuted, fontSize: 13, fontFamily: undefined },
+  navBtn: { minWidth: 56, height: 48, borderRadius: 6, borderWidth: 1, borderColor: colors.lineStrong, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
+  navStop: { backgroundColor: colors.danger, borderColor: colors.danger },
+  navStopText: { color: colors.ink, fontWeight: '800', fontSize: 13 },
   report: { backgroundColor: colors.warn, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 3 },
   reportText: { fontFamily: fonts.mono, fontSize: 10, color: colors.ink },
   cenaBtn: { position: 'absolute', left: 16, bottom: 24, minHeight: 44, paddingHorizontal: 12, justifyContent: 'center',

@@ -134,3 +134,47 @@ export function Marker({ lngLat, children }: MarkerProps) {
 
   return createPortal(children, el);
 }
+
+/** Linha da rota da navegação (some e volta sozinha quando o tema do mapa troca). */
+export function RouteLine({ coords }: { coords: { lat: number; lon: number }[] }) {
+  const map = useContext(MapCtx);
+  const data = useRef<GeoJSON.Feature>({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [] } });
+  data.current = {
+    type: 'Feature', properties: {},
+    geometry: { type: 'LineString', coordinates: coords.map((c) => [c.lon, c.lat]) },
+  };
+
+  useEffect(() => {
+    if (!map) return;
+    const ensure = () => {
+      if (!map.isStyleLoaded()) return;
+      const src = map.getSource('rota') as maplibregl.GeoJSONSource | undefined;
+      if (src) { src.setData(data.current); return; }
+      map.addSource('rota', { type: 'geojson', data: data.current });
+      map.addLayer({ id: 'rota-borda', type: 'line', source: 'rota',
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: { 'line-color': colors.bg, 'line-width': 11, 'line-opacity': 0.85 } });
+      map.addLayer({ id: 'rota-linha', type: 'line', source: 'rota',
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: { 'line-color': colors.holo, 'line-width': 7 } });
+    };
+    ensure();
+    map.on('styledata', ensure);
+    return () => {
+      map.off('styledata', ensure);
+      try {
+        if (map.getLayer('rota-linha')) map.removeLayer('rota-linha');
+        if (map.getLayer('rota-borda')) map.removeLayer('rota-borda');
+        if (map.getSource('rota')) map.removeSource('rota');
+      } catch { /* mapa já foi desmontado */ }
+    };
+  }, [map]);
+
+  // rota nova (recálculo): só troca os dados
+  useEffect(() => {
+    const src = map?.getSource('rota') as maplibregl.GeoJSONSource | undefined;
+    src?.setData(data.current);
+  }, [map, coords]);
+
+  return null;
+}

@@ -1,0 +1,7 @@
+{
+  "compilerOptions": {
+    "strict": true, "target": "ES2022", "module": "ESNext", "moduleResolution": "Bundler",
+    "noEmit": true, "skipLibCheck": true, "allowImportingTsExtensions": true, "types": [], "lib": ["ES2022", "DOM"]
+  },
+  "include": ["src/geocode.ts", "src/route.ts", "src/limits.ts", "src/obstacles.ts"]
+}

@@ -1,0 +1,11 @@
+name = "marcha-gps-api"
+main = "src/index.ts"
+compatibility_date = "2026-11-01"
+
+[vars]
+CLERK_ISSUER = "https://great-aphid-3258.clerk.accounts.dev"
+# IMPORT_DATABASE_URL é segredo: wrangler secret put IMPORT_DATABASE_URL (usuário "importador" do Neon)
+
+[triggers]
+# segunda de madrugada (horário UTC), uma cidade por vez
+crons = ["7,17,27 6 * * 1"]

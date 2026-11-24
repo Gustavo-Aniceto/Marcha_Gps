@@ -9,5 +9,5 @@
     "skipLibCheck": true,
     "types": []
   },
-  "include": ["src/lib/contrast.ts", "src/lib/fitment.ts", "src/lib/reports.ts", "src/lib/errors.ts", "src/lib/mapCamera.ts", "src/lib/geo.ts", "src/lib/mapStyle.ts", "src/lib/events.ts", "src/lib/checkinQr.ts", "src/theme/tokens.ts"]
+  "include": ["src/lib/contrast.ts", "src/lib/fitment.ts", "src/lib/reports.ts", "src/lib/errors.ts", "src/lib/mapCamera.ts", "src/lib/geo.ts", "src/lib/mapStyle.ts", "src/lib/events.ts", "src/lib/checkinQr.ts", "src/lib/nav.ts", "src/lib/photoSize.ts", "src/theme/tokens.ts"]
 }

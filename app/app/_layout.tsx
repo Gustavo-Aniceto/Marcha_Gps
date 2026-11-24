@@ -10,6 +10,7 @@ import { tokenCache } from '../src/lib/clerkTokenCache';
 import { ChakraPetch_700Bold } from '@expo-google-fonts/chakra-petch';
 import { ShareTechMono_400Regular } from '@expo-google-fonts/share-tech-mono';
 import { SessionProvider, useSession } from '../src/lib/session';
+import { NavigationProvider } from '../src/lib/navigation';
 import { MapSettingsProvider } from '../src/lib/mapSettings';
 import { colors } from '../src/theme/tokens.ts';
 
@@ -50,6 +51,7 @@ function Gate() {
         <Stack.Screen name="radar" options={{ presentation: 'modal' }} />
         <Stack.Screen name="camera-mapa" options={{ presentation: 'modal' }} />
         <Stack.Screen name="visibilidade" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="destino" options={{ presentation: 'modal' }} />
       </Stack.Protected>
     </Stack>
   );
@@ -71,7 +73,9 @@ export default function RootLayout() {
       <ClerkProvider publishableKey={clerkKey} tokenCache={tokenCache} localization={ptBR}>
         <SessionProvider>
           <MapSettingsProvider>
-            <Gate />
+            <NavigationProvider>
+              <Gate />
+            </NavigationProvider>
           </MapSettingsProvider>
         </SessionProvider>
       </ClerkProvider>
