@@ -21,6 +21,12 @@ Leia `docs/decisoes.md` antes de mudar regra de produto.
 - Sempre pelo `workers/fotos` (R2). Chave = `<tipo>/<user_id do Clerk>/<uuid>.<ext>`; o banco só aceita chave da própria pessoa (`check_own_photo_key`).
 - Mídia de evento: o app chama `submit_event_media_checked`, nunca `submit_event_media`.
 
+## Rotas e navegação
+- Busca e rota passam pelo `workers/api` (Worker `marcha-gps-api`): `GET /buscar` (Photon) e `POST /rota` (Valhalla do FOSSGIS, em pt-BR). Exigem login do Clerk; cache e limite por pessoa porque os servidores públicos pedem uso justo (Valhalla: 1 pedido/s). O app nunca chama Photon/Valhalla direto.
+- Lógica da navegação pura em `app/src/lib/nav.ts` (encaixe na rota, recálculo, voz, chegada) com testes; estado em `app/src/lib/navigation.tsx`.
+- Lombadas/radares do OpenStreetMap entram toda segunda pelo agendamento do `marcha-gps-api` (uma cidade por disparo), via `import_osm_obstacles()` com o usuário `importador` do Neon (só executa essa função; segredo `IMPORT_DATABASE_URL` no Worker).
+- Publicar o Worker: o código vai como módulos ES (o `src` + `../fotos/src/jwt.ts` e `cors.ts`); manter `wrangler.toml` igual ao que está no ar.
+
 ## Mapa
 - MapLibre + OpenFreeMap (grátis). Estilos só em `app/src/lib/mapStyle.ts` (noite, dia, cena). Não usar Mapbox (pago).
 - Navegação = 3D só com a equipe; Cena ao vivo (`app/app/cena.tsx`) = 2D cinza com todos que `visible_cars()` liberar.

@@ -17,6 +17,7 @@ app/            App mobile (Expo + React Native + TypeScript)
 db/migrations/  Banco (Postgres no Neon): tabelas, regras de acesso (RLS) e funções
 db/tests/       Testes do banco (rodam num Postgres local)
 workers/fotos/  Serviço de fotos (Cloudflare Worker + R2): confere o login do Clerk e guarda a imagem
+workers/api/    Serviço de rotas: busca de lugares, rota em português e importação semanal de lombadas/radares
 scripts/        Importação de lombadas/radares (OpenStreetMap + ANTT)
 docs/           Decisões e notas do produto
 ```
@@ -66,6 +67,10 @@ Testes do banco num Postgres local:
 3. `cd workers/fotos && npm install && npm test && npx wrangler deploy`
 4. Coloque a URL do Worker em `EXPO_PUBLIC_FOTOS_URL` no `app/.env`.
 5. O app reduz as fotos (lado maior 1600 px, JPEG 70%) antes de enviar, pra caber folgado na cota grátis.
+
+### Rotas (Cloudflare)
+
+Worker `marcha-gps-api` em `https://marcha-gps-api.guuhaniceto2.workers.dev` (código em `workers/api`): busca de lugares, rotas em português e a importação semanal de lombadas/radares. Variáveis: `CLERK_ISSUER` e o segredo `IMPORT_DATABASE_URL` (usuário `importador` do Neon). No app: `EXPO_PUBLIC_API_URL`.
 
 ### 4. Obstáculos e radares
 
