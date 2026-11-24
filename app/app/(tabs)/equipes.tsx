@@ -92,10 +92,14 @@ export default function Equipes() {
           <Text style={{ color: accent, fontSize: 20, fontWeight: '700' }}>{current.crews.name}</Text>
           <Mono color={accent}>{current.role.toUpperCase()} · {current.status === 'verified' ? 'VERIFICADO' : 'EM VERIFICAÇÃO'}</Mono>
           {current.status === 'pending' && (
-            <Body dim>
-              Pra ser verificado: membros da equipe confirmam que te conhecem e um admin faz seu check-in num encontro.
-              Até lá você não vê a localização da equipe.
-            </Body>
+            <>
+              <Body dim>
+                Pra ser verificado: membros da equipe confirmam que te conhecem e um admin escaneia seu QR num encontro.
+                Até lá você não vê a localização da equipe.
+              </Body>
+              <Button title="Mostrar meu QR de check-in" color={current.crews.color} shape={current.crews.button_shape}
+                      onPress={() => router.push({ pathname: '/meu-qr', params: { crew: current.crews.id, nome: current.crews.name } })} />
+            </>
           )}
         </Card>
       )}
@@ -120,12 +124,13 @@ export default function Equipes() {
             <Button title="Confirmo que conheço" variant="secondary" color={current!.crews.color}
                     onPress={() => call('vouch_member', { p_crew: selected, p_member: m.user_id })} />
           )}
-          {m.status === 'pending' && isAdmin && (
-            <Button title="Check-in: vi a pessoa e o carro" color={current!.crews.color} shape={current!.crews.button_shape}
-                    onPress={() => call('admin_checkin', { p_crew: selected, p_member: m.user_id })} />
-          )}
         </Card>
       ))}
+
+      {current && isAdmin && (
+        <Button title="Escanear QR de check-in" variant="secondary" color={current.crews.color}
+                onPress={() => router.push({ pathname: '/escanear', params: { crew: current.crews.id } })} />
+      )}
 
       {current && isAdmin && (
         <Button title="Criar evento" color={current.crews.color} shape={current.crews.button_shape}

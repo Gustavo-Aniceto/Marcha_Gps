@@ -107,7 +107,9 @@ export default function Feed() {
         return (
           <Card key={ev.id} accent={accent}>
             <Mono color={accent}>{ev.crew_name.toUpperCase()} · {kindLabel(ev.kind).toUpperCase()}</Mono>
-            <Text style={{ color: colors.text, fontSize: 17, fontWeight: '700' }}>{ev.title}</Text>
+            <Pressable onPress={() => router.push({ pathname: '/evento/[id]', params: { id: ev.id } })} accessibilityRole="link">
+              <Text style={{ color: colors.text, fontSize: 17, fontWeight: '700' }}>{ev.title} ›</Text>
+            </Pressable>
             <Body dim>{whenText(new Date(ev.starts_at))} · {ev.going} {ev.going === 1 ? 'vai' : 'vão'}</Body>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <View style={{ flex: 1 }}>

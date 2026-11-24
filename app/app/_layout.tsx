@@ -43,6 +43,9 @@ function Gate() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="cena" />
       <Stack.Screen name="midia/[id]" />
+      <Stack.Screen name="evento/[id]" />
+      <Stack.Screen name="meu-qr" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="escanear" options={{ presentation: 'modal' }} />
       <Stack.Screen name="evento-novo" options={{ presentation: 'modal' }} />
       <Stack.Screen name="radar" options={{ presentation: 'modal' }} />
       <Stack.Screen name="camera-mapa" options={{ presentation: 'modal' }} />

@@ -96,11 +96,12 @@ Precisa de build de desenvolvimento (o mapa MapLibre e a tela de login nativa do
 
 - Feed da equipe e geral, com foto e curtida.
 - Eventos: criar (admin), lista de próximos, "vou" e **fazer a mídia** pela câmera do app (foto conferida pelo serviço de fotos, local e horário conferidos no banco, +50 XP).
+- Página do evento com a galeria de mídias; admin contesta em até 24 h.
+- **Check-in por QR code**: o membro mostra o QR, o admin escaneia no encontro (vale como a prova presencial da verificação).
 
 ## Próximas fases
 
 - Cadastro do carro por fotos (reconhecimento por IA) e garagem em 3D.
-- Galeria de mídias do evento e contestação pelo admin no app.
 - Modelo 3D do carro no lugar do ícone.
 - Mapas próprios: gerar um arquivo PMTiles só de SP, Guarulhos e Itaquá e hospedar no nosso armazenamento (deixa de depender do OpenFreeMap; o estilo continua o mesmo, só muda `TILES_URL`).
 - Rotina chamando `expire_reports()` a cada 5 minutos (pg_cron no Neon ou função agendada).
