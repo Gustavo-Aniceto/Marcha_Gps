@@ -13,6 +13,6 @@ const preview: Record<MapTheme, object> = {
 
 for (const t of ['noite', 'dia', 'cena'] as MapTheme[]) {
   const style = { ...buildMapStyle(t), ...preview[t] };
-  writeFileSync(fileURLToPath(new URL(`../map-styles/${t}.json`, import.meta.url)), JSON.stringify(style, null, 2) + '\n');
+  writeFileSync(fileURLToPath(new URL(`../map-styles/${t}.json`, import.meta.url).href), JSON.stringify(style, null, 2) + '\n');
   console.log(`map-styles/${t}.json`);
 }

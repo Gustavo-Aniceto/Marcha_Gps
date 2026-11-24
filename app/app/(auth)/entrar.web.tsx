@@ -23,14 +23,8 @@ export default function Entrar() {
         appearance={{
           variables: {
             colorPrimary: colors.neon,
-            colorPrimaryForeground: '#070B12',
             colorBackground: '#0B111C',
-            colorText: colors.text,
-            colorTextSecondary: colors.textMuted,
-            colorInputBackground: '#070B12',
-            colorInputText: colors.text,
             borderRadius: '6px',
-            // nomes novos das mesmas cores (versões recentes do Clerk)
             colorForeground: colors.text,
             colorMutedForeground: colors.textMuted,
             colorPrimaryForeground: colors.bg,
