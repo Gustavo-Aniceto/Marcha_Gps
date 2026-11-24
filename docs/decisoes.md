@@ -24,6 +24,9 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 - "Para onde?" busca endereço ou lugar (estado de SP, puxando pra perto de você) e já sai navegando: linha da rota, próxima manobra com seta e distância, "depois: …", tempo restante, distância e horário de chegada.
 - **Recalcula sozinho** quando sai da rota (2 leituras seguidas a mais de ~40 m, com folga se o GPS estiver ruim), quando fica muito longe (120 m) ou quando anda na contramão da rota por 3 leituras. Espera pelo menos 8 s entre recálculos e, se falhar, continua mostrando a rota antiga.
 - **Voz em português** com 400 m e na hora da manobra (dá pra deixar mudo). Tela não apaga enquanto navega.
+- **Mapa solto como no Waze:** arrastar, girar ou dar zoom solta a câmera do carro e aparece "Voltar pro carro". Navegando, volta sozinho depois de 15 s sem mexer. Botão "ver a rota inteira" mostra o caminho todo na tela.
+- O mapa principal mostra **todo mundo que `visible_cars()` libera** (não só a equipe): o banco já aplica fantasma, só-equipe, posição aproximada, atraso e zonas privadas. Nome da equipe em verde, os outros em azul.
+- Avisos no mapa são **ícones** (radar, lombada, valeta, buraco, blitz, alagamento etc.) num círculo laranja, não etiqueta de texto. Não confirmado fica meio apagado.
 - Durante a rota, o alerta laranja mostra o próximo obstáculo **em cima da rota** que pega no seu carro (pela altura da garagem) e radares com a velocidade.
 - Fontes gratuitas do OpenStreetMap: busca pelo Photon (Komoot) e rotas pelo Valhalla (FOSSGIS), passando pelo nosso serviço com login, cache e limite. Se o uso crescer, a troca é só no serviço (Valhalla próprio ou pago), sem atualizar o app.
 - Próximo passo: rota que **desvia** de lombada/valeta onde o carro não passa (o Valhalla aceita pontos a evitar).

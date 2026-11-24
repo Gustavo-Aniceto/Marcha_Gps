@@ -99,11 +99,21 @@ interface CameraProps {
   initialViewState?: { center: [number, number] | readonly [number, number]; zoom?: number; pitch?: number };
   /** posição do usuário (no navegador a câmera segue por aqui) */
   follow?: { lat: number; lon: number; heading: number | null } | null;
+  /** false = a pessoa está mexendo no mapa: não puxa a câmera de volta pro carro */
+  following?: boolean;
+  /** a pessoa arrastou, girou ou deu zoom com o dedo */
+  onUserGesture?: () => void;
+  /** mostra estes pontos inteiros na tela (ex.: a rota toda); muda `fitKey` pra repetir */
+  fitCoords?: { lat: number; lon: number }[] | null;
+  fitKey?: number;
 }
 
-export function Camera({ zoom, pitch, duration = 600, trackUserLocation, initialViewState, follow }: CameraProps) {
+export function Camera({ zoom, pitch, duration = 600, trackUserLocation, initialViewState, follow,
+  following = true, onUserGesture, fitCoords, fitKey }: CameraProps) {
   const map = useContext(MapCtx);
   const started = useRef(false);
+  const gesture = useRef(onUserGesture);
+  gesture.current = onUserGesture;
 
   useEffect(() => {
     if (!map || started.current || !initialViewState) return;
@@ -112,35 +122,60 @@ export function Camera({ zoom, pitch, duration = 600, trackUserLocation, initial
                  zoom: initialViewState.zoom ?? map.getZoom(), pitch: initialViewState.pitch ?? 0 });
   }, [map, initialViewState]);
 
+  // dedo no mapa (arrastar, pinça, girar): só conta quando veio da pessoa, não da câmera
   useEffect(() => {
     if (!map) return;
+    const onStart = (e: { originalEvent?: Event }) => { if (e.originalEvent) gesture.current?.(); };
+    const evs = ['dragstart', 'zoomstart', 'rotatestart', 'pitchstart'] as const;
+    for (const ev of evs) map.on(ev, onStart);
+    return () => { for (const ev of evs) map.off(ev, onStart); };
+  }, [map]);
+
+  useEffect(() => {
+    if (!map || !following) return;
     map.easeTo({ zoom: zoom ?? map.getZoom(), pitch: pitch ?? map.getPitch(), duration });
-  }, [map, zoom, pitch, duration]);
+  }, [map, zoom, pitch, duration, following]);
 
   const lat = follow?.lat, lon = follow?.lon, heading = follow?.heading;
   useEffect(() => {
-    if (!map || !trackUserLocation || lat == null || lon == null) return;
+    if (!map || !following || !trackUserLocation || lat == null || lon == null) return;
     const bearing = trackUserLocation === 'course' && heading != null ? heading : map.getBearing();
     map.easeTo({ center: [lon, lat], bearing, zoom: zoom ?? map.getZoom(), pitch: pitch ?? map.getPitch(), duration });
-  }, [map, trackUserLocation, lat, lon, heading]);
+  }, [map, trackUserLocation, lat, lon, heading, following]);
+
+  useEffect(() => {
+    if (!map || !fitCoords || fitCoords.length < 2) return;
+    const b = new maplibregl.LngLatBounds();
+    for (const c of fitCoords) b.extend([c.lon, c.lat]);
+    map.fitBounds(b, { padding: { top: 150, bottom: 190, left: 50, right: 50 }, pitch: 0, bearing: 0, duration: 800, maxZoom: 17 });
+  }, [map, fitKey]);
 
   return null;
 }
 
-interface MarkerProps { id?: string; lngLat: [number, number]; children: React.ReactNode }
+interface MarkerProps {
+  id?: string; lngLat: [number, number]; children: React.ReactNode;
+  /** direção em graus; com ela o desenho gira junto com o mapa e deita no 3D (como no Waze) */
+  rotation?: number | null;
+}
 
-export function Marker({ lngLat, children }: MarkerProps) {
+export function Marker({ lngLat, children, rotation }: MarkerProps) {
   const map = useContext(MapCtx);
   const [el] = useState(() => document.createElement('div'));
   const marker = useRef<maplibregl.Marker | null>(null);
 
   useEffect(() => {
     if (!map) return;
-    marker.current = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(lngLat).addTo(map);
+    const turns = rotation !== undefined;
+    marker.current = new maplibregl.Marker({
+      element: el, anchor: 'center',
+      ...(turns ? { rotationAlignment: 'map' as const, pitchAlignment: 'map' as const, rotation: rotation ?? 0 } : {}),
+    }).setLngLat(lngLat).addTo(map);
     return () => { marker.current?.remove(); marker.current = null; };
   }, [map]);
 
   useEffect(() => { marker.current?.setLngLat(lngLat); }, [lngLat[0], lngLat[1]]);
+  useEffect(() => { if (rotation != null) marker.current?.setRotation(rotation); }, [rotation]);
 
   return createPortal(children, el);
 }

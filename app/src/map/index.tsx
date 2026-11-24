@@ -1,14 +1,29 @@
 // Mapa no celular (app nativo): MapLibre React Native.
 // No navegador o Metro usa index.web.tsx, com a mesma API.
 import React from 'react';
-import { Camera as NativeCamera, GeoJSONSource, Layer, Map as NativeMap, Marker } from '@maplibre/maplibre-react-native';
+import { Camera as NativeCamera, GeoJSONSource, Layer, Map as NativeMap, Marker as NativeMarker } from '@maplibre/maplibre-react-native';
 import { colors } from '../theme/tokens.ts';
 
 type NativeCameraProps = React.ComponentProps<typeof NativeCamera>;
 
-/** Mesma câmera do MapLibre; `follow` só é usado na versão web (no app a câmera segue o GPS sozinha). */
-export function Camera({ follow: _follow, ...props }: NativeCameraProps & { follow?: { lat: number; lon: number; heading: number | null } | null }) {
-  return <NativeCamera {...props} />;
+interface ExtraCameraProps {
+  /** só a versão web usa (no app a câmera segue o GPS sozinha) */
+  follow?: { lat: number; lon: number; heading: number | null } | null;
+  /** false = a pessoa está mexendo no mapa: a câmera para de seguir o carro */
+  following?: boolean;
+  onUserGesture?: () => void;
+  fitCoords?: { lat: number; lon: number }[] | null;
+  fitKey?: number;
+}
+
+/** Mesma câmera do MapLibre, com as opções extras da versão web. */
+export function Camera({ follow: _follow, following = true, onUserGesture: _g, fitCoords, fitKey: _k, ...props }:
+  NativeCameraProps & ExtraCameraProps) {
+  if (fitCoords && fitCoords.length >= 2 && !following) {
+    const lons = fitCoords.map((c) => c.lon), lats = fitCoords.map((c) => c.lat);
+    return <NativeCamera bounds={[Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)] as never} />;
+  }
+  return <NativeCamera {...props} trackUserLocation={following ? props.trackUserLocation : undefined} />;
 }
 
 type NativeMapProps = React.ComponentProps<typeof NativeMap>;
@@ -18,7 +33,10 @@ export function Map({ mapStyle, ...props }: Omit<NativeMapProps, 'mapStyle'> & {
   return <NativeMap {...props} mapStyle={mapStyle as NativeMapProps['mapStyle']} />;
 }
 
-export { Marker };
+/** Marcador; `rotation` só é usado na versão web (no app o desenho já gira sozinho). */
+export function Marker({ rotation: _r, ...props }: React.ComponentProps<typeof NativeMarker> & { rotation?: number | null }) {
+  return <NativeMarker {...props} />;
+}
 
 // Linha da rota da navegação
 export function RouteLine({ coords }: { coords: { lat: number; lon: number }[] }) {
