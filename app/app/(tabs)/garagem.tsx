@@ -53,18 +53,25 @@ export default function Garagem() {
     if (!profile) return;
     setMsg(null);
     if (!car.make.trim() || !car.model.trim()) { setError('Preencha a marca e o modelo do carro lá em cima.'); return; }
+    const year = car.year ? Number(car.year) : null;
+    const maxYear = new Date().getFullYear() + 1;
+    if (year != null && (year < 1950 || year > maxYear)) {
+      setError(`Ano inválido: use 4 números, de 1950 a ${maxYear} (ex.: 2009). Ou deixa em branco.`); return;
+    }
     setBusy(true); setError(null);
     const row = {
       owner_id: profile.id, make: car.make.trim(), model: car.model.trim(),
-      year: car.year ? Number(car.year) : null, color: car.color, ride_height_cm: car.ride_height_cm,
+      year, color: car.color, ride_height_cm: car.ride_height_cm,
       suspension: car.suspension, rim: car.rim, wheel_position: car.wheel_position, camber_deg: car.camber_deg,
       tint: car.tint, spoiler: car.spoiler, neon: car.neon, updated_at: new Date().toISOString(),
     };
     const q = car.id
       ? db.from('cars').update(row).eq('id', car.id).select('id').single()
       : db.from('cars').insert(row).select('id').single();
-    const { data, error: e } = await q;
+    let data: unknown = null, e: unknown = null;
+    try { ({ data, error: e } = await q); } catch (x) { e = x; }
     setBusy(false);
+    if (e) console.warn('garagem: salvar carro', e);
     if (e || !data) { setError(e ? friendlyError(e) : 'Não consegui salvar. Tenta de novo.'); return; }
     setCar((c) => ({ ...c, id: (data as { id: string }).id }));
     setMsg('Salvo! É esse carro que aparece no mapa, na sua localização.');
@@ -82,7 +89,7 @@ export default function Garagem() {
 
       <Field label="Marca" value={car.make} onChangeText={(v) => set('make', v)} placeholder="Ex.: Volkswagen" />
       <Field label="Modelo" value={car.model} onChangeText={(v) => set('model', v)} placeholder="Ex.: Gol G5" />
-      <Field label="Ano" value={car.year} onChangeText={(v) => set('year', v.replace(/\D/g, '').slice(0, 4))} keyboardType="number-pad" />
+      <Field label="Ano (opcional, 4 números)" value={car.year} onChangeText={(v) => set('year', v.replace(/\D/g, '').slice(0, 4))} keyboardType="number-pad" />
 
       <Label>Altura (vão livre)</Label>
       <Pills options={[[15, 'Original'], [11, 'Rebaixado'], [8, 'Baixo'], [5, 'Arrastando']].map(([v, l]) => ({ value: v as number, label: `${l} · ${v} cm` }))}

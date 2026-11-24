@@ -30,5 +30,10 @@ test('texto dos pontos', () => {
 
 test('erros do banco viram mensagem em português', () => {
   assert.equal(friendlyError({ message: 'outside_area' }), 'Por enquanto o Marcha GPS funciona só em São Paulo, Guarulhos e Itaquá.');
-  assert.equal(friendlyError(new Error('qualquer coisa')), 'Deu ruim. Tenta de novo.');
+  assert.equal(friendlyError(new Error('qualquer coisa')), 'Deu ruim. Tenta de novo. (qualquer coisa)');
+  assert.equal(friendlyError(null), 'Deu ruim. Tenta de novo.');
+  assert.equal(friendlyError({ code: '23514', message: 'new row for relation "cars" violates check constraint "cars_year_check"' }),
+    'Ano do carro inválido: use 4 números (ex.: 2009).');
+  assert.match(friendlyError({ code: '42501', message: 'new row violates row-level security policy for table "cars"' }), /não deixou salvar/);
+  assert.match(friendlyError(new TypeError('Failed to fetch')), /internet/);
 });

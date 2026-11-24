@@ -33,13 +33,30 @@ const MESSAGES: Record<string, string> = {
   contest_window_closed: 'Passou o prazo de 24 h pra contestar.',
 };
 
+// regra do banco (check) que barrou o dado -> o que a pessoa precisa arrumar
+const CHECKS: Record<string, string> = {
+  profiles_username_check: 'Nome de usuário: 3 a 24 letras minúsculas, números, ponto ou _.',
+  cars_year_check: 'Ano do carro inválido: use 4 números (ex.: 2009).',
+  cars_color_check: 'Cor inválida. Escolhe uma das cores.',
+  cars_ride_height_cm_check: 'Altura inválida.',
+  cars_rim_check: 'Aro inválido (13 a 22).',
+  cars_camber_deg_check: 'Cambagem inválida.',
+  cars_one_active_per_owner: 'Você já tem um carro ativo. Abre a garagem de novo e salva.',
+  posts_carro_tem_foto: 'Foto do carro precisa de foto.',
+};
+
 export function friendlyError(err: unknown): string {
-  const raw = typeof err === 'string' ? err
-    : err && typeof err === 'object' && 'message' in err ? String((err as { message: unknown }).message)
-    : '';
+  const o = err && typeof err === 'object' ? (err as { message?: unknown; code?: unknown; details?: unknown }) : null;
+  const raw = typeof err === 'string' ? err : o && 'message' in o ? String(o.message) : '';
+  const all = `${raw} ${o?.details ? String(o.details) : ''}`;
   const code = Object.keys(MESSAGES).find((c) => raw === c || raw.includes(c));
   if (code) return MESSAGES[code];
-  if (raw.includes('profiles_username_check')) return 'Nome de usuário: 3 a 24 letras minúsculas, números, ponto ou _.';
+  const check = Object.keys(CHECKS).find((c) => all.includes(c));
+  if (check) return CHECKS[check];
   if (raw.includes('duplicate key') && raw.includes('username')) return 'Esse nome de usuário já existe.';
-  return 'Deu ruim. Tenta de novo.';
+  if (raw.includes('row-level security') || o?.code === '42501') return 'O banco não deixou salvar isso com a sua conta. Sai e entra de novo; se continuar, me manda print.';
+  if (/Failed to fetch|Network request failed|NetworkError|Load failed/i.test(raw)) return 'Sem conexão com o servidor. Confere a internet e tenta de novo.';
+  // erro desconhecido: mostra o código pra dar pra descobrir o que foi
+  const tech = [o?.code ? String(o.code) : null, raw ? raw.slice(0, 120) : null].filter(Boolean).join(': ');
+  return tech ? `Deu ruim. Tenta de novo. (${tech})` : 'Deu ruim. Tenta de novo.';
 }
