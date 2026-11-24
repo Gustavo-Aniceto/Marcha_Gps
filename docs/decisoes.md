@@ -1,0 +1,39 @@
+# Marcha GPS — decisões do produto
+
+Protótipo das telas: https://claude.ai/artifact/UYsUewuuw3KkM5jdFJ7oj2
+
+## Conceito
+GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: **São Paulo, Guarulhos e Itaquaquecetuba**.
+
+## Acesso e confiança
+- Entrada só por **convite**; quem convida é o padrinho e responde pelo convidado.
+- **Verificação do membro** além do convite: 2 membros confirmam que conhecem + check-in presencial (QR escaneado por admin). Sem isso: não vê localização da equipe nem entra em comboio.
+- Só o **Adm Master** (dono do app) libera equipes novas. O dono da equipe manda nome, cidade, Instagram, nº de membros, fotos de prova e faz chamada de vídeo.
+
+## Carro
+- Cadastro por **fotos** (frente, traseira, laterais, roda; mínimo 3). IA reconhece modelo, ano, cor, altura e aro; o app usa o modelo 3D da base e ajusta.
+- **Garagem** em 3D: altura, tipo de suspensão, aro, posição da roda, cambagem, cor, vidro, aerofólio, neon. Checa fitment e monta a lista de peças da base (marca "Serve" / "Atenção").
+
+## Mapa
+- Visual holográfico, câmera alta, carro 3D por cima. O usuário escolhe 3D/2D, ângulo (20–88°) e raio de visão (40–220 m).
+- **Cena ao vivo**: mapa de SP, Guarulhos e Itaquá com o carrinho montado de quem escolheu aparecer. Filtro por cidade e por tipo (Todos / Minhas equipes / Em encontro).
+- Visibilidade: **Fantasma** / **Só minhas equipes** / **Cena ao vivo**. Na Cena ao vivo: posição aproximada (~500 m) por padrão para quem não é da equipe, atraso opcional, some ao parar 10 min, só membros verificados veem, zonas privadas (casa/trabalho) escondem até da equipe.
+
+## Equipes
+- Fundador/admin cria **eventos**: Encontro, Rolê (comboio com rota que desvia de obstáculos) ou Pista (só autódromo/área fechada autorizada).
+- **Tema da equipe**: cor e formato dos botões. Aparece na tela/feed/rank da equipe e nas etiquetas do mapa. Cor escura é clareada automaticamente para leitura. Avisos de segurança continuam laranja para todos.
+- **Prova de presença: "fazer a mídia"**: foto pela câmera do app (galeria não vale), no local e no horário do evento; o app confere se o carro bate com a garagem. Vale +50 XP na equipe; admin pode contestar em 24 h.
+
+## Ranks
+- **Rank de patente é interno de cada equipe** (só a equipe vê; sem disputa entre equipes). XP vem de: evento com mídia +50, rolê em comboio +30, convidado verificado +40.
+- **Radar é soma geral** de todo mundo nas 3 cidades: pontos só por aviso confirmado por 3 pessoas. Buraco/Lombada alta/Valeta +15, Blitz/Rua ruim/Alagamento +10, Radar +5, confirmar aviso de outro +3. Aviso falso tira pontos. Blitz expira em 1 h, alagamento em 6 h, o resto em 7 dias sem confirmação.
+
+## Dados de obstáculos
+- Importação inicial por cidade: OpenStreetMap (traffic_calming, highway=speed_camera) + radares da ANTT (rodovias concedidas, ex.: Dutra, Ayrton Senna). Duplicados a menos de 15 m são juntados; cada ponto leva a cidade; tudo entra como "não confirmado". Script: `scripts/import_obstacles.py`.
+- Não usar dados do Waze/Google (termos de uso).
+
+## Fora do escopo
+- Nada que premie racha/velocidade na rua (ranking por velocidade, "puxada" entre carros). Competição só no Modo Pista, em local autorizado.
+
+## Tech
+React Native (Expo), Mapbox (`@rnmapbox/maps`), Supabase (login, equipes, feed, localização em tempo real).

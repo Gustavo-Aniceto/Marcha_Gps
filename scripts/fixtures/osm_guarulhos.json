@@ -1,0 +1,6 @@
+{"elements":[
+{"type":"node","id":1,"lat":-23.55,"lon":-46.63,"tags":{"traffic_calming":"bump"}},
+{"type":"node","id":2,"lat":-23.55005,"lon":-46.63005,"tags":{"traffic_calming":"hump"}},
+{"type":"node","id":3,"lat":-23.56,"lon":-46.64,"tags":{"highway":"speed_camera","maxspeed":"50"}},
+{"type":"way","id":4,"center":{"lat":-23.57,"lon":-46.65},"tags":{"traffic_calming":"choker;dip"}},
+{"type":"node","id":5,"lat":-23.58,"lon":-46.66,"tags":{"traffic_calming":"chicane"}}]}

@@ -1,0 +1,14 @@
+node_modules/
+.expo/
+dist/
+web-build/
+ios/
+android/
+.env
+.env.local
+*.log
+__pycache__/
+*.geojson
+supabase/.temp/
+app/build-tests/
+.DS_Store

@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": []
+  },
+  "include": ["src/lib/contrast.ts", "src/lib/fitment.ts", "src/lib/reports.ts", "src/lib/errors.ts", "src/lib/mapCamera.ts", "src/lib/geo.ts", "src/theme/tokens.ts"]
+}

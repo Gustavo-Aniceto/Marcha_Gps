@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Marcha GPS",
+    "slug": "marcha-gps",
+    "scheme": "marchagps",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#070B12",
+    "ios": {
+      "bundleIdentifier": "br.com.marchagps.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "O Marcha GPS usa sua localização pra navegar, avisar de lombadas e mostrar seu carro pra sua equipe (se você quiser).",
+        "NSCameraUsageDescription": "A câmera é usada pra fotografar seu carro e fazer a mídia nos eventos."
+      }
+    },
+    "android": {
+      "package": "br.com.marchagps.app",
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION", "CAMERA"]
+    },
+    "plugins": [
+      "expo-router",
+      ["@rnmapbox/maps", { "RNMapboxMapsDownloadToken": "" }],
+      "expo-location",
+      "expo-camera"
+    ]
+  }
+}
