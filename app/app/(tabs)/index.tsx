@@ -31,7 +31,8 @@ export default function Mapa() {
   const share = !!profile && profile.visibility !== 'ghost';
   const nav = useNavigation();
   const navigating = nav.status !== 'idle';
-  const { position, permission } = useLocationSharing(share, null, navigating);
+  const { position, permission, retry } = useLocationSharing(share, null, navigating);
+  const [recenter, setRecenter] = useState(0);
   const [routeReports, setRouteReports] = useState<{ item: Report; along: number }[]>([]);
   const [cars, setCars] = useState<VisibleCar[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
@@ -130,6 +131,7 @@ export default function Mapa() {
       <MapView style={{ flex: 1 }} mapStyle={mapStyle} logo={false} compass={false}
            attribution attributionPosition={{ bottom: 8, left: 8 }}>
         <Camera
+          key={`camera-${recenter}`}
           trackUserLocation={camera.threeD || navigating ? 'course' : 'default'}
           zoom={navigating ? Math.max(cam.zoom, 16.5) : cam.zoom}
           pitch={cam.pitch}
@@ -196,7 +198,9 @@ export default function Mapa() {
       {navigating && (
         <View style={s.maneuver} accessibilityLiveRegion="polite">
           {nav.status === 'routing' || !next ? (
-            <Text style={s.maneuverText}>{nav.status === 'routing' ? (nav.error ?? 'Calculando a rota…') : nav.status === 'arrived' ? 'Você chegou' : 'Siga a rota'}</Text>
+            <Text style={s.maneuverText}>{nav.status === 'routing'
+              ? (!position ? 'Esperando o GPS achar você… (libere a localização se o navegador perguntar)' : 'Calculando a rota…')
+              : nav.status === 'arrived' ? 'Você chegou' : 'Siga a rota'}</Text>
           ) : (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <View style={s.maneuverIcon}><ManeuverIcon kind={next.maneuver.kind} /></View>
@@ -213,11 +217,25 @@ export default function Mapa() {
         </View>
       )}
 
-      {permission === 'denied' && (
-        <View style={[s.banner, { top: 160 }]}>
-          <Text style={s.bannerText}>Sem permissão de localização. Libere nas configurações do celular pra usar o mapa.</Text>
-        </View>
+      {(permission === 'denied' || permission === 'unavailable') && (
+        <Pressable style={[s.info, { top: navigating ? 196 : 160 }]} onPress={retry} accessibilityRole="button">
+          <Text style={[s.infoText, { fontWeight: '700' }]}>
+            {permission === 'denied' ? 'Localização bloqueada' : 'Não achei sua localização'}
+          </Text>
+          <Text style={s.infoText}>
+            {permission === 'denied'
+              ? 'Libere a localização pra este site: no iPhone, Ajustes > Privacidade > Serviços de Localização > Safari (ou Chrome) > "Durante o uso". No Android, toque no cadeado ao lado do endereço > Permissões > Local. Depois toque aqui.'
+              : 'Confira se o GPS do celular está ligado e toque aqui pra tentar de novo.'}
+          </Text>
+        </Pressable>
       )}
+
+      <Pressable style={[s.locateBtn, navigating && { bottom: 186 }]} accessibilityRole="button" accessibilityLabel="Ir pra minha localização"
+                 onPress={() => { if (!position) retry(); setRecenter((n) => n + 1); }}>
+        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={position ? colors.holo : colors.textMuted} strokeWidth={2}>
+          <Circle cx={12} cy={12} r={4} /><Path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+        </Svg>
+      </Pressable>
 
       {alert && (
         <View style={[s.banner, { top: navigating ? 196 : 160 }]} accessibilityLiveRegion="polite">
@@ -290,6 +308,8 @@ const s = StyleSheet.create({
             borderColor: colors.warn, backgroundColor: 'rgba(28,18,6,0.94)', gap: 2 },
   bannerTitle: { color: '#FFB070', fontFamily: fonts.display, fontSize: 17 },
   bannerText: { color: colors.warnText, fontSize: 13 },
+  locateBtn: { position: 'absolute', right: 16, bottom: 108, width: 48, height: 48, borderRadius: 24, borderWidth: 1,
+               borderColor: colors.lineStrong, backgroundColor: 'rgba(6,12,22,0.94)', alignItems: 'center', justifyContent: 'center' },
   searchBar: { position: 'absolute', top: 108, left: 16, right: 16, minHeight: 46, flexDirection: 'row', alignItems: 'center', gap: 10,
                paddingHorizontal: 14, borderRadius: 6, borderWidth: 1, borderColor: colors.lineStrong, backgroundColor: 'rgba(6,12,22,0.94)' },
   searchText: { color: colors.textDim, fontSize: 16 },
