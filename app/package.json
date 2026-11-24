@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@clerk/expo": "^4.0.0",
+    "@clerk/localizations": "latest",
     "@expo-google-fonts/chakra-petch": "^0.4.1",
     "@expo-google-fonts/share-tech-mono": "^0.4.1",
     "@expo/metro-runtime": "~6.1.2",

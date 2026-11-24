@@ -28,6 +28,14 @@ export default function Entrar() {
             colorInputBackground: '#070B12',
             colorInputText: colors.text,
             borderRadius: '6px',
+            // nomes novos das mesmas cores (versões recentes do Clerk)
+            colorForeground: colors.text,
+            colorMutedForeground: colors.textMuted,
+            colorPrimaryForeground: colors.bg,
+            colorInput: colors.bg,
+            colorInputForeground: colors.text,
+            colorNeutral: colors.text,
+            colorShimmer: 'transparent',
           },
         }}
       />

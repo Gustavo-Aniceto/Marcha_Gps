@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import { ClerkProvider } from '@clerk/expo';
+import { ptBR } from '@clerk/localizations';
 import { tokenCache } from '../src/lib/clerkTokenCache';
 import { ChakraPetch_700Bold } from '@expo-google-fonts/chakra-petch';
 import { ShareTechMono_400Regular } from '@expo-google-fonts/share-tech-mono';
@@ -67,7 +68,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <StatusBar style="light" />
-      <ClerkProvider publishableKey={clerkKey} tokenCache={tokenCache}>
+      <ClerkProvider publishableKey={clerkKey} tokenCache={tokenCache} localization={ptBR}>
         <SessionProvider>
           <MapSettingsProvider>
             <Gate />
