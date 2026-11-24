@@ -24,7 +24,7 @@ Leia `docs/decisoes.md` antes de mudar regra de produto.
 ## Rotas e navegação
 - Busca e rota passam pelo `workers/api` (Worker `marcha-gps-api`): `GET /buscar` (Photon) e `POST /rota` (Valhalla do FOSSGIS, em pt-BR). Exigem login do Clerk; cache e limite por pessoa porque os servidores públicos pedem uso justo (Valhalla: 1 pedido/s). O app nunca chama Photon/Valhalla direto.
 - Lógica da navegação pura em `app/src/lib/nav.ts` (encaixe na rota, recálculo, voz, chegada) com testes; estado em `app/src/lib/navigation.tsx`.
-- Lombadas/radares do OpenStreetMap entram toda segunda pelo agendamento do `marcha-gps-api` (uma cidade por disparo), via `import_osm_obstacles()` com o usuário `importador` do Neon (só executa essa função; segredo `IMPORT_DATABASE_URL` no Worker).
+- Lombadas/radares do OpenStreetMap entram pelo agendamento de hora em hora do `marcha-gps-api`: o mapa é dividido em 3 faixas e cada uma só é baixada de novo depois de 6 dias (`osm_import_due()` + tabela `import_runs`). Grava via `import_osm_obstacles()` com o usuário `importador` do Neon (só executa essas duas funções; segredo `IMPORT_DATABASE_URL` no Worker). Se o Overpass estiver fora, tenta outros servidores e de novo na hora seguinte.
 - Publicar o Worker: o código vai como módulos ES (o `src` + `../fotos/src/jwt.ts` e `cors.ts`); manter `wrangler.toml` igual ao que está no ar.
 
 ## Mapa

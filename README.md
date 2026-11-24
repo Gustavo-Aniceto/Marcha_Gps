@@ -70,7 +70,7 @@ Testes do banco num Postgres local:
 
 ### Rotas (Cloudflare)
 
-Worker `marcha-gps-api` em `https://marcha-gps-api.guuhaniceto2.workers.dev` (código em `workers/api`): busca de lugares, rotas em português e a importação semanal de lombadas/radares. Variáveis: `CLERK_ISSUER` e o segredo `IMPORT_DATABASE_URL` (usuário `importador` do Neon). No app: `EXPO_PUBLIC_API_URL`.
+Worker `marcha-gps-api` em `https://marcha-gps-api.guuhaniceto2.workers.dev` (código em `workers/api`): busca de lugares, rotas em português e a importação semanal de lombadas/radares (tenta de hora em hora; cada faixa do mapa a cada 6 dias). Variáveis: `CLERK_ISSUER` e o segredo `IMPORT_DATABASE_URL` (usuário `importador` do Neon). No app: `EXPO_PUBLIC_API_URL`.
 
 ### 4. Obstáculos e radares
 
