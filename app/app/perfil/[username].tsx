@@ -1,17 +1,19 @@
-// Perfil de alguém da cena: foto, @, carro montado na garagem e os posts.
+// Perfil de alguém da cena: foto, @, carro montado na garagem e o mural (posts, fotos do carro, enquetes).
+// No próprio perfil dá pra postar direto: post, foto do carro ou enquete.
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { Button, ErrorText, Screen } from '../../src/components/ui';
+import { Button, ErrorText, Pills, Screen } from '../../src/components/ui';
+import { Composer } from '../../src/components/Composer';
 import { Avatar } from '../../src/components/Avatar';
 import { CarMarker } from '../../src/components/CarMarker';
 import { PostCard } from '../../src/components/PostCard';
 import { db } from '../../src/lib/db';
 import { useSession } from '../../src/lib/session';
 import { friendlyError } from '../../src/lib/errors.ts';
-import { uploadPhoto } from '../../src/lib/photos';
-import { loadFeed, type Post } from '../../src/lib/social';
+import { photoUrl, uploadPhoto } from '../../src/lib/photos';
+import { loadFeed, type Post, type PostKind } from '../../src/lib/social';
 import { colors, fonts } from '../../src/theme/tokens.ts';
 
 interface PublicProfile {
@@ -22,6 +24,13 @@ interface PublicProfile {
 
 const SUSP: Record<string, string> = { original: 'Original', fixa: 'Fixa', rosca: 'Rosca', ar: 'A ar' };
 
+type Tab = 'tudo' | PostKind;
+const TABS: { value: Tab; label: string }[] = [
+  { value: 'tudo', label: 'Tudo' },
+  { value: 'carro', label: 'Fotos do carro' },
+  { value: 'enquete', label: 'Enquetes' },
+];
+
 export default function Perfil() {
   const { username } = useLocalSearchParams<{ username: string }>();
   const router = useRouter();
@@ -31,6 +40,7 @@ export default function Perfil() {
   const [missing, setMissing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>('tudo');
 
   const load = useCallback(async () => {
     if (!username) return;
@@ -38,8 +48,8 @@ export default function Perfil() {
     if (!data) { setMissing(true); return; }
     const pp = data as PublicProfile;
     setP(pp);
-    setPosts(await loadFeed({ author: pp.id, limit: 30 }).catch(() => []));
-  }, [username]);
+    setPosts(await loadFeed({ author: pp.id, limit: 60, kind: tab === 'tudo' ? null : tab }).catch(() => []));
+  }, [username, tab]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -93,9 +103,28 @@ export default function Perfil() {
           </View>
           {p.mine && <Button title={p.car ? 'Editar meu carro' : 'Montar meu carro'} variant="secondary" onPress={() => router.push('/(tabs)/garagem')} />}
 
-          <Text style={{ color: colors.textMuted, fontFamily: fonts.mono, fontSize: 12, letterSpacing: 1 }}>POSTS</Text>
-          {posts.length === 0 && <Text style={{ color: colors.textMuted }}>Nenhum post ainda.</Text>}
-          {profile && posts.map((x) => <PostCard key={x.id} post={x} me={profile.id} onChange={load} />)}
+          {p.mine && <Composer onPosted={load} initialMode={tab === 'tudo' ? 'post' : tab} key={`composer-${tab}`} />}
+
+          <Pills options={TABS} value={tab} onChange={setTab} />
+          {posts.length === 0 && (
+            <Text style={{ color: colors.textMuted }}>
+              {tab === 'carro' ? 'Nenhuma foto do carro ainda.' : tab === 'enquete' ? 'Nenhuma enquete ainda.' : 'Nenhum post ainda.'}
+            </Text>
+          )}
+          {tab === 'carro' ? (
+            // fotos do carro em grade (toque abre o post com curtidas e comentários)
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
+              {posts.map((x) => (
+                <Pressable key={x.id} onPress={() => router.push({ pathname: '/post/[id]', params: { id: x.id } })}
+                           accessibilityRole="imagebutton" accessibilityLabel={`Foto do carro: ${x.body}`}
+                           style={{ width: '32.5%', aspectRatio: 1, backgroundColor: colors.panelAlt, borderRadius: 4, overflow: 'hidden' }}>
+                  {photoUrl(x.photo_key) && <Image source={{ uri: photoUrl(x.photo_key)! }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />}
+                </Pressable>
+              ))}
+            </View>
+          ) : (
+            profile && posts.map((x) => <PostCard key={x.id} post={x} me={profile.id} onChange={load} />)
+          )}
         </>
       )}
     </Screen>

@@ -1,11 +1,14 @@
 // Cena ao vivo: mapa 2D cinza-escuro de SP, Guarulhos e Itaquá com o carrinho de quem escolheu aparecer.
-// Quem aparece e onde é decidido no banco (visible_cars): aqui só desenha.
-import React, { useEffect, useMemo, useState } from 'react';
+// Quem aparece e onde é decidido no banco (visible_cars): aqui só desenha. O seu carro vem do seu GPS
+// (só você vê ele aqui do seu jeito; os outros te veem pelas regras da sua visibilidade).
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Camera, Map as MapView, Marker } from '../src/map';
 import { CarMarker } from '../src/components/CarMarker';
 import { db, type VisibleCar } from '../src/lib/db';
+import { useSession } from '../src/lib/session';
+import { useLocationSharing } from '../src/lib/useLocationSharing';
 import { buildMapStyle, REGION_VIEW } from '../src/lib/mapStyle.ts';
 import { LAUNCH_CITIES } from '../src/lib/geo.ts';
 import { colors, fonts } from '../src/theme/tokens.ts';
@@ -19,6 +22,15 @@ export default function Cena() {
   const [onlyCrew, setOnlyCrew] = useState(false);
   const [cars, setCars] = useState<VisibleCar[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
+  const { profile } = useSession();
+  const share = !!profile && profile.visibility !== 'ghost';
+  const { position } = useLocationSharing(share, null);
+  const [myCar, setMyCar] = useState<{ color: string; neon: string | null } | null>(null);
+  useFocusEffect(useCallback(() => {
+    if (!profile) return;
+    db.from('cars').select('color, neon').eq('owner_id', profile.id).eq('is_active', true).maybeSingle()
+      .then(({ data }) => setMyCar(data as { color: string; neon: string | null } | null));
+  }, [profile]));
 
   useEffect(() => {
     let alive = true;
@@ -39,6 +51,12 @@ export default function Cena() {
       <MapView style={{ flex: 1 }} mapStyle={mapStyle} logo={false} compass={false}
                attribution attributionPosition={{ bottom: 8, left: 8 }} onPress={() => setSelected(null)}>
         <Camera initialViewState={{ center: REGION_VIEW.center, zoom: REGION_VIEW.zoom, pitch: 0 }} />
+        {position && (
+          <Marker id="cena-eu" lngLat={[position.lon, position.lat]}>
+            <CarMarker me color={myCar?.color} neon={myCar?.neon} heading={position.heading}
+                       label={profile?.visibility === 'ghost' ? 'VOCÊ · FANTASMA' : 'VOCÊ'} />
+          </Marker>
+        )}
         {shown.map((c) => (
           <Marker key={c.user_id} id={`cena-${c.user_id}`} lngLat={[c.lon, c.lat]}>
             <Pressable onPress={() => setSelected(c.user_id)} accessibilityRole="button" accessibilityLabel={`Ver carro de @${c.username}`}
@@ -57,7 +75,7 @@ export default function Cena() {
           </Pressable>
           <View style={{ flex: 1 }}>
             <Text style={s.title}>Cena ao vivo</Text>
-            <Text style={s.mono}>SP · GUARULHOS · ITAQUÁ · {shown.length} CARROS</Text>
+            <Text style={s.mono}>SP · GUARULHOS · ITAQUÁ · {shown.length + (position ? 1 : 0)} {shown.length + (position ? 1 : 0) === 1 ? 'CARRO' : 'CARROS'}</Text>
           </View>
           <Pressable onPress={() => router.push('/visibilidade')} style={s.chip} accessibilityRole="button">
             <Text style={[s.mono, { color: colors.neon }]}>QUEM ME VÊ</Text>
@@ -90,6 +108,10 @@ export default function Cena() {
           <Text style={[s.mono, { color: sel.same_crew ? colors.neon : colors.holo }]}>
             {sel.same_crew ? 'SUA EQUIPE · POSIÇÃO EXATA' : sel.approximate ? 'REGIÃO APROXIMADA (~500 M)' : 'POSIÇÃO LIBERADA PELA PESSOA'}
           </Text>
+          <Pressable onPress={() => router.push({ pathname: '/perfil/[username]', params: { username: sel.username } })}
+                     accessibilityRole="link" style={{ minHeight: 40, justifyContent: 'center' }}>
+            <Text style={{ color: colors.neon, fontWeight: '700' }}>Ver perfil ›</Text>
+          </Pressable>
         </View>
       )}
     </View>

@@ -19,6 +19,7 @@ const MESSAGES: Record<string, string> = {
   member_not_found: 'Membro não encontrado.',
   outside_area: 'Por enquanto o Marcha GPS funciona só em São Paulo, Guarulhos e Itaquá.',
   invalid_speed: 'Escolha a velocidade da placa (de 10 em 10 km/h).',
+  invalid_poll: 'A enquete precisa de uma pergunta e de 2 a 4 opções (até 60 letras cada).',
   rate_limited: 'Muitos avisos seguidos. Espera um pouco.',
   cannot_vote_own_report: 'Esse aviso é seu: espera a galera confirmar.',
   report_not_active: 'Esse aviso não está mais ativo.',

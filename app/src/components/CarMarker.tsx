@@ -17,7 +17,7 @@ export function CarMarker({
   const rot = `rotate(${heading ?? 0})`;
   const size = me ? 64 : 52;
   return (
-    <View style={{ alignItems: 'center' }} accessibilityLabel={label ? `Carro de ${label}` : 'Seu carro'}>
+    <View style={{ alignItems: 'center' }} accessibilityLabel={me ? 'Seu carro' : label ? `Carro de ${label}` : 'Carro'}>
       {label ? (
         <Text style={{
           fontFamily: fonts.mono, fontSize: 10, color: sameCrew ? colors.neon : colors.holo,

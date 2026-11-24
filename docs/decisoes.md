@@ -17,7 +17,8 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 
 ## Mapa
 - Navegação em 3D "meio 2D" (prédios em bloco), câmera alta, carro por cima. Visual noite (azul-escuro) ou dia (claro). O usuário escolhe 3D/2D, ângulo (20–88°) e raio de visão (40–220 m).
-- **Cena ao vivo**: mapa de SP, Guarulhos e Itaquá com o carrinho montado de quem escolheu aparecer. Filtro por cidade e por tipo (Todos / Minhas equipes / Em encontro).
+- **Cena ao vivo**: mapa de SP, Guarulhos e Itaquá com o carrinho montado de quem escolheu aparecer, **e o seu carro** (marcado "VOCÊ", pelo seu GPS). Filtro por cidade e por tipo (Todos / Minhas equipes / Em encontro). Tocar num carro mostra o carro e "Ver perfil".
+- Quem pode ver a Cena: membro verificado de alguma equipe **ou o Adm Master** (`can_view_scene()`).
 - Visibilidade: **Fantasma** / **Só minhas equipes** / **Cena ao vivo**. Na Cena ao vivo: posição aproximada (~500 m) por padrão para quem não é da equipe, atraso opcional, some ao parar 10 min, só membros verificados veem, zonas privadas (casa/trabalho) escondem até da equipe.
 
 ## Navegação
@@ -41,7 +42,8 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 ## Feed (rede social da cena)
 - Posts com texto e foto, no **Geral** ou só pra equipe. Cada post mostra a foto de perfil, o @ e o carro do autor (da garagem).
 - Curtir (muda na hora), comentar (tela do post), compartilhar, apagar o próprio post; o dono do post pode apagar comentários nele.
-- Perfil de cada um: foto, carro montado e posts. Próximos eventos em cartões no topo do feed.
+- Perfil de cada um: foto, carro montado e o mural com abas **Tudo / Fotos do carro (em grade) / Enquetes**. No próprio perfil (e no feed) dá pra postar: **post** (texto e foto), **foto do carro** (foto obrigatória) ou **enquete** (pergunta + 2 a 4 opções). Próximos eventos em cartões no topo do feed.
+- Enquete: voto secreto (só o total e a % aparecem), dá pra trocar o voto; o resultado aparece depois de votar (o autor sempre vê). Enquete só nasce pela `create_poll()`.
 
 ## Ranks
 - **Rank de patente é interno de cada equipe** (só a equipe vê; sem disputa entre equipes). XP vem de: evento com mídia +50, rolê em comboio +30, convidado verificado +40.

@@ -6,13 +6,18 @@ export interface Post {
   crew_id: string | null; crew_name: string | null; crew_color: string | null; event_id: string | null;
   body: string; photo_key: string | null; created_at: string;
   likes: number; liked_by_me: boolean; comments: number; mine: boolean;
+  kind: PostKind; poll: Poll | null;
 }
+
+export type PostKind = 'post' | 'carro' | 'enquete';
+export interface Poll { options: { idx: number; label: string; votes: number }[]; total: number; my_vote: number | null }
 
 export interface Comment { id: string; author_id: string; username: string; avatar_key: string | null; body: string; created_at: string; mine: boolean }
 
-export async function loadFeed(opts: { crew?: string | null; author?: string | null; before?: string | null; limit?: number }) {
+export async function loadFeed(opts: { crew?: string | null; author?: string | null; before?: string | null; limit?: number; kind?: PostKind | null }) {
   const { data, error } = await db.rpc('feed', {
     p_crew: opts.crew ?? null, p_before: opts.before ?? null, p_limit: opts.limit ?? 20, p_author: opts.author ?? null,
+    p_kind: opts.kind ?? null,
   });
   if (error) throw error;
   return (data ?? []) as Post[];
@@ -22,6 +27,18 @@ export async function toggleLike(p: Post, me: string) {
   const { error } = p.liked_by_me
     ? await db.from('post_likes').delete().eq('post_id', p.id).eq('user_id', me)
     : await db.from('post_likes').insert({ post_id: p.id, user_id: me });
+  if (error) throw error;
+}
+
+/** Vota (ou troca o voto) e devolve o resultado novo. */
+export async function votePoll(postId: string, idx: number): Promise<Poll> {
+  const { data, error } = await db.rpc('vote_poll', { p_post: postId, p_idx: idx });
+  if (error) throw error;
+  return data as Poll;
+}
+
+export async function createPoll(question: string, options: string[], crew: string | null) {
+  const { error } = await db.rpc('create_poll', { p_question: question, p_options: options, p_crew: crew });
   if (error) throw error;
 }
 

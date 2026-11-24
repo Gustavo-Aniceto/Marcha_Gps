@@ -1,16 +1,15 @@
 // Feed: rede social da cena. Postagens (geral ou da equipe) com foto, curtida e comentário,
 // e os próximos eventos no topo.
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
 import { Button, ErrorText, Pills, Screen } from '../../src/components/ui';
 import { Avatar } from '../../src/components/Avatar';
 import { PostCard } from '../../src/components/PostCard';
+import { Composer } from '../../src/components/Composer';
 import { db } from '../../src/lib/db';
 import { useSession } from '../../src/lib/session';
 import { friendlyError } from '../../src/lib/errors.ts';
-import { uploadPhoto } from '../../src/lib/photos';
 import { loadFeed, type Post } from '../../src/lib/social';
 import { kindLabel, whenText } from '../../src/lib/events.ts';
 import { readableAccent } from '../../src/lib/contrast.ts';
@@ -29,9 +28,6 @@ export default function Feed() {
   const [scope, setScope] = useState<string>('geral'); // 'geral' ou id da equipe
   const [posts, setPosts] = useState<Post[]>([]);
   const [events, setEvents] = useState<UpcomingEvent[]>([]);
-  const [text, setText] = useState('');
-  const [photo, setPhoto] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [more, setMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -65,30 +61,6 @@ export default function Feed() {
       setPosts((p) => [...p, ...list]);
       setMore(list.length >= 20);
     } catch (e) { setError(friendlyError(e)); }
-  }
-
-  async function pickPhoto() {
-    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
-    if (!r.canceled && r.assets[0]) setPhoto(r.assets[0].uri);
-  }
-
-  async function publish() {
-    if (!profile) return;
-    if (!text.trim() && !photo) { setError('Escreve alguma coisa ou põe uma foto.'); return; }
-    setBusy(true); setError(null);
-    try {
-      const photo_key = photo ? await uploadPhoto(photo, 'post') : null;
-      const { error: e } = await db.from('posts').insert({
-        author_id: profile.id, crew_id: scope === 'geral' ? null : scope, body: text.trim() || '📸', photo_key,
-      });
-      if (e) throw e;
-      setText(''); setPhoto(null);
-      await load();
-    } catch (e) {
-      setError(friendlyError(e));
-    } finally {
-      setBusy(false);
-    }
   }
 
   const scopeName = scope === 'geral' ? 'todo mundo' : crews.find((c) => c.id === scope)?.name ?? 'a equipe';
@@ -125,29 +97,9 @@ export default function Feed() {
       <Pills options={[{ value: 'geral', label: 'Geral' }, ...crews.map((c) => ({ value: c.id, label: c.name }))]}
              value={scope} onChange={setScope} />
 
-      {/* novo post */}
-      <View style={{ backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.line, borderRadius: 10, padding: 12, gap: 10 }}>
-        <View style={{ flexDirection: 'row', gap: 10 }}>
-          {profile && <Avatar username={profile.username} avatarKey={profile.avatar_key} />}
-          <TextInput value={text} onChangeText={setText} multiline maxLength={1000}
-                     placeholder={`Fala pra ${scopeName}… rolê, setup, foto do carro`} placeholderTextColor={colors.textMuted}
-                     style={{ flex: 1, minHeight: 60, color: colors.text, fontSize: 15, textAlignVertical: 'top' }}
-                     accessibilityLabel="Escrever post" />
-        </View>
-        {photo && (
-          <View>
-            <Image source={{ uri: photo }} style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: 8 }} accessibilityLabel="Foto escolhida" />
-            <Pressable onPress={() => setPhoto(null)} style={{ position: 'absolute', top: 6, right: 6, backgroundColor: 'rgba(0,0,0,0.7)', borderRadius: 14, paddingHorizontal: 10, paddingVertical: 4 }}>
-              <Text style={{ color: colors.text }}>Tirar</Text>
-            </Pressable>
-          </View>
-        )}
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <View style={{ flex: 1 }}><Button title={photo ? 'Trocar foto' : '📷 Foto'} variant="secondary" onPress={pickPhoto} /></View>
-          <View style={{ flex: 1 }}><Button title="Postar" onPress={publish} loading={busy} /></View>
-        </View>
-        <ErrorText>{error}</ErrorText>
-      </View>
+      {/* novo post: texto/foto, foto do carro ou enquete */}
+      <Composer crewId={scope === 'geral' ? null : scope} scopeName={scopeName} onPosted={load} />
+      <ErrorText>{error}</ErrorText>
 
       {loading && posts.length === 0 && <ActivityIndicator color={colors.neon} style={{ marginTop: 20 }} />}
       {!loading && posts.length === 0 && (
