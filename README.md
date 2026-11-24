@@ -55,10 +55,11 @@ Testes do banco num Postgres local:
 
 ### 3. Fotos (Cloudflare)
 
-1. Crie o bucket R2 `marcha-gps-fotos`.
+1. Já feito: bucket R2 `marcha-gps-fotos` criado e Worker publicado em `https://marcha-gps-fotos.guuhaniceto2.workers.dev` (uploads respondem 503 até o `CLERK_ISSUER` ser preenchido).
 2. Em `workers/fotos/wrangler.toml`, preencha `CLERK_ISSUER` com o domínio do Clerk (ex.: `https://xxx.clerk.accounts.dev`).
 3. `cd workers/fotos && npm install && npm test && npx wrangler deploy`
 4. Coloque a URL do Worker em `EXPO_PUBLIC_FOTOS_URL` no `app/.env`.
+5. O app reduz as fotos (lado maior 1600 px, JPEG 70%) antes de enviar, pra caber folgado na cota grátis.
 
 ### 4. Obstáculos e radares
 

@@ -47,6 +47,7 @@ export default {
     }
 
     if (req.method === 'POST' && url.pathname === '/upload') {
+      if (!env.CLERK_ISSUER) return json({ error: 'servico_nao_configurado' }, 503);
       const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '');
       let sub: string;
       try {
