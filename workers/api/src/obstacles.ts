@@ -9,30 +9,24 @@ export const OVERPASS_URLS = [
   'https://overpass.kumi.systems/api/interpreter',
 ];
 
-export const CITIES: Record<string, string> = {
-  sao_paulo: 'São Paulo',
-  guarulhos: 'Guarulhos',
-  itaquaquecetuba: 'Itaquaquecetuba',
-};
-
-// Cada disparo do agendamento importa uma cidade (um pedido por vez pro Overpass).
-// Agendamento: "7,17,27 6 * * 1" -> minuto 7 Itaquá, 17 Guarulhos, 27 São Paulo (37/47/57 repetem a ordem).
-const ORDER = ['itaquaquecetuba', 'guarulhos', 'sao_paulo'];
-export function cityForMinute(minute: number): string | null {
-  if (minute % 10 !== 7) return null;
-  return ORDER[Math.floor(minute / 10) % 3];
-}
+// O mapa das 3 cidades em 3 faixas (oeste -> leste). Consulta por caixa é bem mais leve pro
+// Overpass que por limite de município; o banco descobre a cidade de cada ponto pela posição.
+export interface Tile { id: string; south: number; west: number; north: number; east: number }
+export const TILES: Tile[] = [
+  { id: 'faixa_oeste', south: -24.01, west: -46.83, north: -23.29, east: -46.64 },
+  { id: 'faixa_centro', south: -24.01, west: -46.64, north: -23.29, east: -46.47 },
+  { id: 'faixa_leste', south: -24.01, west: -46.47, north: -23.29, east: -46.30 },
+];
 
 /** Consulta em CSV (tab): tipo, id, lat, lon, traffic_calming, highway, hazard, maxspeed. */
-export function overpassQuery(cityName: string): string {
-  const name = cityName.replace(/["\\]/g, '');
-  return `[out:csv(::type,::id,::lat,::lon,traffic_calming,highway,hazard,maxspeed;false;"\\t")][timeout:180];
-area["boundary"="administrative"]["admin_level"="8"]["name"="${name}"]->.c;
+export function overpassQuery(t: Tile): string {
+  const box = [t.south, t.west, t.north, t.east].map((n) => Number(n).toFixed(4)).join(',');
+  return `[out:csv(::type,::id,::lat,::lon,traffic_calming,highway,hazard,maxspeed;false;"\\t")][timeout:150][bbox:${box}];
 (
-  node["traffic_calming"](area.c);
-  way["traffic_calming"](area.c);
-  node["highway"="speed_camera"](area.c);
-  node["hazard"="bump"](area.c);
+  node["traffic_calming"];
+  way["traffic_calming"];
+  node["highway"="speed_camera"];
+  node["hazard"="bump"];
 );
 out center;`;
 }

@@ -7,5 +7,5 @@ CLERK_ISSUER = "https://great-aphid-3258.clerk.accounts.dev"
 # IMPORT_DATABASE_URL é segredo: wrangler secret put IMPORT_DATABASE_URL (usuário "importador" do Neon)
 
 [triggers]
-# segunda de madrugada (horário UTC), uma cidade por vez
-crons = ["7,17,27 6 * * 1"]
+# de hora em hora; cada faixa do mapa só é importada de novo depois de 6 dias (o banco controla)
+crons = ["7 * * * *"]

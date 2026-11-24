@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { parsePhoton, photonUrl, normalizeQuery } from '../src/geocode.ts';
 import { parseValhalla, valhallaBody, validPoint, RouteError } from '../src/route.ts';
 import { RateLimiter } from '../src/limits.ts';
-import { overpassQuery, neonSqlUrl, cityForMinute } from '../src/obstacles.ts';
+import { overpassQuery, neonSqlUrl, TILES } from '../src/obstacles.ts';
 
 test('busca: monta o endereço do Photon com SP e perto de mim', () => {
   const u = new URL(photonUrl('  av   paulista  ', { lat: -23.5613, lon: -46.6565 }));
@@ -68,15 +68,16 @@ test('limite por pessoa por minuto', () => {
   assert.ok(l.allow('a', 60_001));
 });
 
-test('importação: consulta do Overpass por cidade e endereço do Neon', () => {
-  const q = overpassQuery('São Paulo');
-  assert.match(q, /\["name"="São Paulo"\]/);
+test('importação: faixas cobrem as 3 cidades e a consulta do Overpass é por caixa', () => {
+  const q = overpassQuery(TILES[0]);
+  assert.match(q, /\[bbox:-24\.0100,-46\.8300,-23\.2900,-46\.6400\]/);
   assert.match(q, /out:csv\(::type,::id,::lat,::lon,traffic_calming,highway,hazard,maxspeed;false;"\\t"\)/);
   assert.match(q, /out center;/);
-  assert.match(overpassQuery('a"]; out; ["x'), /\["name"="a\]; out; \[x"\]->/); // aspas do nome são removidas
+  // juntas, as faixas cobrem de -46.83 a -46.30 sem buraco
+  for (let i = 1; i < TILES.length; i++) assert.equal(TILES[i].west, TILES[i - 1].east);
+  assert.equal(TILES[0].west, -46.83);
+  assert.equal(TILES[TILES.length - 1].east, -46.30);
+  for (const t of TILES) assert.match(t.id, /^[a-z_]{1,30}$/);
   assert.equal(neonSqlUrl('postgresql://importador:segredo@ep-x-123-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require'),
     'https://ep-x-123.c-2.sa-east-1.aws.neon.tech/sql');
-  assert.deepEqual([7, 17, 27, 37, 47, 57].map(cityForMinute),
-    ['itaquaquecetuba', 'guarulhos', 'sao_paulo', 'itaquaquecetuba', 'guarulhos', 'sao_paulo']);
-  assert.equal(cityForMinute(0), null);
 });

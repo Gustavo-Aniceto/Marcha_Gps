@@ -7,7 +7,7 @@ import { preflight, withCors } from '../../fotos/src/cors';
 import { normalizeQuery, parsePhoton, photonUrl } from './geocode';
 import { RouteError, parseValhalla, validPoint, valhallaBody, VALHALLA_URL } from './route';
 import { RateLimiter } from './limits';
-import { CITIES, OVERPASS_URLS, cityForMinute, neonSqlUrl, overpassQuery } from './obstacles';
+import { OVERPASS_URLS, TILES, neonSqlUrl, overpassQuery, type Tile } from './obstacles';
 
 interface Env {
   CLERK_ISSUER: string;
@@ -43,9 +43,10 @@ export default {
     return withCors(await handle(req, env, ctx));
   },
 
-  async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
-    const city = cityForMinute(new Date(event.scheduledTime).getUTCMinutes());
-    if (city) ctx.waitUntil(importCity(city, env));
+  // De hora em hora: importa a primeira faixa que está vencida (6 dias). Se o Overpass falhar,
+  // tenta de novo na hora seguinte. Quase sempre não há nada a fazer e só consulta o banco.
+  async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(importNextTile(env));
   },
 };
 
@@ -106,29 +107,43 @@ async function handle(req: Request, env: Env, ctx: ExecutionContext): Promise<Re
   return json({ error: 'nao_encontrado' }, 404);
 }
 
-async function importCity(city: string, env: Env): Promise<void> {
+async function sql(env: Env, query: string, params: unknown[]): Promise<unknown[]> {
+  const res = await fetch(neonSqlUrl(env.IMPORT_DATABASE_URL!), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'Neon-Connection-String': env.IMPORT_DATABASE_URL! },
+    body: JSON.stringify({ query, params }),
+  });
+  const body = (await res.json().catch(() => ({}))) as { rows?: unknown[]; message?: string };
+  if (!res.ok) throw new Error(`banco ${res.status} ${body.message ?? ''}`);
+  return body.rows ?? [];
+}
+
+async function importNextTile(env: Env): Promise<void> {
   if (!env.IMPORT_DATABASE_URL) return;
+  for (const tile of TILES) {
+    const [row] = (await sql(env, 'select public.osm_import_due($1) as due', [tile.id])) as { due: boolean }[];
+    if (row?.due) { await importTile(tile, env); return; }
+  }
+}
+
+async function importTile(tile: Tile, env: Env): Promise<void> {
   let csv: string | null = null;
   for (const server of OVERPASS_URLS) {
     try {
       const res = await fetch(server, {
         method: 'POST',
         headers: { 'content-type': 'application/x-www-form-urlencoded', 'user-agent': UA },
-        body: new URLSearchParams({ data: overpassQuery(CITIES[city]) }),
+        body: new URLSearchParams({ data: overpassQuery(tile) }),
       });
       const text = await res.text();
       // o Overpass às vezes responde 200 com erro no texto; CSV bom começa com node/way
       if (res.ok && (text === '' || /^(node|way)\t/.test(text))) { csv = text; break; }
-      console.log(`overpass ${city} ${server}: ${res.status} ${text.slice(0, 120)}`);
+      console.log(`overpass ${tile.id} ${server}: ${res.status} ${text.slice(0, 120)}`);
     } catch (e) {
-      console.log(`overpass ${city} ${server}: ${(e as Error).message}`);
+      console.log(`overpass ${tile.id} ${server}: ${(e as Error).message}`);
     }
   }
   if (csv == null) return;
-  const db = await fetch(neonSqlUrl(env.IMPORT_DATABASE_URL), {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'Neon-Connection-String': env.IMPORT_DATABASE_URL },
-    body: JSON.stringify({ query: 'select public.import_osm_obstacles($1, $2) as novos', params: [city, csv] }),
-  });
-  console.log(`import ${city}: overpass ${csv.length} bytes, banco ${db.status} ${(await db.text()).slice(0, 300)}`);
+  const rows = await sql(env, 'select public.import_osm_obstacles($1, $2) as novos', [tile.id, csv]);
+  console.log(`import ${tile.id}: ${csv.length} bytes, ${JSON.stringify(rows)}`);
 }

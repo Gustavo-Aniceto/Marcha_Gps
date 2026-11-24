@@ -22,7 +22,7 @@ select public.import_osm_obstacles('itaquaquecetuba', :'csv') as n2 \gset
 reset role;
 select t.ok(:n1 = 5, 'importa 5 pontos válidos');
 select t.ok(:n2 = 0, 'rodar de novo não duplica');
-select t.throws($$ select public.import_osm_obstacles('rio', 'x') $$, 'cidade_invalida');
+select t.throws($$ select public.import_osm_obstacles('Rio; drop', 'x') $$, 'faixa_invalida');
 
 select t.ok((select kind || ':' || base_risk from public.reports where source_ref = 'node/1') = 'lombada:3', 'bump vira lombada alta');
 select t.ok(not exists (select 1 from public.reports where source_ref = 'node/2'), 'lombada repetida a 5 m some');
@@ -33,5 +33,21 @@ select t.ok((select kind from public.reports where source_ref = 'node/6') = 'lom
 select t.ok((select kind || ':' || coalesce(speed_limit::text, '-') from public.reports where source_ref = 'node/7') = 'valeta:-', 'dip vira valeta; velocidade ruim fica vazia');
 select t.ok((select count(*) from public.reports where source = 'osm' and status = 'unconfirmed' and author_id is null) = 5, 'tudo entra sem autor e não confirmado');
 select t.ok(not exists (select 1 from public.points_ledger), 'importar não dá ponto pra ninguém');
+
+-- por faixa: a cidade vem da posição; fora das 3 cidades fica de fora
+-- centro de SP entra; Rio fica de fora
+select E'node\t100\t-23.5500000\t-46.6300000\tbump\t\t\t\n'
+    || E'node\t101\t-22.9000000\t-43.2000000\tbump\t\t\t\n' as csv2 \gset
+set local role importador;
+select public.osm_import_due('faixa_teste') as due1 \gset
+select public.osm_import_due('faixa_teste') as due2 \gset
+select public.import_osm_obstacles('faixa_teste', :'csv2') as n3 \gset
+select public.osm_import_due('faixa_teste') as due3 \gset
+reset role;
+select t.ok(:'due1' = 't' and :'due2' = 'f', 'faixa nova roda; segunda tentativa na mesma hora não');
+select t.ok(:n3 = 1, 'só o ponto dentro das cidades entra');
+select t.ok((select city_id from public.reports where source_ref = 'node/100') = 'sao_paulo', 'cidade pela posição');
+select t.ok(:'due3' = 'f', 'depois de importar, só daqui a 6 dias');
+select t.ok((select rows_new from public.import_runs where tile = 'faixa_teste') = 1, 'guarda quantos entraram');
 
 rollback;
