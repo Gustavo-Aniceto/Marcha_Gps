@@ -1,6 +1,7 @@
 // Serviço de rotas do Marcha GPS (Cloudflare Worker).
 //   GET  /buscar?q=texto&lat=&lon=   -> { lugares: Place[] }   (precisa de login)
 //   POST /rota { de: {lat, lon, heading?}, para: {lat, lon} } -> Route   (precisa de login)
+//   GET  /convite?codigo=XXXX-XXXX -> { status, kind, crew_name }   (sem login, limite por IP)
 // Agendado: importa lombadas e radares do OpenStreetMap, uma cidade por vez.
 import { AuthError, verifyJwt, type Jwk } from '../../fotos/src/jwt';
 import { preflight, withCors } from '../../fotos/src/cors';
@@ -17,6 +18,7 @@ interface Env {
 const UA = 'MarchaGPS/0.1 (+https://marcha-gps.vercel.app)';
 const searchLimit = new RateLimiter(30, 60_000);
 const routeLimit = new RateLimiter(20, 60_000);
+const inviteLimit = new RateLimiter(10, 60_000); // por IP: conferir convite não precisa de login
 
 let jwksCache: { keys: Jwk[]; at: number } | null = null;
 async function getJwks(issuer: string): Promise<Jwk[]> {
@@ -52,6 +54,22 @@ export default {
 
 async function handle(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
   const url = new URL(req.url);
+
+  // Convite antes do login (única rota sem login). Responde só se o código vale, e pra qual equipe.
+  if (req.method === 'GET' && url.pathname === '/convite') {
+    const ip = req.headers.get('cf-connecting-ip') ?? 'sem-ip';
+    if (!inviteLimit.allow(ip)) return json({ error: 'muitas_tentativas' }, 429);
+    const code = (url.searchParams.get('codigo') ?? '').toUpperCase().trim();
+    if (!/^[0-9A-F]{4}-[0-9A-F]{4}$/.test(code)) return json({ status: 'nao_existe', kind: null, crew_name: null });
+    if (!env.IMPORT_DATABASE_URL) return json({ error: 'servico_nao_configurado' }, 503);
+    try {
+      const [row] = await sql(env, 'select status, kind, crew_name from public.check_invite($1)', [code]);
+      return json(row ?? { status: 'nao_existe', kind: null, crew_name: null });
+    } catch {
+      return json({ error: 'convite_indisponivel' }, 502);
+    }
+  }
+
   if (!env.CLERK_ISSUER) return json({ error: 'servico_nao_configurado' }, 503);
 
   let user: string;

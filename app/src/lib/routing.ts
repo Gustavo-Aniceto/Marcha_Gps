@@ -38,3 +38,19 @@ export function fetchRoute(from: { lat: number; lon: number; heading?: number | 
     body: JSON.stringify({ de: from, para: to }),
   });
 }
+
+export interface InviteCheck { status: 'ok' | 'nao_existe' | 'usado' | 'vencido'; kind: 'fundador' | 'equipe' | null; crew_name: string | null }
+
+/** Confere o convite antes do login (o serviço de rotas responde sem login, com limite por IP). */
+export async function checkInvite(code: string): Promise<InviteCheck> {
+  if (!base) throw new RoutingError('servico_nao_configurado');
+  let res: Response;
+  try {
+    res = await fetch(`${base}/convite?codigo=${encodeURIComponent(code)}`);
+  } catch {
+    throw new RoutingError('sem_internet');
+  }
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new RoutingError((body as { error?: string }).error ?? 'convite_indisponivel');
+  return body as InviteCheck;
+}

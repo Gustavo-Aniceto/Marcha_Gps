@@ -23,3 +23,11 @@ end $$;
 
 revoke execute on function public.check_invite(text) from public;
 grant execute on function public.check_invite(text) to anonymous, authenticated;
+
+-- A Data API do Neon não aceita pedido sem login, então quem confere o convite antes do login é o
+-- serviço marcha-gps-api (GET /convite, com limite por IP), usando o usuário "importador".
+do $$ begin
+  if exists (select 1 from pg_roles where rolname = 'importador') then
+    grant execute on function public.check_invite(text) to importador;
+  end if;
+end $$;

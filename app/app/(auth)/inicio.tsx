@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Body, Button, ErrorText, Field, Screen } from '../../src/components/ui';
-import { db } from '../../src/lib/db';
+import { checkInvite, RoutingError } from '../../src/lib/routing';
 import { formatInviteCode, inviteStatusText, loadPendingInvite, savePendingInvite } from '../../src/lib/pendingInvite';
 import { colors, fonts } from '../../src/theme/tokens.ts';
 
@@ -19,10 +19,16 @@ export default function Inicio() {
 
   async function check() {
     setError(null); setBusy(true);
-    const { data, error: e } = await db.rpc('check_invite', { p_code: code }).maybeSingle();
+    let r;
+    try {
+      r = await checkInvite(code);
+    } catch (e) {
+      setBusy(false);
+      setError(e instanceof RoutingError && e.message === 'muitas_tentativas'
+        ? 'Muitas tentativas. Espera um minuto.' : 'Sem conexão. Tenta de novo.');
+      return;
+    }
     setBusy(false);
-    const r = data as { status: string; kind: 'fundador' | 'equipe' | null; crew_name: string | null } | null;
-    if (e || !r) { setError('Sem conexão. Tenta de novo.'); return; }
     if (r.status !== 'ok') { setError(inviteStatusText(r.status)); return; }
     await savePendingInvite({ code, kind: r.kind ?? 'equipe', crewName: r.crew_name });
     router.push('/(auth)/entrar');
