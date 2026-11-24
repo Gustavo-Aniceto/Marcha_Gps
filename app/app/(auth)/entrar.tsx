@@ -2,7 +2,10 @@
 import React from 'react';
 import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AuthView } from '@clerk/expo/native';
+import * as ClerkNative from '@clerk/expo/native-components';
+
+// os tipos publicados do Clerk não descrevem as props do AuthView
+const AuthView = ClerkNative.AuthView as unknown as React.ComponentType<Record<string, unknown>>;
 import { colors, fonts } from '../../src/theme/tokens.ts';
 import { InviteBadge } from '../../src/components/InviteBadge';
 

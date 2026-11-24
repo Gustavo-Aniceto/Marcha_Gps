@@ -23,7 +23,7 @@ export default function Entrar() {
         appearance={{
           variables: {
             colorPrimary: colors.neon,
-            colorTextOnPrimaryBackground: '#070B12',
+            colorPrimaryForeground: '#070B12',
             colorBackground: '#0B111C',
             colorText: colors.text,
             colorTextSecondary: colors.textMuted,

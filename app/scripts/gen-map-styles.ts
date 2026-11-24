@@ -1,6 +1,7 @@
 // Gera map-styles/*.json a partir de src/lib/mapStyle.ts (pra abrir/editar no Maputnik).
 // Uso: npm run styles
 import { writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { buildMapStyle, type MapTheme } from '../src/lib/mapStyle.ts';
 
 // visão inicial só pra prévia no Maputnik (o app controla a câmera sozinho)
@@ -12,6 +13,6 @@ const preview: Record<MapTheme, object> = {
 
 for (const t of ['noite', 'dia', 'cena'] as MapTheme[]) {
   const style = { ...buildMapStyle(t), ...preview[t] };
-  writeFileSync(new URL(`../map-styles/${t}.json`, import.meta.url), JSON.stringify(style, null, 2) + '\n');
+  writeFileSync(fileURLToPath(new URL(`../map-styles/${t}.json`, import.meta.url)), JSON.stringify(style, null, 2) + '\n');
   console.log(`map-styles/${t}.json`);
 }

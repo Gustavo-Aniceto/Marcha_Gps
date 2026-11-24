@@ -3,10 +3,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { parseValhalla } from '../../../../workers/api/src/route.ts';
 import { buildRoute, distM, initialNavState, navStep, type NavState } from '../nav.ts';
 
-const body = JSON.parse(readFileSync(new URL('./fixtures/valhalla-paulista.json', import.meta.url), 'utf8'));
+const body = JSON.parse(readFileSync(fileURLToPath(new URL('./fixtures/valhalla-paulista.json', import.meta.url)), 'utf8'));
 const route = buildRoute(parseValhalla(body));
 
 /** Pontos a cada ~10 m ao longo da rota, com a direção do trecho. */

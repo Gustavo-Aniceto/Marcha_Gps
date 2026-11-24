@@ -1,7 +1,7 @@
 // Mapa no celular (app nativo): MapLibre React Native.
 // No navegador o Metro usa index.web.tsx, com a mesma API.
 import React from 'react';
-import { Camera as NativeCamera, GeoJSONSource, Layer, Map, Marker } from '@maplibre/maplibre-react-native';
+import { Camera as NativeCamera, GeoJSONSource, Layer, Map as NativeMap, Marker } from '@maplibre/maplibre-react-native';
 import { colors } from '../theme/tokens.ts';
 
 type NativeCameraProps = React.ComponentProps<typeof NativeCamera>;
@@ -11,7 +11,14 @@ export function Camera({ follow: _follow, ...props }: NativeCameraProps & { foll
   return <NativeCamera {...props} />;
 }
 
-export { Map, Marker };
+type NativeMapProps = React.ComponentProps<typeof NativeMap>;
+
+/** Mapa nativo; aceita o estilo gerado por buildMapStyle (objeto) ou uma URL. */
+export function Map({ mapStyle, ...props }: Omit<NativeMapProps, 'mapStyle'> & { mapStyle: string | Record<string, unknown> }) {
+  return <NativeMap {...props} mapStyle={mapStyle as NativeMapProps['mapStyle']} />;
+}
+
+export { Marker };
 
 // Linha da rota da navegação
 export function RouteLine({ coords }: { coords: { lat: number; lon: number }[] }) {

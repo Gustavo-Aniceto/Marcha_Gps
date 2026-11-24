@@ -20,7 +20,7 @@ import { colors } from '../src/theme/tokens.ts';
 // As telas do app só existem (Stack.Protected) pra quem já entrou com convite: o mapa nem monta antes disso.
 function Gate() {
   const { loading, signedIn, profile } = useSession();
-  const segments = useSegments();
+  const segments = useSegments() as string[];
   const router = useRouter();
   const inside = signedIn && !!profile;
 
