@@ -46,7 +46,7 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 - **Radar é soma geral** de todo mundo nas 3 cidades: pontos só por aviso confirmado por 3 pessoas. Buraco/Lombada alta/Valeta +15, Blitz/Rua ruim/Alagamento +10, Radar +5, confirmar aviso de outro +3. Aviso falso tira pontos. Blitz expira em 1 h, alagamento em 6 h, o resto em 7 dias sem confirmação.
 
 ## Dados de obstáculos
-- Importação **automática toda semana** (o serviço de rotas tenta de hora em hora; cada faixa do mapa só é baixada de novo depois de 6 dias; se o Overpass estiver fora, tenta outro servidor e de novo depois) + script manual. OpenStreetMap (traffic_calming, highway=speed_camera) + radares da ANTT (rodovias concedidas, ex.: Dutra, Ayrton Senna). Duplicados a menos de 15 m são juntados; cada ponto leva a cidade; tudo entra como "não confirmado". Script: `scripts/import_obstacles.py`.
+- Importação **automática toda semana** (o serviço de rotas tenta de hora em hora; cada pedaço do mapa (12 quadrados) só é baixado de novo depois de 6 dias; se o Overpass estiver fora, tenta outro servidor e de novo depois) + script manual. OpenStreetMap (traffic_calming, highway=speed_camera) + radares da ANTT (rodovias concedidas, ex.: Dutra, Ayrton Senna). Duplicados a menos de 15 m são juntados; cada ponto leva a cidade; tudo entra como "não confirmado". Script: `scripts/import_obstacles.py`.
 - Não usar dados do Waze/Google (termos de uso).
 
 ## Adm Master
