@@ -22,6 +22,9 @@ interface Palette {
   roadMajor: string;
   roadCasing: string;
   building: string;
+  buildingTop: string;   // prédio alto fica mais claro (degradê pela altura)
+  glow: string | null;   // brilho em volta das avenidas (null = sem)
+  motorway: string;      // rodovias e marginais
   label: string;
   labelHalo: string;
   poi: string | null; // null = sem nomes de lugares
@@ -29,23 +32,28 @@ interface Palette {
 }
 
 export const PALETTES: Record<MapTheme, Palette> = {
+  // GPS de videogame à noite: base azul-marinho, vias em azul neon, avenidas com brilho, prédios em bloco
   noite: {
-    background: '#2E3350', water: '#1B2238', park: '#34425A', roadMinor: '#6B7391', roadMajor: '#A3A9BF',
-    roadCasing: '#262A40', building: '#454C6E', label: '#D7DAE6', labelHalo: '#1C2033', poi: '#F0B45A', threeD: true,
+    background: '#0B1222', water: '#06101F', park: '#0F1F2A', roadMinor: '#2A3C66', roadMajor: '#4F86FF',
+    roadCasing: '#081020', building: '#18233F', buildingTop: '#3A4E86', glow: '#2F6BFF', motorway: '#9CC8FF',
+    label: '#B9C9EE', labelHalo: '#070C18', poi: '#7FA6E8', threeD: true,
   },
   dia: {
-    background: '#F2EFE9', water: '#AAD3EB', park: '#C9EBB4', roadMinor: '#FFFFFF', roadMajor: '#B9C3DC',
-    roadCasing: '#D8D4CC', building: '#E9E4D8', label: '#4A4F5C', labelHalo: '#FFFFFF', poi: '#C4762A', threeD: true,
+    background: '#EEF1F6', water: '#9CC9F0', park: '#CDE9C2', roadMinor: '#FFFFFF', roadMajor: '#FFFFFF',
+    roadCasing: '#C9D1E0', building: '#DDE3EE', buildingTop: '#B8C3DA', glow: null, motorway: '#FFD8A8',
+    label: '#3E4657', labelHalo: '#FFFFFF', poi: '#5B6B8C', threeD: true,
   },
   cena: {
     background: '#191A1C', water: '#0F1012', park: '#1E2022', roadMinor: '#2B2D31', roadMajor: '#45484E',
-    roadCasing: '#141517', building: '#202225', label: '#8C9097', labelHalo: '#101113', poi: null, threeD: false,
+    roadCasing: '#141517', building: '#202225', buildingTop: '#2A2C30', glow: null, motorway: '#55585F',
+    label: '#8C9097', labelHalo: '#101113', poi: null, threeD: false,
   },
 };
 
 type Layer = Record<string, unknown> & { id: string; type: string };
 
-const MAJOR = ['motorway', 'trunk', 'primary', 'secondary', 'tertiary'];
+const MAJOR = ['primary', 'secondary', 'tertiary'];
+const MOTORWAY = ['motorway', 'trunk'];
 const MINOR = ['minor', 'service', 'track'];
 
 export function buildMapStyle(theme: MapTheme): Record<string, unknown> {
@@ -65,9 +73,19 @@ export function buildMapStyle(theme: MapTheme): Record<string, unknown> {
       id: 'aeroporto', type: 'fill', source: SOURCE, 'source-layer': 'aeroway',
       filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'fill-color': p.roadCasing, 'fill-opacity': 0.6 },
     },
+    ...(p.glow ? [{
+      // brilho neon embaixo das avenidas e rodovias
+      id: 'ruas-brilho', type: 'line', source: SOURCE, 'source-layer': 'transportation',
+      filter: ['in', ['get', 'class'], ['literal', [...MAJOR, ...MOTORWAY]]],
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: {
+        'line-color': p.glow, 'line-opacity': 0.35, 'line-blur': ['interpolate', ['linear'], ['zoom'], 10, 2, 16, 8],
+        'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 8, 3, 14, 14, 18, 48],
+      },
+    }] : []),
     {
       id: 'ruas-contorno', type: 'line', source: SOURCE, 'source-layer': 'transportation',
-      filter: ['in', ['get', 'class'], ['literal', MAJOR]],
+      filter: ['in', ['get', 'class'], ['literal', [...MAJOR, ...MOTORWAY]]],
       layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: {
         'line-color': p.roadCasing,
@@ -92,16 +110,27 @@ export function buildMapStyle(theme: MapTheme): Record<string, unknown> {
         'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 8, 1, 14, 6, 18, 24],
       },
     },
+    {
+      id: 'rodovias', type: 'line', source: SOURCE, 'source-layer': 'transportation',
+      filter: ['in', ['get', 'class'], ['literal', MOTORWAY]],
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: {
+        'line-color': p.motorway,
+        'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 8, 1.5, 14, 8, 18, 30],
+      },
+    },
     p.threeD
       ? {
           // prédios em bloco (o "3D meio 2D")
           id: 'predios-3d', type: 'fill-extrusion', source: SOURCE, 'source-layer': 'building', minzoom: 14,
           filter: ['!', ['has', 'hide_3d']],
           paint: {
-            'fill-extrusion-color': p.building,
+            'fill-extrusion-color': ['interpolate', ['linear'], ['coalesce', ['get', 'render_height'], 6],
+              0, p.building, 60, p.buildingTop],
             'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 6],
             'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
-            'fill-extrusion-opacity': 0.92,
+            'fill-extrusion-opacity': 0.9,
+            'fill-extrusion-vertical-gradient': true,
           },
         }
       : {

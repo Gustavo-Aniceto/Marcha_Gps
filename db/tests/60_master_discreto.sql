@@ -19,7 +19,7 @@ select public.redeem_invite(:'code_f', 'dono.equipe');
 select t.ok(not exists (select 1 from public.master_contact()), 'pedido em análise não vê o master');
 select t.ok(not (select is_master from public.my_profile()), 'fundador não é master');
 insert into public.crew_requests (requester_id, name, city_id, member_count)
-  values (auth.user_id(), 'Baixos SP', 'sao_paulo', 10);
+  values (public.current_uid(), 'Baixos SP', 'sao_paulo', 10);
 select id as req from public.crew_requests \gset
 -- quem analisou o pedido não aparece
 select t.throws($$ select reviewed_by from public.crew_requests $$, 'permission denied');
@@ -38,11 +38,11 @@ select t.ok(not exists (select 1 from public.master_contact()), 'membro não vê
 select t.throws($$ select is_master from public.profiles $$, 'permission denied');
 select t.throws($$ select invites_left from public.profiles $$, 'permission denied');
 select t.ok((select count(*) from public.profiles where username = 'adm.master') = 1, 'o perfil aparece, mas sem marca de master');
-select t.ok((select count(*) from public.my_profile()) = 1 and (select id from public.my_profile()) = auth.user_id(),
+select t.ok((select count(*) from public.my_profile()) = 1 and (select id from public.my_profile()) = public.current_uid(),
             'my_profile só devolve o próprio');
 
 -- mesmo virando fundador de outro jeito o membro comum continua sem ver (só founder verificado)
-update public.profiles set visibility = 'crew' where id = auth.user_id();
+update public.profiles set visibility = 'crew' where id = public.current_uid();
 select t.ok((select visibility from public.my_profile()) = 'crew', 'ainda muda a própria visibilidade');
 
 rollback;

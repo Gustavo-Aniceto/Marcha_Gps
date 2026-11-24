@@ -13,7 +13,7 @@
       "id": "fundo",
       "type": "background",
       "paint": {
-        "background-color": "#F2EFE9"
+        "background-color": "#EEF1F6"
       }
     },
     {
@@ -22,7 +22,7 @@
       "source": "openmaptiles",
       "source-layer": "park",
       "paint": {
-        "fill-color": "#C9EBB4"
+        "fill-color": "#CDE9C2"
       }
     },
     {
@@ -45,7 +45,7 @@
         ]
       ],
       "paint": {
-        "fill-color": "#C9EBB4",
+        "fill-color": "#CDE9C2",
         "fill-opacity": 0.7
       }
     },
@@ -55,7 +55,7 @@
       "source": "openmaptiles",
       "source-layer": "water",
       "paint": {
-        "fill-color": "#AAD3EB"
+        "fill-color": "#9CC9F0"
       }
     },
     {
@@ -71,7 +71,7 @@
         "Polygon"
       ],
       "paint": {
-        "fill-color": "#D8D4CC",
+        "fill-color": "#C9D1E0",
         "fill-opacity": 0.6
       }
     },
@@ -89,11 +89,11 @@
         [
           "literal",
           [
-            "motorway",
-            "trunk",
             "primary",
             "secondary",
-            "tertiary"
+            "tertiary",
+            "motorway",
+            "trunk"
           ]
         ]
       ],
@@ -102,7 +102,7 @@
         "line-join": "round"
       },
       "paint": {
-        "line-color": "#D8D4CC",
+        "line-color": "#C9D1E0",
         "line-width": [
           "interpolate",
           [
@@ -180,8 +180,6 @@
         [
           "literal",
           [
-            "motorway",
-            "trunk",
             "primary",
             "secondary",
             "tertiary"
@@ -193,7 +191,7 @@
         "line-join": "round"
       },
       "paint": {
-        "line-color": "#B9C3DC",
+        "line-color": "#FFFFFF",
         "line-width": [
           "interpolate",
           [
@@ -213,6 +211,49 @@
       }
     },
     {
+      "id": "rodovias",
+      "type": "line",
+      "source": "openmaptiles",
+      "source-layer": "transportation",
+      "filter": [
+        "in",
+        [
+          "get",
+          "class"
+        ],
+        [
+          "literal",
+          [
+            "motorway",
+            "trunk"
+          ]
+        ]
+      ],
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      "paint": {
+        "line-color": "#FFD8A8",
+        "line-width": [
+          "interpolate",
+          [
+            "exponential",
+            1.5
+          ],
+          [
+            "zoom"
+          ],
+          8,
+          1.5,
+          14,
+          8,
+          18,
+          30
+        ]
+      }
+    },
+    {
       "id": "predios-3d",
       "type": "fill-extrusion",
       "source": "openmaptiles",
@@ -226,7 +267,24 @@
         ]
       ],
       "paint": {
-        "fill-extrusion-color": "#E9E4D8",
+        "fill-extrusion-color": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "coalesce",
+            [
+              "get",
+              "render_height"
+            ],
+            6
+          ],
+          0,
+          "#DDE3EE",
+          60,
+          "#B8C3DA"
+        ],
         "fill-extrusion-height": [
           "coalesce",
           [
@@ -243,7 +301,8 @@
           ],
           0
         ],
-        "fill-extrusion-opacity": 0.92
+        "fill-extrusion-opacity": 0.9,
+        "fill-extrusion-vertical-gradient": true
       }
     },
     {
@@ -278,7 +337,7 @@
         "text-letter-spacing": 0.05
       },
       "paint": {
-        "text-color": "#4A4F5C",
+        "text-color": "#3E4657",
         "text-halo-color": "#FFFFFF",
         "text-halo-width": 1.2
       }
@@ -331,7 +390,7 @@
         "text-max-width": 8
       },
       "paint": {
-        "text-color": "#4A4F5C",
+        "text-color": "#3E4657",
         "text-halo-color": "#FFFFFF",
         "text-halo-width": 1.5
       }
@@ -366,7 +425,7 @@
         "text-max-width": 9
       },
       "paint": {
-        "text-color": "#C4762A",
+        "text-color": "#5B6B8C",
         "text-halo-color": "#FFFFFF",
         "text-halo-width": 1.2
       }

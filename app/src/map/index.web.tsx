@@ -49,7 +49,17 @@ export function Map({ style, mapStyle, compass, onPress, children }: MapProps) {
       if ((e.originalEvent.target as HTMLElement | null)?.closest('.maplibregl-marker')) return;
       press.current?.();
     });
-    m.once('load', () => setMap(m));
+    m.once('load', () => {
+      // céu/neblina no horizonte quando o mapa está inclinado (3D), na cor do fundo do mapa
+      try {
+        const bg = (mapStyle as { layers?: { paint?: Record<string, string> }[] }).layers?.[0]?.paint?.['background-color'] ?? '#0B1222';
+        (m as unknown as { setSky?: (s: Record<string, unknown>) => void }).setSky?.({
+          'sky-color': bg, 'horizon-color': bg, 'fog-color': bg,
+          'sky-horizon-blend': 0.6, 'horizon-fog-blend': 0.6, 'fog-ground-blend': 0.4,
+        });
+      } catch { /* versão sem céu */ }
+      setMap(m);
+    });
     const ro = new ResizeObserver(() => m.resize());
     ro.observe(el);
     return () => { ro.disconnect(); m.remove(); setMap(null); };

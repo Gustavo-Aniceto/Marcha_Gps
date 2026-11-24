@@ -1,5 +1,6 @@
 // Garagem: monta o carro que aparece no mapa. (Visual 3D e cadastro por foto vêm na próxima fase.)
 import React, { useCallback, useState } from 'react';
+import { Text } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Body, Button, Card, ErrorText, Field, Label, Mono, Pills, Screen, Title, Warning } from '../../src/components/ui';
 import { CarMarker } from '../../src/components/CarMarker';
@@ -7,6 +8,7 @@ import { db } from '../../src/lib/db';
 import { useSession } from '../../src/lib/session';
 import { checkFitment, tireFor, type Suspension, type WheelPosition } from '../../src/lib/fitment.ts';
 import { friendlyError } from '../../src/lib/errors.ts';
+import { colors } from '../../src/theme/tokens.ts';
 
 interface CarForm {
   id?: string;
@@ -49,6 +51,8 @@ export default function Garagem() {
 
   async function save() {
     if (!profile) return;
+    setMsg(null);
+    if (!car.make.trim() || !car.model.trim()) { setError('Preencha a marca e o modelo do carro lá em cima.'); return; }
     setBusy(true); setError(null);
     const row = {
       owner_id: profile.id, make: car.make.trim(), model: car.model.trim(),
@@ -61,9 +65,9 @@ export default function Garagem() {
       : db.from('cars').insert(row).select('id').single();
     const { data, error: e } = await q;
     setBusy(false);
-    if (e) { setError(friendlyError(e)); return; }
-    setCar((c) => ({ ...c, id: data.id }));
-    setMsg('Salvo. É esse carro que aparece no mapa.');
+    if (e || !data) { setError(e ? friendlyError(e) : 'Não consegui salvar. Tenta de novo.'); return; }
+    setCar((c) => ({ ...c, id: (data as { id: string }).id }));
+    setMsg('Salvo! É esse carro que aparece no mapa, na sua localização.');
   }
 
   return (
@@ -71,7 +75,7 @@ export default function Garagem() {
       <Title>Garagem</Title>
       <Card style={{ alignItems: 'center' }}>
         <CarMarker me color={car.color} neon={car.neon} heading={0} />
-        <Mono color="#C6FF3D">VÃO {car.ride_height_cm} CM · ARO {car.rim} · {tireFor(car.rim) ?? '—'}</Mono>
+        <Mono color={colors.neon}>VÃO {car.ride_height_cm} CM · ARO {car.rim} · {tireFor(car.rim) ?? '—'}</Mono>
       </Card>
 
       {fit.ok ? <Body dim>Fitment ok: nada encosta.</Body> : fit.warnings.map((w) => <Warning key={w}>{w}</Warning>)}
@@ -107,8 +111,8 @@ export default function Garagem() {
       <Pills options={[{ value: 0, label: 'Sem' }, { value: 1, label: 'Com' }]} value={car.spoiler ? 1 : 0} onChange={(v) => set('spoiler', v === 1)} />
 
       <ErrorText>{error}</ErrorText>
-      {msg && <Body dim>{msg}</Body>}
-      <Button title="Salvar e usar no mapa" onPress={save} loading={busy} disabled={!car.make.trim() || !car.model.trim()} />
+      {msg && <Card accent={colors.neon}><Text style={{ color: colors.neon, fontWeight: '700' }}>{msg}</Text></Card>}
+      <Button title="Salvar e usar no mapa" onPress={save} loading={busy} />
     </Screen>
   );
 }

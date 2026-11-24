@@ -9,10 +9,12 @@ import { friendlyError } from '../../src/lib/errors.ts';
 import { readableAccent } from '../../src/lib/contrast.ts';
 import { LAUNCH_CITIES } from '../../src/lib/geo.ts';
 import { colors, type ButtonShape } from '../../src/theme/tokens.ts';
+import { InviteCard } from '../../src/components/InviteCard';
 
 interface Crew { id: string; name: string; color: string; button_shape: ButtonShape; city_id: string }
 interface MyMembership { role: 'founder' | 'admin' | 'member'; status: 'pending' | 'verified'; crews: Crew }
 interface Member { user_id: string; role: string; status: string; xp: number; profiles: { username: string } }
+interface OpenInvite { code: string; crew_id: string | null; expires_at: string; crews: { name: string } | null }
 interface Request { id: string; name: string; city_id: string; instagram: string | null; member_count: number; status: string }
 
 const THEME_COLORS = ['#C6FF3D', '#3FA0FF', '#FF4D6D', '#FF8A1F', '#FFD233', '#B36BFF', '#29E0C8', '#FF5FC8', '#EDEFF2'];
@@ -29,6 +31,8 @@ export default function Equipes() {
   const [form, setForm] = useState({ name: '', city: 'sao_paulo', instagram: '', count: '' });
   const [formSent, setFormSent] = useState(false);
   const [master, setMaster] = useState<string | null>(null);
+  const [openInvites, setOpenInvites] = useState<OpenInvite[]>([]);
+  const [founderInvite, setFounderInvite] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!profile) return;
@@ -47,6 +51,11 @@ export default function Equipes() {
     const { data: r } = await db.from('crew_requests')
       .select('id, name, city_id, instagram, member_count, status').order('created_at', { ascending: false });
     setRequests((r ?? []) as Request[]);
+    // meus convites ainda não usados
+    const { data: inv } = await db.from('invites').select('code, crew_id, expires_at, crews(name)')
+      .eq('created_by', profile.id).is('used_by', null).gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false }).limit(10);
+    setOpenInvites((inv ?? []) as unknown as OpenInvite[]);
     // só volta alguém pra quem é dono de equipe
     const { data: mc } = await db.rpc('master_contact');
     const names = (mc ?? []) as { username: string }[];
@@ -114,7 +123,7 @@ export default function Equipes() {
           <Label>Convites ({profile?.invites_left ?? 0} restando)</Label>
           <Body dim>Você responde por quem convidar.</Body>
           <Button title="Gerar convite" color={current.crews.color} shape={current.crews.button_shape} onPress={newInvite} />
-          {invite && <Card accent={accent}><Mono color={accent}>CÓDIGO: {invite}</Mono><Body dim>Vale por 7 dias e uma pessoa.</Body></Card>}
+          {invite && <InviteCard code={invite} crewName={current.crews.name} accent={accent} />}
         </>
       )}
 
@@ -154,6 +163,15 @@ export default function Equipes() {
         </Card>
       )}
 
+      {openInvites.filter((i) => i.code !== founderInvite && i.code !== invite).length > 0 && (
+        <>
+          <Label>Seus convites ainda não usados</Label>
+          {openInvites.filter((i) => i.code !== founderInvite && i.code !== invite).slice(0, 5).map((i) => (
+            <InviteCard key={i.code} code={i.code} crewName={i.crews?.name ?? null} expiresAt={i.expires_at} />
+          ))}
+        </>
+      )}
+
       <ErrorText>{error}</ErrorText>
 
       {master && (
@@ -166,10 +184,15 @@ export default function Equipes() {
       {profile?.is_master && (
         <>
           <Title>Adm Master</Title>
-          <Button title="Gerar convite de fundador" variant="secondary" onPress={async () => {
+          <Body dim>O convite de fundador é pra quem vai registrar uma equipe nova. Depois você aprova o pedido aqui.</Body>
+          <Button title="Gerar convite de fundador" onPress={async () => {
             const code = await call('create_invite', { p_crew: null });
-            if (code) setInvite(code as string);
+            if (code) setFounderInvite(code as string);
           }} />
+          {founderInvite && <InviteCard code={founderInvite} crewName={null} />}
+          {requests.filter((r) => r.status === 'pending' || r.status === 'more_info').length === 0 && (
+            <Body dim>Nenhum pedido de equipe esperando.</Body>
+          )}
           {requests.filter((r) => r.status === 'pending' || r.status === 'more_info').map((r) => (
             <Card key={r.id}>
               <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700' }}>{r.name}</Text>

@@ -1,34 +1,26 @@
-// Feed: próximos eventos + postagens (minhas equipes ou geral).
+// Feed: rede social da cena. Postagens (geral ou da equipe) com foto, curtida e comentário,
+// e os próximos eventos no topo.
 import React, { useCallback, useState } from 'react';
-import { Image, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { Body, Button, Card, ErrorText, Field, Label, Mono, Pills, Screen, Title } from '../../src/components/ui';
+import { Button, ErrorText, Pills, Screen } from '../../src/components/ui';
+import { Avatar } from '../../src/components/Avatar';
+import { PostCard } from '../../src/components/PostCard';
 import { db } from '../../src/lib/db';
 import { useSession } from '../../src/lib/session';
 import { friendlyError } from '../../src/lib/errors.ts';
-import { photoUrl, uploadPhoto } from '../../src/lib/photos';
-import { eventWindow, kindLabel, whenText } from '../../src/lib/events.ts';
+import { uploadPhoto } from '../../src/lib/photos';
+import { loadFeed, type Post } from '../../src/lib/social';
+import { kindLabel, whenText } from '../../src/lib/events.ts';
 import { readableAccent } from '../../src/lib/contrast.ts';
-import { colors } from '../../src/theme/tokens.ts';
+import { colors, fonts } from '../../src/theme/tokens.ts';
 
-interface Post {
-  id: string; author_id: string; username: string; crew_name: string | null; crew_color: string | null;
-  body: string; photo_key: string | null; created_at: string; likes: number; liked_by_me: boolean;
-}
 export interface UpcomingEvent {
   id: string; crew_id: string; crew_name: string; crew_color: string; kind: string; title: string;
   starts_at: string; ends_at: string; going: number; i_am_going: boolean; my_media: boolean;
 }
 interface Crew { id: string; name: string }
-
-function ago(iso: string): string {
-  const min = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
-  if (min < 1) return 'agora';
-  if (min < 60) return `há ${min} min`;
-  const h = Math.round(min / 60);
-  return h < 24 ? `há ${h} h` : `há ${Math.round(h / 24)} d`;
-}
 
 export default function Feed() {
   const router = useRouter();
@@ -40,33 +32,54 @@ export default function Feed() {
   const [text, setText] = useState('');
   const [photo, setPhoto] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [more, setMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!profile) return;
-    const { data: m } = await db.from('crew_members').select('crews(id, name)').eq('user_id', profile.id);
-    const list = (m ?? []).map((r: any) => r.crews).filter(Boolean) as Crew[];
-    setCrews(list);
-    const { data: ev } = await db.rpc('upcoming_events', { p_limit: 10 });
-    setEvents((ev ?? []) as UpcomingEvent[]);
-    const { data: p } = await db.rpc('feed', { p_crew: scope === 'geral' ? null : scope, p_before: null, p_limit: 30 });
-    setPosts((p ?? []) as Post[]);
+    setLoading(true);
+    try {
+      const { data: m } = await db.from('crew_members').select('crews(id, name)').eq('user_id', profile.id);
+      setCrews(((m ?? []) as unknown as { crews: Crew | null }[]).map((r) => r.crews).filter(Boolean) as Crew[]);
+      const { data: ev } = await db.rpc('upcoming_events', { p_limit: 10 });
+      setEvents((ev ?? []) as UpcomingEvent[]);
+      const list = await loadFeed({ crew: scope === 'geral' ? null : scope });
+      setPosts(list);
+      setMore(list.length >= 20);
+      setError(null);
+    } catch (e) {
+      setError(friendlyError(e));
+    } finally {
+      setLoading(false);
+    }
   }, [profile, scope]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
+  async function loadMore() {
+    const last = posts[posts.length - 1];
+    if (!last) return;
+    try {
+      const list = await loadFeed({ crew: scope === 'geral' ? null : scope, before: last.created_at });
+      setPosts((p) => [...p, ...list]);
+      setMore(list.length >= 20);
+    } catch (e) { setError(friendlyError(e)); }
+  }
+
   async function pickPhoto() {
-    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
+    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
     if (!r.canceled && r.assets[0]) setPhoto(r.assets[0].uri);
   }
 
   async function publish() {
     if (!profile) return;
+    if (!text.trim() && !photo) { setError('Escreve alguma coisa ou põe uma foto.'); return; }
     setBusy(true); setError(null);
     try {
       const photo_key = photo ? await uploadPhoto(photo, 'post') : null;
       const { error: e } = await db.from('posts').insert({
-        author_id: profile.id, crew_id: scope === 'geral' ? null : scope, body: text.trim(), photo_key,
+        author_id: profile.id, crew_id: scope === 'geral' ? null : scope, body: text.trim() || '📸', photo_key,
       });
       if (e) throw e;
       setText(''); setPhoto(null);
@@ -78,94 +91,70 @@ export default function Feed() {
     }
   }
 
-  async function toggleGoing(ev: UpcomingEvent) {
-    if (!profile) return;
-    const q = ev.i_am_going
-      ? db.from('event_rsvps').delete().eq('event_id', ev.id).eq('user_id', profile.id)
-      : db.from('event_rsvps').insert({ event_id: ev.id, user_id: profile.id });
-    const { error: e } = await q;
-    if (e) setError(friendlyError(e)); else load();
-  }
-
-  async function toggleLike(p: Post) {
-    if (!profile) return;
-    const q = p.liked_by_me
-      ? db.from('post_likes').delete().eq('post_id', p.id).eq('user_id', profile.id)
-      : db.from('post_likes').insert({ post_id: p.id, user_id: profile.id });
-    await q;
-    load();
-  }
+  const scopeName = scope === 'geral' ? 'todo mundo' : crews.find((c) => c.id === scope)?.name ?? 'a equipe';
 
   return (
     <Screen>
-      <Title>Feed</Title>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text style={{ color: colors.text, fontFamily: fonts.display, fontSize: 28 }}>Feed</Text>
+        {profile && (
+          <Pressable onPress={() => router.push({ pathname: '/perfil/[username]', params: { username: profile.username } })}
+                     accessibilityRole="link" accessibilityLabel="Meu perfil">
+            <Avatar username={profile.username} avatarKey={profile.avatar_key} size={38} ring={colors.neon} />
+          </Pressable>
+        )}
+      </View>
 
-      {events.length > 0 && <Label>Próximos eventos</Label>}
-      {events.map((ev) => {
-        const win = eventWindow(new Date(ev.starts_at), new Date(ev.ends_at));
-        const accent = readableAccent(ev.crew_color);
-        return (
-          <Card key={ev.id} accent={accent}>
-            <Mono color={accent}>{ev.crew_name.toUpperCase()} · {kindLabel(ev.kind).toUpperCase()}</Mono>
-            <Pressable onPress={() => router.push({ pathname: '/evento/[id]', params: { id: ev.id } })} accessibilityRole="link">
-              <Text style={{ color: colors.text, fontSize: 17, fontWeight: '700' }}>{ev.title} ›</Text>
-            </Pressable>
-            <Body dim>{whenText(new Date(ev.starts_at))} · {ev.going} {ev.going === 1 ? 'vai' : 'vão'}</Body>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <View style={{ flex: 1 }}>
-                <Button title={ev.i_am_going ? 'Vou ✓' : 'Vou'} variant={ev.i_am_going ? 'primary' : 'secondary'}
-                        color={ev.crew_color} onPress={() => toggleGoing(ev)} />
-              </View>
-              {win === 'aberto' && !ev.my_media && (
-                <View style={{ flex: 1 }}>
-                  <Button title="Fazer a mídia" color={ev.crew_color}
-                          onPress={() => router.push({ pathname: '/midia/[id]', params: { id: ev.id, titulo: ev.title } })} />
-                </View>
-              )}
-            </View>
-            {ev.my_media && <Mono color={colors.neon}>PRESENÇA CONFIRMADA</Mono>}
-          </Card>
-        );
-      })}
+      {events.length > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+          {events.map((ev) => {
+            const accent = readableAccent(ev.crew_color);
+            return (
+              <Pressable key={ev.id} onPress={() => router.push({ pathname: '/evento/[id]', params: { id: ev.id } })}
+                         style={{ width: 220, padding: 12, borderRadius: 10, borderWidth: 1, borderColor: accent, backgroundColor: colors.panel, gap: 4 }}>
+                <Text style={{ color: accent, fontFamily: fonts.mono, fontSize: 10 }}>{ev.crew_name.toUpperCase()} · {kindLabel(ev.kind).toUpperCase()}</Text>
+                <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700' }} numberOfLines={1}>{ev.title}</Text>
+                <Text style={{ color: colors.textMuted, fontSize: 12 }}>{whenText(new Date(ev.starts_at))} · {ev.going} {ev.going === 1 ? 'vai' : 'vão'}</Text>
+                {ev.i_am_going && <Text style={{ color: colors.neon, fontSize: 12, fontWeight: '700' }}>Você vai ✓</Text>}
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      )}
 
       <Pills options={[{ value: 'geral', label: 'Geral' }, ...crews.map((c) => ({ value: c.id, label: c.name }))]}
              value={scope} onChange={setScope} />
 
-      <Card>
-        <Field label={scope === 'geral' ? 'Postar pra todo mundo' : `Postar pra ${crews.find((c) => c.id === scope)?.name}`}
-               value={text} onChangeText={setText} multiline maxLength={1000} placeholder="Fala aí..." style={{ minHeight: 70 }} />
-        {photo && <Image source={{ uri: photo }} style={{ height: 160, borderRadius: 6 }} accessibilityLabel="Foto escolhida" />}
+      {/* novo post */}
+      <View style={{ backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.line, borderRadius: 10, padding: 12, gap: 10 }}>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          {profile && <Avatar username={profile.username} avatarKey={profile.avatar_key} />}
+          <TextInput value={text} onChangeText={setText} multiline maxLength={1000}
+                     placeholder={`Fala pra ${scopeName}… rolê, setup, foto do carro`} placeholderTextColor={colors.textMuted}
+                     style={{ flex: 1, minHeight: 60, color: colors.text, fontSize: 15, textAlignVertical: 'top' }}
+                     accessibilityLabel="Escrever post" />
+        </View>
+        {photo && (
+          <View>
+            <Image source={{ uri: photo }} style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: 8 }} accessibilityLabel="Foto escolhida" />
+            <Pressable onPress={() => setPhoto(null)} style={{ position: 'absolute', top: 6, right: 6, backgroundColor: 'rgba(0,0,0,0.7)', borderRadius: 14, paddingHorizontal: 10, paddingVertical: 4 }}>
+              <Text style={{ color: colors.text }}>Tirar</Text>
+            </Pressable>
+          </View>
+        )}
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          <View style={{ flex: 1 }}>
-            <Button title={photo ? 'Trocar foto' : 'Foto'} variant="secondary" onPress={pickPhoto} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Button title="Postar" onPress={publish} loading={busy} disabled={!text.trim()} />
-          </View>
+          <View style={{ flex: 1 }}><Button title={photo ? 'Trocar foto' : '📷 Foto'} variant="secondary" onPress={pickPhoto} /></View>
+          <View style={{ flex: 1 }}><Button title="Postar" onPress={publish} loading={busy} /></View>
         </View>
         <ErrorText>{error}</ErrorText>
-      </Card>
+      </View>
 
-      {posts.length === 0 && <Body dim>Nada por aqui ainda. Posta a primeira!</Body>}
-      {posts.map((p) => {
-        const img = photoUrl(p.photo_key);
-        return (
-          <Card key={p.id}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{ color: colors.text, fontWeight: '700' }}>@{p.username}</Text>
-              <Text style={{ color: colors.textMuted, fontSize: 12 }}>{ago(p.created_at)}</Text>
-            </View>
-            <Body>{p.body}</Body>
-            {img && <Image source={{ uri: img }} style={{ height: 200, borderRadius: 6 }} accessibilityLabel={`Foto de @${p.username}`} />}
-            <Pressable onPress={() => toggleLike(p)} accessibilityRole="button" accessibilityState={{ selected: p.liked_by_me }}
-                       style={{ minHeight: 40, justifyContent: 'center' }}>
-              <Text style={{ color: p.liked_by_me ? colors.neon : colors.textDim, fontWeight: '600' }}>
-                {p.liked_by_me ? '♥' : '♡'} {p.likes}
-              </Text>
-            </Pressable>
-          </Card>
-        );
-      })}
+      {loading && posts.length === 0 && <ActivityIndicator color={colors.neon} style={{ marginTop: 20 }} />}
+      {!loading && posts.length === 0 && (
+        <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 20 }}>Nada por aqui ainda. Posta a primeira!</Text>
+      )}
+      {profile && posts.map((p) => <PostCard key={p.id} post={p} me={profile.id} onChange={load} />)}
+      {more && posts.length > 0 && <Button title="Ver mais" variant="secondary" onPress={loadMore} />}
     </Screen>
   );
 }

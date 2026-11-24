@@ -14,13 +14,13 @@ set local role authenticated;
 -- membro não cria evento
 select t.login(:'m');
 select t.throws(format($$ insert into public.events (crew_id, kind, title, starts_at, ends_at, lat, lon, created_by)
-                          values (%L, 'encontro', 'Fake', now(), now() + interval '2 hours', -23.46, -46.53, auth.user_id()) $$, :'x'),
+                          values (%L, 'encontro', 'Fake', now(), now() + interval '2 hours', -23.46, -46.53, public.current_uid()) $$, :'x'),
                 'row-level security');
 
 select t.login(:'adm');
 insert into public.events (crew_id, kind, title, starts_at, ends_at, lat, lon, radius_m, created_by)
 values (:'x', 'encontro', 'Rolê de sábado', now() - interval '10 minutes', now() + interval '3 hours',
-        -23.4600, -46.5300, 200, auth.user_id())
+        -23.4600, -46.5300, 200, public.current_uid())
 returning id as ev \gset
 
 -- quem é de outra equipe não vê evento fechado
@@ -32,7 +32,7 @@ select t.throws(format($$ select public.crew_leaderboard(%L) $$, :'x'), 'forbidd
 select t.login(:'m');
 select t.throws(format($$ select public.submit_event_media_checked(%L, t.key(), -23.4700, -46.5300) $$, :'ev'), 'outside_event_area');
 select public.submit_event_media_checked(:'ev', t.key(), -23.4605, -46.5302) as media \gset
-select t.ok((select xp from public.crew_members where crew_id = :'x' and user_id = auth.user_id()) = 50, 'mídia vale 50 XP');
+select t.ok((select xp from public.crew_members where crew_id = :'x' and user_id = public.current_uid()) = 50, 'mídia vale 50 XP');
 select t.throws(format($$ select public.submit_event_media_checked(%L, t.key(), -23.46, -46.53) $$, :'ev'), 'already_submitted');
 select t.throws(format($$ select public.contest_event_media(%L) $$, :'media'), 'forbidden');
 select t.ok((select rank_pos from public.crew_leaderboard(:'x') where username = 'membro.x') = 1, 'rank interno');

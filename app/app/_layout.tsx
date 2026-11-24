@@ -69,6 +69,8 @@ function Gate() {
         <Stack.Screen name="camera-mapa" options={{ presentation: 'modal' }} />
         <Stack.Screen name="visibilidade" options={{ presentation: 'modal' }} />
         <Stack.Screen name="destino" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="post/[id]" />
+        <Stack.Screen name="perfil/[username]" />
       </Stack.Protected>
     </Stack>
   );

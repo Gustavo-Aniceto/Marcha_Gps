@@ -52,4 +52,5 @@ export interface Profile {
   visibility: 'ghost' | 'crew' | 'scene';
   precise_for_scene: boolean;
   delay_minutes: 0 | 2 | 5;
+  avatar_key: string | null;
 }

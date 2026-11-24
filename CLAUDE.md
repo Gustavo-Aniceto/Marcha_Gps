@@ -12,6 +12,7 @@ Leia `docs/decisoes.md` antes de mudar regra de produto.
 ## Banco (Neon) e login (Clerk)
 - Banco no Neon (projeto `marcha-gps`, região São Paulo). O app fala com ele pela **Data API** (PostgREST) mandando o token do Clerk.
 - Usuário atual no SQL: `auth.user_id()` (texto, claim `sub` do Clerk, ex.: `user_2abc...`). IDs de usuário são `text`, nunca `uuid`.
+- **No Neon, `authenticated` não tem USAGE no schema `auth`.** Policies podem usar `auth.user_id()` (já ficam compiladas), mas função `SECURITY INVOKER` precisa usar `public.current_uid()`; senão dá "permission denied for schema auth". Os testes locais imitam isso.
 - O token do Clerk precisa ter `"role": "authenticated"` (Clerk > Sessions > Customize session token). Sem isso a Data API roda como `anonymous` e nada funciona.
 - Migrations em `db/migrations/`, numeradas. Nunca edite uma migration já aplicada; crie outra. Depois de aplicar, atualize o cache da Data API (Console > Data API > Refresh schema cache).
 - Toda tabela nova precisa de RLS ligado e policies.
@@ -35,6 +36,7 @@ Leia `docs/decisoes.md` antes de mudar regra de produto.
 - Roda primeiro como **site instalável (PWA)** na Vercel (`app/vercel.json`, projeto `marcha-gps`; push na `main` publica). O mesmo código gera o app nativo.
 - Telas usam o mapa por `app/src/map` (nativo: MapLibre RN; web: `index.web.tsx` com maplibre-gl). Nunca importar `@maplibre/maplibre-react-native` direto numa tela.
 - Arquivos `.web.tsx` / `.web.ts` são a versão do navegador (login do Clerk, cache do token, mapa).
+- Feed social: `feed()` (geral/equipe/autor, com curtidas, comentários, foto e carro do autor), `post_comments`, `public_profile()`, foto de perfil via `set_my_avatar()` (foto sobe como tipo `post`). Telas `app/post/[id].tsx` e `app/perfil/[username].tsx`.
 - Primeiro acesso: `(auth)/inicio` (código, conferido sem login pelo `GET /convite` do `marcha-gps-api`, que chama `check_invite()` com o usuário `importador`; a Data API do Neon não aceita pedido sem login) → `(auth)/entrar` (Clerk: Google, Apple, Facebook, e-mail) → `(auth)/convite` (nome de usuário + `redeem_invite`). O código fica guardado no aparelho (`src/lib/pendingInvite.ts`) entre as telas.
 - O próprio perfil vem de `my_profile()`; a tabela `profiles` só mostra id, username, padrinho e data. Só fundadores veem o Adm Master (`master_contact()`).
 - Expo + expo-router + TypeScript. Lógica pura fica em `app/src/lib/` com testes em `app/src/lib/__tests__/` (`npm test`).

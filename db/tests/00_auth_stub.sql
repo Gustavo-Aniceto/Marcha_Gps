@@ -9,7 +9,8 @@ create schema if not exists auth;
 create or replace function auth.user_id() returns text language sql stable as $$
   select nullif(current_setting('request.jwt.claim.sub', true), '');
 $$;
-grant usage on schema auth to anonymous, authenticated;
+-- Igual ao Neon: authenticated/anonymous NÃO têm USAGE no schema auth. Policies funcionam (já estão
+-- compiladas), mas função SECURITY INVOKER que escreve auth.user_id() no corpo quebra. Use public.current_uid().
 grant execute on function auth.user_id() to anonymous, authenticated;
 grant usage on schema public to anonymous, authenticated;
 
@@ -30,7 +31,7 @@ exception when others then
   end if;
 end $$;
 create or replace function t.key() returns text language sql volatile as $$
-  select 'media/' || auth.user_id() || '/' || gen_random_uuid()::text || '.jpg';
+  select 'media/' || current_setting('request.jwt.claim.sub', true) || '/' || gen_random_uuid()::text || '.jpg';
 $$;
 create or replace function t.login(u text) returns void language sql as $$
   select set_config('request.jwt.claim.sub', u, true);

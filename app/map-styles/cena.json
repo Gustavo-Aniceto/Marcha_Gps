@@ -89,11 +89,11 @@
         [
           "literal",
           [
-            "motorway",
-            "trunk",
             "primary",
             "secondary",
-            "tertiary"
+            "tertiary",
+            "motorway",
+            "trunk"
           ]
         ]
       ],
@@ -180,8 +180,6 @@
         [
           "literal",
           [
-            "motorway",
-            "trunk",
             "primary",
             "secondary",
             "tertiary"
@@ -209,6 +207,49 @@
           6,
           18,
           24
+        ]
+      }
+    },
+    {
+      "id": "rodovias",
+      "type": "line",
+      "source": "openmaptiles",
+      "source-layer": "transportation",
+      "filter": [
+        "in",
+        [
+          "get",
+          "class"
+        ],
+        [
+          "literal",
+          [
+            "motorway",
+            "trunk"
+          ]
+        ]
+      ],
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      "paint": {
+        "line-color": "#55585F",
+        "line-width": [
+          "interpolate",
+          [
+            "exponential",
+            1.5
+          ],
+          [
+            "zoom"
+          ],
+          8,
+          1.5,
+          14,
+          8,
+          18,
+          30
         ]
       }
     },
