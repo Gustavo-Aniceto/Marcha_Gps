@@ -26,6 +26,10 @@ Leia `docs/decisoes.md` antes de mudar regra de produto.
 - Navegação = 3D só com a equipe; Cena ao vivo (`app/app/cena.tsx`) = 2D cinza com todos que `visible_cars()` liberar.
 
 ## App
+- Roda primeiro como **site instalável (PWA)** na Vercel (`app/vercel.json`, projeto `marcha-gps`; push na `main` publica). O mesmo código gera o app nativo.
+- Telas usam o mapa por `app/src/map` (nativo: MapLibre RN; web: `index.web.tsx` com maplibre-gl). Nunca importar `@maplibre/maplibre-react-native` direto numa tela.
+- Arquivos `.web.tsx` / `.web.ts` são a versão do navegador (login do Clerk, cache do token, mapa).
+- O próprio perfil vem de `my_profile()`; a tabela `profiles` só mostra id, username, padrinho e data. Só fundadores veem o Adm Master (`master_contact()`).
 - Expo + expo-router + TypeScript. Lógica pura fica em `app/src/lib/` com testes em `app/src/lib/__tests__/` (`npm test`).
 - Cores e fontes em `app/src/theme/`. Não espalhar cor solta pelas telas.
 - Textos para o usuário em português do Brasil.

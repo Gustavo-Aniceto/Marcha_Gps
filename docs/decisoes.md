@@ -32,11 +32,15 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 - Importação inicial por cidade: OpenStreetMap (traffic_calming, highway=speed_camera) + radares da ANTT (rodovias concedidas, ex.: Dutra, Ayrton Senna). Duplicados a menos de 15 m são juntados; cada ponto leva a cidade; tudo entra como "não confirmado". Script: `scripts/import_obstacles.py`.
 - Não usar dados do Waze/Google (termos de uso).
 
+## Adm Master
+- Fica discreto: só **donos de equipe** (fundadores verificados) veem quem é o Adm Master, pela função `master_contact()`. Pros outros o perfil dele aparece como um membro comum; a tabela de perfis não mostra a marca de master nem os convites de ninguém (cada um vê os próprios dados por `my_profile()`).
+
 ## Fora do escopo
 - Nada que premie racha/velocidade na rua (ranking por velocidade, "puxada" entre carros). Competição só no Modo Pista, em local autorizado.
 
 ## Tech
-- App: React Native (Expo).
+- App: React Native (Expo), publicado **primeiro como site instalável (PWA)** em `https://marcha-gps.vercel.app` pra rodar em qualquer celular sem loja. A pessoa abre no navegador e usa "Adicionar à tela inicial". O mesmo código continua gerando o app nativo pra quando for pra Play Store/App Store.
+- Limite do PWA: o navegador só manda a localização com o app **aberto na tela**. Se a pessoa bloqueia o celular ou troca de app, o carrinho dela some do mapa da equipe depois de 10 min (regra já existente). Compartilhar em segundo plano fica pro app nativo.
 - Mapa: **MapLibre** (`@maplibre/maplibre-react-native`) + mapas gratuitos do **OpenFreeMap**. Mapbox descartado por custo. Dois visuais: navegação 3D com prédios em bloco (noite azul ou dia claro) e **Cena ao vivo em 2D cinza-escuro** pra ver os carros. Plano B se o OpenFreeMap sair do ar: hospedar os próprios tiles (PMTiles) só da região.
 - Banco: **Neon** (Postgres, região São Paulo) com a Data API.
 - Fotos: **Cloudflare R2** com um Worker que confere o login do Clerk (o armazenamento do Neon não existe na região de São Paulo).

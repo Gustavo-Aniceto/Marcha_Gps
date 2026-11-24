@@ -78,17 +78,19 @@ Rode o `carga.sql` no SQL Editor do Neon (como dono do banco).
 
 ### 5. App
 
+**No navegador (principal):** https://marcha-gps.vercel.app — abre em qualquer celular. Pra instalar: no Android (Chrome) menu ⋮ → **Instalar app**; no iPhone (Safari) **Compartilhar → Adicionar à Tela de Início**. Todo push na `main` publica sozinho na Vercel (projeto `marcha-gps`, pasta `app`, variáveis `EXPO_PUBLIC_*` já cadastradas lá).
+
+Rodar local:
+
 ```bash
 cd app
-cp .env.example .env      # chave pública do Clerk, URL da Data API do Neon e URL do serviço de fotos
+cp .env.example .env
 npm install
-npx expo install --fix    # alinha as versões das libs com o SDK do Expo instalado
-npm run typecheck
-npm test                  # testes da lógica (fitment, tema, pontos)
-npx expo run:android      # ou run:ios
+npm run web        # navegador
+npm test           # lógica pura
 ```
 
-Precisa de build de desenvolvimento (o mapa MapLibre e a tela de login nativa do Clerk não rodam no Expo Go).
+**App nativo (depois):** `npx expo run:android` / `npx expo run:ios` (precisa de build de desenvolvimento por causa do MapLibre e do login nativo do Clerk).
 
 ## O que já está pronto (fase 1)
 
