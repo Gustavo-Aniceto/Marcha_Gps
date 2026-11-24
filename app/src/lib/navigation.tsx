@@ -57,10 +57,16 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   // tela não apaga enquanto navega
+  const awake = useRef(false);
   useEffect(() => {
     const on = status === 'navigating' || status === 'rerouting';
-    if (on) activateKeepAwakeAsync('navegacao').catch(() => {});
-    else deactivateKeepAwake('navegacao');
+    if (on && !awake.current) {
+      awake.current = true;
+      activateKeepAwakeAsync('navegacao').catch(() => { awake.current = false; });
+    } else if (!on && awake.current) {
+      awake.current = false;
+      Promise.resolve().then(() => deactivateKeepAwake('navegacao')).catch(() => {});
+    }
   }, [status]);
 
   const setVoice = useCallback((on: boolean) => {
