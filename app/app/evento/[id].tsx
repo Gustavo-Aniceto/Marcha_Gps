@@ -9,6 +9,7 @@ import { photoUrl } from '../../src/lib/photos';
 import { eventWindow, kindLabel, whenText } from '../../src/lib/events.ts';
 import { readableAccent } from '../../src/lib/contrast.ts';
 import { colors } from '../../src/theme/tokens.ts';
+import { goBack } from '../../src/lib/goBack';
 
 interface Ev { id: string; crew_id: string; kind: string; title: string; starts_at: string; ends_at: string; crews: { name: string; color: string } }
 interface Media { id: string; user_id: string; photo_path: string; status: string; created_at: string; profiles: { username: string } }
@@ -46,7 +47,7 @@ export default function Evento() {
     if (e) setError(friendlyError(e)); else load();
   }
 
-  if (!ev) return <Screen><Body dim>Evento não encontrado ou você não tem acesso.</Body><Button title="Voltar" onPress={() => router.back()} /></Screen>;
+  if (!ev) return <Screen><Body dim>Evento não encontrado ou você não tem acesso.</Body><Button title="Voltar" onPress={() => goBack(router)} /></Screen>;
   const accent = readableAccent(ev.crews.color);
   const win = eventWindow(new Date(ev.starts_at), new Date(ev.ends_at));
 

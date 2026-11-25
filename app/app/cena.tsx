@@ -14,6 +14,7 @@ import { useSession } from '../src/lib/session';
 import { useLocationSharing } from '../src/lib/useLocationSharing';
 import { buildMapStyle, REGION_VIEW } from '../src/lib/mapStyle.ts';
 import { colors, fonts } from '../src/theme/tokens.ts';
+import { goBack } from '../src/lib/goBack';
 
 
 export default function Cena() {
@@ -88,7 +89,7 @@ export default function Cena() {
 
       <View style={s.top}>
         <View style={s.header}>
-          <Pressable onPress={() => router.back()} style={s.back} accessibilityRole="button" accessibilityLabel="Voltar">
+          <Pressable onPress={() => goBack(router)} style={s.back} accessibilityRole="button" accessibilityLabel="Voltar">
             <Text style={{ color: colors.holo, fontSize: 18 }}>‹</Text>
           </Pressable>
           <View style={{ flex: 1 }}>

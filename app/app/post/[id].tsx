@@ -10,6 +10,7 @@ import { useSession } from '../../src/lib/session';
 import { friendlyError } from '../../src/lib/errors.ts';
 import { ago, type Comment, type Post } from '../../src/lib/social';
 import { colors } from '../../src/theme/tokens.ts';
+import { goBack } from '../../src/lib/goBack';
 
 export default function PostScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -52,12 +53,12 @@ export default function PostScreen() {
 
   return (
     <Screen>
-      <Pressable onPress={() => router.back()} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
+      <Pressable onPress={() => goBack(router)} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
         <Text style={{ color: colors.holo, fontSize: 16 }}>‹ Voltar</Text>
       </Pressable>
       {gone && <Text style={{ color: colors.textMuted }}>Esse post foi apagado ou você não tem acesso.</Text>}
       {!post && !gone && <ActivityIndicator color={colors.neon} />}
-      {post && profile && <PostCard post={post} me={profile.id} detail onChange={() => router.back()} />}
+      {post && profile && <PostCard post={post} me={profile.id} detail onChange={() => goBack(router)} />}
 
       {post && (
         <View style={{ gap: 12 }}>

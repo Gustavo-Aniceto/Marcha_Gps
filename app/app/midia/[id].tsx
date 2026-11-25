@@ -10,6 +10,7 @@ import { db } from '../../src/lib/db';
 import { friendlyError } from '../../src/lib/errors.ts';
 import { uploadPhoto } from '../../src/lib/photos';
 import { colors } from '../../src/theme/tokens.ts';
+import { goBack } from '../../src/lib/goBack';
 
 export default function Midia() {
   const router = useRouter();
@@ -54,7 +55,7 @@ export default function Midia() {
           <Mono color={colors.neon}>+50 XP NA EQUIPE</Mono>
           <Body dim>A mídia vai pra galeria do evento. O admin pode contestar em até 24 h.</Body>
         </Card>
-        <Button title="Voltar" onPress={() => router.back()} />
+        <Button title="Voltar" onPress={() => goBack(router)} />
       </Screen>
     );
   }
@@ -66,7 +67,7 @@ export default function Midia() {
         <Title>Fazer a mídia</Title>
         <Body dim>Pra provar que você foi, a foto é tirada na hora pela câmera do app.</Body>
         <Button title="Liberar câmera" onPress={requestPermission} />
-        <Button title="Voltar" variant="secondary" onPress={() => router.back()} />
+        <Button title="Voltar" variant="secondary" onPress={() => goBack(router)} />
       </Screen>
     );
   }

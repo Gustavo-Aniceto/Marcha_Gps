@@ -7,6 +7,7 @@ import { Body, Button, Card, Mono, Screen, Title } from '../src/components/ui';
 import { useSession } from '../src/lib/session';
 import { checkinPayload } from '../src/lib/checkinQr.ts';
 import { colors } from '../src/theme/tokens.ts';
+import { goBack } from '../src/lib/goBack';
 
 export default function MeuQr() {
   const router = useRouter();
@@ -25,7 +26,7 @@ export default function MeuQr() {
           : <Body>Não deu pra gerar o QR.</Body>}
       </Card>
       <Body dim>Mostra pra um admin da equipe no próximo encontro. Ele escaneia e confirma que te viu lá com o carro.</Body>
-      <Button title="Pronto" onPress={() => router.back()} />
+      <Button title="Pronto" onPress={() => goBack(router)} />
     </Screen>
   );
 }

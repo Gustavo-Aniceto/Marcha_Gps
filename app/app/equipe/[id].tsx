@@ -13,6 +13,7 @@ import { friendlyError } from '../../src/lib/errors.ts';
 import { readableAccent } from '../../src/lib/contrast.ts';
 import { whenText } from '../../src/lib/events.ts';
 import { colors } from '../../src/theme/tokens.ts';
+import { goBack } from '../../src/lib/goBack';
 
 interface Person { username: string; avatar_key: string | null; role?: string }
 interface JoinReq { id: string; username: string; avatar_key: string | null; message: string | null; created_at: string }
@@ -78,7 +79,7 @@ export default function EquipePagina() {
     return (
       <Screen>
         <Body>Essa equipe não existe ou não está disponível.</Body>
-        <Button title="Voltar" variant="secondary" onPress={() => router.back()} />
+        <Button title="Voltar" variant="secondary" onPress={() => goBack(router, '/equipes')} />
       </Screen>
     );
   }
@@ -99,7 +100,7 @@ export default function EquipePagina() {
 
   return (
     <Screen>
-      <Pressable onPress={() => router.back()} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
+      <Pressable onPress={() => goBack(router, '/equipes')} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
         <Text style={{ color: colors.holo, fontSize: 16 }}>‹ Voltar</Text>
       </Pressable>
 

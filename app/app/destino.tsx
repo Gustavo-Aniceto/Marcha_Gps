@@ -7,6 +7,7 @@ import { useNavigation } from '../src/lib/navigation';
 import { lastKnownPosition } from '../src/lib/lastPosition';
 import { routeErrorText } from '../src/lib/nav.ts';
 import { colors, fonts, touch } from '../src/theme/tokens.ts';
+import { goBack } from '../src/lib/goBack';
 
 export default function Destino() {
   const router = useRouter();
@@ -39,7 +40,7 @@ export default function Destino() {
 
   const go = (p: Place) => {
     nav.start(p, lastKnownPosition());
-    router.back();
+    goBack(router);
   };
 
   const showRecents = q.trim().length < 3 && nav.recents.length > 0;
@@ -58,7 +59,7 @@ export default function Destino() {
           returnKeyType="search"
           accessibilityLabel="Buscar destino"
         />
-        <Pressable onPress={() => router.back()} style={s.cancel} accessibilityRole="button">
+        <Pressable onPress={() => goBack(router)} style={s.cancel} accessibilityRole="button">
           <Text style={s.cancelText}>Cancelar</Text>
         </Pressable>
       </View>

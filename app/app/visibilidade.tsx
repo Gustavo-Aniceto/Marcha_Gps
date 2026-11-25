@@ -7,6 +7,7 @@ import { Body, Button, Card, ErrorText, Label, Mono, Pills, Screen, Title } from
 import { db, type Profile } from '../src/lib/db';
 import { useSession } from '../src/lib/session';
 import { friendlyError } from '../src/lib/errors.ts';
+import { goBack } from '../src/lib/goBack';
 
 const MODES: { value: Profile['visibility']; label: string; sub: string }[] = [
   { value: 'ghost', label: 'Modo fantasma', sub: 'Ninguém te vê, nem a equipe. Você ainda vê os outros.' },
@@ -70,7 +71,7 @@ export default function Visibilidade() {
     setBusy(false);
     if (e) { setError(friendlyError(e)); return; }
     await refreshProfile();
-    router.back();
+    goBack(router);
   }
 
   const preview = mode === 'ghost' ? 'Invisível. Seu carro não aparece em nenhum mapa.'

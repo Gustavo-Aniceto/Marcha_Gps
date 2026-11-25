@@ -7,6 +7,7 @@ import { db } from '../src/lib/db';
 import { friendlyError } from '../src/lib/errors.ts';
 import { REPORT_KINDS, pointsText, type ReportKind } from '../src/lib/reports.ts';
 import { lastKnownPosition } from '../src/lib/lastPosition';
+import { goBack } from '../src/lib/goBack';
 
 // velocidades de placa mais comuns em SP (0 = não sei)
 const SPEEDS = [0, 30, 40, 50, 60, 70, 80, 90, 100, 110];
@@ -65,9 +66,9 @@ export default function Radar() {
       <Warning>{pointsText(kind)}</Warning>
       <ErrorText>{error}</ErrorText>
       {done
-        ? <Button title="Enviado! Voltar pro mapa" onPress={() => router.back()} />
+        ? <Button title="Enviado! Voltar pro mapa" onPress={() => goBack(router)} />
         : <Button title="Marcar no mapa" variant="warn" onPress={send} loading={busy} />}
-      <Button title="Cancelar" variant="secondary" onPress={() => router.back()} />
+      <Button title="Cancelar" variant="secondary" onPress={() => goBack(router)} />
     </Screen>
   );
 }

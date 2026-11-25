@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { Body, Button, Label, Mono, Pills, Screen, Title } from '../src/components/ui';
 import { useMapSettings } from '../src/lib/mapSettings';
 import { PITCH_PRESETS, RADIUS_OPTIONS, cameraFor } from '../src/lib/mapCamera.ts';
+import { goBack } from '../src/lib/goBack';
 
 export default function CameraMapa() {
   const router = useRouter();
@@ -36,7 +37,7 @@ export default function CameraMapa() {
              value={camera.radiusM} onChange={(v) => setCamera({ ...camera, radiusM: v })} />
       <Body dim>Quanto do caminho à frente aparece. Perto mostra mais detalhe, longe mostra mais rua.</Body>
 
-      <Button title="Pronto" onPress={() => router.back()} />
+      <Button title="Pronto" onPress={() => goBack(router)} />
     </Screen>
   );
 }

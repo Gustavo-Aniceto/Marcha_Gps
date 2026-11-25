@@ -16,6 +16,7 @@ import { photoUrl, uploadPhoto } from '../../src/lib/photos';
 import { loadFeed, type Post, type PostKind } from '../../src/lib/social';
 import { readableAccent } from '../../src/lib/contrast.ts';
 import { colors, fonts } from '../../src/theme/tokens.ts';
+import { goBack } from '../../src/lib/goBack';
 
 interface PublicProfile {
   id: string; username: string; avatar_key: string | null; joined_at: string; posts: number; mine: boolean;
@@ -79,7 +80,7 @@ export default function Perfil() {
 
   return (
     <Screen>
-      <Pressable onPress={() => router.back()} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
+      <Pressable onPress={() => goBack(router)} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
         <Text style={{ color: colors.holo, fontSize: 16 }}>‹ Voltar</Text>
       </Pressable>
       {missing && <Text style={{ color: colors.textMuted }}>Perfil não encontrado.</Text>}

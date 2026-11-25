@@ -11,6 +11,7 @@ import { friendlyError } from '../src/lib/errors.ts';
 import { atTime, isPastDay, monthGrid, MONTHS, sameDay, shiftMonth, WEEKDAYS_SHORT, whenText } from '../src/lib/events.ts';
 import { searchPlaces, type Place } from '../src/lib/routing';
 import { colors } from '../src/theme/tokens.ts';
+import { goBack } from '../src/lib/goBack';
 
 type Vis = 'crew' | 'open';
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
@@ -69,7 +70,7 @@ export default function EventoNovo() {
       lat: place.lat, lon: place.lon, radius_m: 200, visibility: vis, verified_only: true, created_by: profile.id,
     });
     setBusy(false);
-    if (e) setError(friendlyError(e)); else router.back();
+    if (e) setError(friendlyError(e)); else goBack(router);
   }
 
   return (
@@ -170,7 +171,7 @@ export default function EventoNovo() {
       <ErrorText>{error}</ErrorText>
       <Button title="Publicar evento" onPress={save} loading={busy}
               disabled={title.trim().length < 2 || !place || !starts || startsPast} />
-      <Button title="Cancelar" variant="secondary" onPress={() => router.back()} />
+      <Button title="Cancelar" variant="secondary" onPress={() => goBack(router)} />
     </Screen>
   );
 }

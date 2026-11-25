@@ -8,6 +8,7 @@ import { db } from '../src/lib/db';
 import { friendlyError } from '../src/lib/errors.ts';
 import { parseCheckin } from '../src/lib/checkinQr.ts';
 import { colors } from '../src/theme/tokens.ts';
+import { goBack } from '../src/lib/goBack';
 
 export default function Escanear() {
   const router = useRouter();
@@ -42,7 +43,7 @@ export default function Escanear() {
       <Screen>
         <Title>Check-in</Title>
         <Button title="Liberar câmera" onPress={requestPermission} />
-        <Button title="Voltar" variant="secondary" onPress={() => router.back()} />
+        <Button title="Voltar" variant="secondary" onPress={() => goBack(router)} />
       </Screen>
     );
   }
@@ -64,7 +65,7 @@ export default function Escanear() {
         </View>
       )}
       <ErrorText>{error}</ErrorText>
-      <Button title="Fechar" variant="secondary" onPress={() => router.back()} />
+      <Button title="Fechar" variant="secondary" onPress={() => goBack(router)} />
     </Screen>
   );
 }
