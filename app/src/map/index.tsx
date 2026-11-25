@@ -3,6 +3,7 @@
 import React from 'react';
 import { Camera as NativeCamera, GeoJSONSource, Layer, Map as NativeMap, Marker as NativeMarker } from '@maplibre/maplibre-react-native';
 import { colors } from '../theme/tokens.ts';
+import type { Glide } from '../lib/glide.ts';
 
 type NativeCameraProps = React.ComponentProps<typeof NativeCamera>;
 
@@ -15,10 +16,12 @@ interface ExtraCameraProps {
   fitCoords?: { lat: number; lon: number }[] | null;
   fitKey?: number;
   padTop?: number;
+  /** só a versão web usa (posição suave do carrinho) */
+  glide?: Glide | null;
 }
 
 /** Mesma câmera do MapLibre, com as opções extras da versão web. */
-export function Camera({ follow: _follow, following = true, onUserGesture: _g, fitCoords, fitKey: _k, padTop = 0, ...props }:
+export function Camera({ follow: _follow, following = true, onUserGesture: _g, fitCoords, fitKey: _k, padTop = 0, glide: _gl, ...props }:
   NativeCameraProps & ExtraCameraProps) {
   if (fitCoords && fitCoords.length >= 2 && !following) {
     const lons = fitCoords.map((c) => c.lon), lats = fitCoords.map((c) => c.lat);
@@ -36,7 +39,7 @@ export function Map({ mapStyle, ...props }: Omit<NativeMapProps, 'mapStyle'> & {
 }
 
 /** Marcador; `rotation` só é usado na versão web (no app o desenho já gira sozinho). */
-export function Marker({ rotation: _r, ...props }: React.ComponentProps<typeof NativeMarker> & { rotation?: number | null }) {
+export function Marker({ rotation: _r, glide: _g, ...props }: React.ComponentProps<typeof NativeMarker> & { rotation?: number | null; glide?: Glide | null }) {
   return <NativeMarker {...props} />;
 }
 

@@ -3,6 +3,7 @@
 // Como no Waze: arrastar o mapa solta a câmera do carro; "Voltar pro carro" (ou 15 s parado, navegando) volta.
 // Mapa gratuito: MapLibre + OpenFreeMap (ver src/lib/mapStyle.ts).
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { displayPoint, Glide } from '../../src/lib/glide.ts';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Camera, Map as MapView, Marker, RouteLine } from '../../src/map';
@@ -94,6 +95,13 @@ export default function Mapa() {
     nav.onFix(position);
   }, [position]);
 
+  // carrinho e câmera deslizam entre as leituras do GPS (sem trancos); navegando, em cima da rota
+  const glide = useMemo(() => new Glide(), []);
+  useEffect(() => {
+    if (!position) return;
+    glide.push(displayPoint(position, navigating ? nav.route : null, nav.update?.state.hint ?? 0), performance.now());
+  }, [position]);
+
   // obstáculos e radares em cima da rota inteira
   const route = nav.route;
   useEffect(() => {
@@ -182,6 +190,7 @@ export default function Mapa() {
           pitch={cam.pitch}
           duration={600}
           follow={position}
+          glide={web ? glide : null}
           following={following}
           onUserGesture={onUserGesture}
           fitCoords={route?.coords ?? null}
@@ -223,7 +232,8 @@ export default function Mapa() {
         ))}
 
         {position && (
-          <Marker id="meu-carro" lngLat={[position.lon, position.lat]} rotation={web ? position.heading ?? 0 : undefined}>
+          <Marker id="meu-carro" lngLat={[position.lon, position.lat]} rotation={web ? position.heading ?? 0 : undefined}
+                  glide={web ? glide : null}>
             <CarMarker me color={myCar?.color} neon={myCar?.neon} heading={web ? 0 : position.heading}
                        body={myCar?.body_type} tint={myCar?.tint} spoiler={myCar?.spoiler} />
           </Marker>

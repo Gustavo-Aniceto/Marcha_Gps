@@ -7,6 +7,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { Camera, Map as MapView, Marker } from '../src/map';
 import { CarMarker } from '../src/components/CarMarker';
 import { ProfileSheet } from '../src/components/ProfileSheet';
+import { Glide } from '../src/lib/glide.ts';
 import { db, type VisibleCar } from '../src/lib/db';
 import { useSession } from '../src/lib/session';
 import { useLocationSharing } from '../src/lib/useLocationSharing';
@@ -23,6 +24,8 @@ export default function Cena() {
   const { profile } = useSession();
   const share = !!profile && profile.visibility !== 'ghost';
   const { position } = useLocationSharing(share, null);
+  const glide = useMemo(() => new Glide(), []);
+  useEffect(() => { if (position) glide.push(position, performance.now()); }, [position]);
   const [myCar, setMyCar] = useState<{ color: string; neon: string | null; body_type: string; tint: string; spoiler: boolean } | null>(null);
   useFocusEffect(useCallback(() => {
     if (!profile) return;
@@ -50,7 +53,7 @@ export default function Cena() {
                attribution attributionPosition={{ bottom: 8, left: 8 }} onPress={() => setSelected(null)}>
         <Camera initialViewState={{ center: REGION_VIEW.center, zoom: REGION_VIEW.zoom, pitch: 0 }} />
         {position && (
-          <Marker id="cena-eu" lngLat={[position.lon, position.lat]}>
+          <Marker id="cena-eu" lngLat={[position.lon, position.lat]} glide={glide}>
             <Pressable onPress={() => setSelected('eu')} accessibilityRole="button" accessibilityLabel="Ver o seu perfil" hitSlop={8}>
               <CarMarker me color={myCar?.color} neon={myCar?.neon} heading={position.heading}
                          body={myCar?.body_type} tint={myCar?.tint} spoiler={myCar?.spoiler}

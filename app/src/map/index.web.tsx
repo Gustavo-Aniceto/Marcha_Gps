@@ -6,6 +6,7 @@ import { Text, View, type ViewStyle, type StyleProp } from 'react-native';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { colors } from '../theme/tokens.ts';
+import { lerpAngle, type Glide } from '../lib/glide.ts';
 
 const MapCtx = createContext<maplibregl.Map | null>(null);
 
@@ -108,14 +109,19 @@ interface CameraProps {
   fitKey?: number;
   /** empurra o carro pra baixo da tela (px de folga em cima), pra ver mais caminho à frente */
   padTop?: number;
+  /** posição suave do carro (lib/glide): a câmera anda junto com o carrinho a cada quadro, sem trancos */
+  glide?: Glide | null;
 }
 
 export function Camera({ zoom, pitch, duration = 600, trackUserLocation, initialViewState, follow,
-  following = true, onUserGesture, fitCoords, fitKey, padTop = 0 }: CameraProps) {
+  following = true, onUserGesture, fitCoords, fitKey, padTop = 0, glide }: CameraProps) {
   const map = useContext(MapCtx);
   const started = useRef(false);
   const gesture = useRef(onUserGesture);
   gesture.current = onUserGesture;
+  const busy = useRef(false); // dedo no mapa: a câmera não briga com a pessoa
+  const live = useRef({ following, trackUserLocation, zoom, pitch, padTop });
+  live.current = { following, trackUserLocation, zoom, pitch, padTop };
 
   useEffect(() => {
     if (!map || started.current || !initialViewState) return;
@@ -127,20 +133,70 @@ export function Camera({ zoom, pitch, duration = 600, trackUserLocation, initial
   // dedo no mapa (arrastar, pinça, girar): só conta quando veio da pessoa, não da câmera
   useEffect(() => {
     if (!map) return;
-    const onStart = (e: { originalEvent?: Event }) => { if (e.originalEvent) gesture.current?.(); };
+    const onStart = (e: { originalEvent?: Event }) => { if (e.originalEvent) { busy.current = true; gesture.current?.(); } };
     const evs = ['dragstart', 'zoomstart', 'rotatestart', 'pitchstart'] as const;
     for (const ev of evs) map.on(ev, onStart);
     return () => { for (const ev of evs) map.off(ev, onStart); };
   }, [map]);
 
+  // voltou a seguir o carro ("Voltar pro carro", fim da visão da rota): volta deslizando, não pulando
+  const catchUp = useRef<{ start: number; center: maplibregl.LngLat } | null>(null);
   useEffect(() => {
     if (!map || !following) return;
+    busy.current = false;
+    catchUp.current = { start: performance.now(), center: map.getCenter() };
+  }, [map, following]);
+
+  // com glide: um quadro por vez, câmera e carrinho lendo a mesma posição
+  useEffect(() => {
+    if (!map || !glide) return;
+    let raf = 0;
+    let last = performance.now();
+    const cam = { bearing: map.getBearing(), zoom: map.getZoom(), pitch: map.getPitch(), pad: map.getPadding().top ?? 0 };
+    const loop = (now: number) => {
+      raf = requestAnimationFrame(loop);
+      const dt = Math.min(100, Math.max(0, now - last)); last = now;
+      const s = live.current;
+      if (!s.following || !s.trackUserLocation || busy.current || map.isMoving()) {
+        cam.bearing = map.getBearing(); cam.zoom = map.getZoom(); cam.pitch = map.getPitch(); cam.pad = map.getPadding().top ?? 0;
+        return;
+      }
+      const p = glide.at(now);
+      if (!p) return;
+      const a = 1 - Math.exp(-dt / 300); // amortece giro/zoom (~0,3 s), sem chacoalhar com o GPS
+      const wantBearing = s.trackUserLocation === 'course' && p.heading != null ? p.heading : cam.bearing;
+      const wantZoom = s.zoom ?? cam.zoom, wantPitch = s.pitch ?? cam.pitch, wantPad = s.padTop ?? 0;
+      const settling = Math.abs(((wantBearing - cam.bearing + 540) % 360) - 180) > 0.05 || Math.abs(wantZoom - cam.zoom) > 0.001
+        || Math.abs(wantPitch - cam.pitch) > 0.05 || Math.abs(wantPad - cam.pad) > 0.5;
+      const cu = catchUp.current;
+      if (!settling && !cu && !glide.moving(now) && map.getCenter().distanceTo(new maplibregl.LngLat(p.lon, p.lat)) < 0.05) return;
+      cam.bearing = lerpAngle(cam.bearing, wantBearing, a) ?? cam.bearing;
+      cam.zoom += (wantZoom - cam.zoom) * a;
+      cam.pitch += (wantPitch - cam.pitch) * a;
+      cam.pad += (wantPad - cam.pad) * a;
+      let lon = p.lon, lat = p.lat;
+      if (cu) {
+        const k = Math.min(1, (now - cu.start) / 700);
+        const e = 1 - (1 - k) ** 3;
+        lon = cu.center.lng + (lon - cu.center.lng) * e;
+        lat = cu.center.lat + (lat - cu.center.lat) * e;
+        if (k >= 1) catchUp.current = null;
+      }
+      map.jumpTo({ center: [lon, lat], bearing: cam.bearing, zoom: cam.zoom, pitch: cam.pitch,
+                   padding: { top: cam.pad, bottom: 0, left: 0, right: 0 } });
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [map, glide]);
+
+  useEffect(() => {
+    if (!map || !following || glide) return;
     map.easeTo({ zoom: zoom ?? map.getZoom(), pitch: pitch ?? map.getPitch(), duration });
-  }, [map, zoom, pitch, duration, following]);
+  }, [map, zoom, pitch, duration, following, glide]);
 
   const lat = follow?.lat, lon = follow?.lon, heading = follow?.heading;
   useEffect(() => {
-    if (!map || !following || !trackUserLocation || lat == null || lon == null) return;
+    if (!map || glide || !following || !trackUserLocation || lat == null || lon == null) return;
     const bearing = trackUserLocation === 'course' && heading != null ? heading : map.getBearing();
     map.easeTo({ center: [lon, lat], bearing, zoom: zoom ?? map.getZoom(), pitch: pitch ?? map.getPitch(), duration,
                  padding: { top: padTop, bottom: 0, left: 0, right: 0 } });
@@ -161,9 +217,11 @@ interface MarkerProps {
   id?: string; lngLat: [number, number]; children: React.ReactNode;
   /** direção em graus; com ela o desenho gira junto com o mapa e deita no 3D (como no Waze) */
   rotation?: number | null;
+  /** posição suave (lib/glide): o carrinho desliza entre as leituras do GPS em vez de pular */
+  glide?: Glide | null;
 }
 
-export function Marker({ lngLat, children, rotation }: MarkerProps) {
+export function Marker({ lngLat, children, rotation, glide }: MarkerProps) {
   const map = useContext(MapCtx);
   const [el] = useState(() => document.createElement('div'));
   const marker = useRef<maplibregl.Marker | null>(null);
@@ -178,8 +236,26 @@ export function Marker({ lngLat, children, rotation }: MarkerProps) {
     return () => { marker.current?.remove(); marker.current = null; };
   }, [map]);
 
-  useEffect(() => { marker.current?.setLngLat(lngLat); }, [lngLat[0], lngLat[1]]);
-  useEffect(() => { if (rotation != null) marker.current?.setRotation(rotation); }, [rotation]);
+  useEffect(() => { if (!glide) marker.current?.setLngLat(lngLat); }, [lngLat[0], lngLat[1], glide]);
+  useEffect(() => { if (!glide && rotation != null) marker.current?.setRotation(rotation); }, [rotation, glide]);
+
+  useEffect(() => {
+    if (!map || !glide) return;
+    const turns = rotation !== undefined;
+    let raf = 0, seen = -1, wasMoving = false;
+    const loop = (now: number) => {
+      raf = requestAnimationFrame(loop);
+      const moving = glide.moving(now);
+      if (!moving && !wasMoving && seen === glide.version) return; // parado e já desenhado
+      wasMoving = moving; seen = glide.version;
+      const p = glide.at(now);
+      if (!p || !marker.current) return;
+      marker.current.setLngLat([p.lon, p.lat]);
+      if (turns) marker.current.setRotation(p.heading ?? 0);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [map, glide]);
 
   return createPortal(children, el);
 }
