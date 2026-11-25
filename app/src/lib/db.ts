@@ -19,11 +19,36 @@ export function authToken(): Promise<string | null> {
   return getToken();
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Token do Clerk; logo depois de abrir o app ele pode demorar um instante: espera um pouco antes de ir sem. */
+async function tokenSoon(): Promise<string | null> {
+  for (let i = 0; i < 6; i++) {
+    const t = await getToken().catch(() => null);
+    if (t) return t;
+    await sleep(250);
+  }
+  return null;
+}
+
 async function authFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  const token = await getToken();
-  const headers = new Headers(init?.headers);
-  if (token) headers.set('Authorization', `Bearer ${token}`);
-  return fetch(input, { ...init, headers });
+  const send = async () => {
+    const token = await tokenSoon();
+    const headers = new Headers(init?.headers);
+    if (token) headers.set('Authorization', `Bearer ${token}`);
+    return fetch(input, { ...init, headers });
+  };
+  const res = await send();
+  // às vezes o banco não reconhece o login na hora (token chegando junto com várias chamadas):
+  // tenta de novo uma vez, com o token renovado, antes de mostrar erro
+  if (res.status === 400 || res.status === 401) {
+    const body = await res.clone().text().catch(() => '');
+    if (/not_authenticated|JWT expired|jwt expired/i.test(body)) {
+      await sleep(400);
+      return send();
+    }
+  }
+  return res;
 }
 
 export const db = new PostgrestClient(url, { fetch: authFetch });

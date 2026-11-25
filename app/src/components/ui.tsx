@@ -124,7 +124,8 @@ export function ErrorText({ children }: { children?: string | null }) {
 
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: 20, gap: 14 },
+  // em tablet o conteúdo não estica: fica numa coluna centralizada, como nos apps de celular
+  content: { padding: 20, gap: 14, width: '100%', maxWidth: 640, alignSelf: 'center' },
   title: { color: colors.text, fontFamily: fonts.display, fontSize: 26 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   backBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.lineStrong,

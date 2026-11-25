@@ -2,10 +2,10 @@
 // fundador, próximos eventos e membros. Fundador/admin edita a página e aprova quem pede pra entrar.
 // Quem é de fora pede pra entrar daqui. Dados de crew_page() — o banco decide o que cada um vê.
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Image, Linking, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { Body, Button, Card, ErrorText, Field, Label, Mono, Screen } from '../../src/components/ui';
+import { Body, Button, Card, ErrorText, Field, Label, Mono, Screen, Title } from '../../src/components/ui';
 import { Avatar } from '../../src/components/Avatar';
 import { db } from '../../src/lib/db';
 import { photoUrl, uploadPhoto } from '../../src/lib/photos';
@@ -100,9 +100,7 @@ export default function EquipePagina() {
 
   return (
     <Screen>
-      <Pressable onPress={() => goBack(router, '/equipes')} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
-        <Text style={{ color: colors.holo, fontSize: 16 }}>‹ Voltar</Text>
-      </Pressable>
+      <Title back="/equipes">Equipe</Title>
 
       {/* capa + foto da equipe por cima, como no Facebook */}
       <View style={{ marginBottom: LOGO / 2 }}>
@@ -111,7 +109,17 @@ export default function EquipePagina() {
           {cover
             ? <Image source={{ uri: cover }} style={{ width: '100%', height: '100%' }} resizeMode="cover"
                      accessibilityLabel={`Capa da equipe ${c.name}`} />
-            : <View style={{ flex: 1, backgroundColor: c.color, opacity: 0.25 }} />}
+            : (
+              // sem capa: fundo na cor da equipe com o nome bem grande e apagado, em vez de um quadro vazio
+              <View style={{ flex: 1, backgroundColor: colors.panel, justifyContent: 'center', overflow: 'hidden' }}>
+                <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: c.color, opacity: 0.16 }} />
+                <Text numberOfLines={1} style={{ color: accent, opacity: 0.18, fontSize: 64, fontWeight: '900', marginLeft: 12,
+                                                 letterSpacing: -1, transform: [{ rotate: '-6deg' }] }}>{c.name.toUpperCase()}</Text>
+                {c.i_am_admin && !editing && (
+                  <Text style={{ position: 'absolute', right: 12, top: 10, color: colors.textMuted, fontSize: 12 }}>Sem capa ainda</Text>
+                )}
+              </View>
+            )}
           {editing && (
             <Pressable onPress={() => pick('cover')} accessibilityRole="button" accessibilityLabel="Trocar capa"
                        style={{ position: 'absolute', right: 8, bottom: 8, backgroundColor: colors.bg, borderRadius: 6,
@@ -184,7 +192,7 @@ export default function EquipePagina() {
         <>
           {c.bio ? <Body>{c.bio}</Body> : c.i_am_admin ? <Body dim>Sem bio ainda. Toque em “Editar página” pra contar a história da equipe.</Body> : null}
           {insta ? (
-            <Text style={{ color: colors.holo, fontWeight: '700', paddingVertical: 6 }} accessibilityRole="link"
+            <Text style={{ color: colors.holo, fontWeight: '700', paddingVertical: 12 }} accessibilityRole="link"
                   onPress={() => Linking.openURL(`https://instagram.com/${encodeURIComponent(insta)}`)}>@{insta} no Instagram ›</Text>
           ) : null}
           {c.i_am_admin && <Button title="Editar página" variant="secondary" color={c.color} onPress={startEdit} />}

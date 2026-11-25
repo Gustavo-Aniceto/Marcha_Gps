@@ -141,7 +141,7 @@ export default function Equipes() {
         <Card accent={accent}>
           <Text style={{ color: accent, fontSize: 20, fontWeight: '700' }}>{current.crews.name}</Text>
           <Mono color={accent}>{ROLE[current.role] ?? current.role.toUpperCase()} · {current.status === 'verified' ? 'VERIFICADO' : 'EM VERIFICAÇÃO'}</Mono>
-          <Text style={{ color: accent, fontWeight: '700', paddingVertical: 8 }} accessibilityRole="link"
+          <Text style={{ color: accent, fontWeight: '700', paddingVertical: 12, minHeight: 44 }} accessibilityRole="link"
                 onPress={() => router.push({ pathname: '/equipe/[id]', params: { id: current.crews.id } })}>
             Ver página da equipe ›
           </Text>
@@ -311,7 +311,7 @@ export default function Equipes() {
                 {!free && <Body>@{f.used_by ?? '—'}</Body>}
                 <Mono color={f.crew_name ? colors.neon : colors.textDim}>{status}</Mono>
                 {f.crew_id && (
-                  <Text style={{ color: colors.holo, fontWeight: '700', paddingVertical: 6 }} accessibilityRole="link"
+                  <Text style={{ color: colors.holo, fontWeight: '700', paddingVertical: 12 }} accessibilityRole="link"
                         onPress={() => router.push({ pathname: '/equipe/[id]', params: { id: f.crew_id! } })}>Abrir equipe ›</Text>
                 )}
               </Card>

@@ -4,7 +4,7 @@ import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { Button, ErrorText, Pills, Screen } from '../../src/components/ui';
+import { Button, ErrorText, Pills, Screen, Title } from '../../src/components/ui';
 import { Composer } from '../../src/components/Composer';
 import { Avatar } from '../../src/components/Avatar';
 import { CarMarker } from '../../src/components/CarMarker';
@@ -80,36 +80,62 @@ export default function Perfil() {
 
   return (
     <Screen>
-      <Pressable onPress={() => goBack(router)} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
-        <Text style={{ color: colors.holo, fontSize: 16 }}>‹ Voltar</Text>
-      </Pressable>
+      <Title back>{p ? `@${p.username}` : 'Perfil'}</Title>
       {missing && <Text style={{ color: colors.textMuted }}>Perfil não encontrado.</Text>}
       {!p && !missing && <ActivityIndicator color={colors.neon} />}
       {p && (
         <>
-          <View style={{ alignItems: 'center', gap: 8 }}>
-            <Avatar username={p.username} avatarKey={p.avatar_key} size={96} ring={colors.neon} />
-            <Text style={{ color: colors.text, fontFamily: fonts.display, fontSize: 26 }}>@{p.username}</Text>
-            <Text style={{ color: colors.textMuted, fontSize: 13 }}>
-              Na cena desde {new Date(p.joined_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })} · {p.posts} {p.posts === 1 ? 'post' : 'posts'}
-            </Text>
-            {p.mine && <View style={{ width: 200 }}><Button title="Trocar foto" variant="secondary" onPress={changePhoto} loading={busy} /></View>}
-            <ErrorText>{error}</ErrorText>
-            {crews.length > 0 && (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-                {crews.map((c) => (
-                  <Pressable key={c.crew_id} accessibilityRole="link" accessibilityLabel={`Página da equipe ${c.name}`}
-                             onPress={() => router.push({ pathname: '/equipe/[id]', params: { id: c.crew_id } })}
-                             style={{ minHeight: 36, paddingHorizontal: 12, borderRadius: 18, borderWidth: 1, justifyContent: 'center',
-                                      borderColor: readableAccent(c.color) }}>
-                    <Text style={{ color: readableAccent(c.color), fontWeight: '700' }}>
-                      {c.role === 'founder' ? '★ ' : ''}{c.name}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
+          {/* cabeçalho no jeito que todo mundo conhece (foto à esquerda, números à direita) */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
+            <Pressable disabled={!p.mine || busy} onPress={changePhoto} accessibilityRole={p.mine ? 'button' : undefined}
+                       accessibilityLabel={p.mine ? 'Trocar foto de perfil' : undefined}>
+              <Avatar username={p.username} avatarKey={p.avatar_key} size={86} ring={colors.neon} />
+              {p.mine && (
+                <View style={{ position: 'absolute', right: -2, bottom: -2, width: 28, height: 28, borderRadius: 14, backgroundColor: colors.neon,
+                               borderWidth: 2, borderColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ color: colors.ink, fontSize: 16, fontWeight: '800', lineHeight: 18 }}>{busy ? '…' : '+'}</Text>
+                </View>
+              )}
+            </Pressable>
+            <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-around' }}>
+              {[
+                { n: p.posts, l: p.posts === 1 ? 'post' : 'posts' },
+                { n: crews.length, l: crews.length === 1 ? 'equipe' : 'equipes' },
+                { n: Math.max(garage.length, p.car ? 1 : 0), l: Math.max(garage.length, p.car ? 1 : 0) === 1 ? 'carro' : 'carros' },
+              ].map((x) => (
+                <View key={x.l} style={{ alignItems: 'center', minWidth: 56 }}>
+                  <Text style={{ color: colors.text, fontSize: 20, fontWeight: '800' }}>{x.n}</Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 13 }}>{x.l}</Text>
+                </View>
+              ))}
+            </View>
           </View>
+          <View style={{ gap: 2 }}>
+            <Text style={{ color: colors.textMuted, fontSize: 13 }}>
+              Na cena desde {new Date(p.joined_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+            </Text>
+          </View>
+          {p.mine && (
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <View style={{ flex: 1 }}><Button title="Trocar foto" variant="secondary" onPress={changePhoto} loading={busy} /></View>
+              <View style={{ flex: 1 }}><Button title={p.car ? 'Editar carro' : 'Montar carro'} variant="secondary" onPress={() => router.push('/(tabs)/garagem')} /></View>
+            </View>
+          )}
+          <ErrorText>{error}</ErrorText>
+          {crews.length > 0 && (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {crews.map((c) => (
+                <Pressable key={c.crew_id} accessibilityRole="link" accessibilityLabel={`Página da equipe ${c.name}`}
+                           onPress={() => router.push({ pathname: '/equipe/[id]', params: { id: c.crew_id } })}
+                           style={{ minHeight: 36, paddingHorizontal: 12, borderRadius: 18, borderWidth: 1, justifyContent: 'center',
+                                    borderColor: readableAccent(c.color) }}>
+                  <Text style={{ color: readableAccent(c.color), fontWeight: '700' }}>
+                    {c.role === 'founder' ? '★ ' : ''}{c.name}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
 
           <View style={{ backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.line, borderRadius: 12, padding: 14,
                          flexDirection: 'row', alignItems: 'center', gap: 14 }}>
@@ -140,7 +166,6 @@ export default function Perfil() {
               </View>
             </>
           )}
-          {p.mine && <Button title={p.car ? 'Editar meu carro' : 'Montar meu carro'} variant="secondary" onPress={() => router.push('/(tabs)/garagem')} />}
 
           {p.mine && <Composer onPosted={load} initialMode={tab === 'tudo' ? 'post' : tab} key={`composer-${tab}`} />}
 

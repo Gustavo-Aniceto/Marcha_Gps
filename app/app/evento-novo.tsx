@@ -160,7 +160,7 @@ export default function EventoNovo() {
                 {r.detail ? <Text style={{ color: colors.textDim, fontSize: 13 }}>{r.detail}</Text> : null}
               </Pressable>
             ))}
-            <Text style={{ color: colors.holo, paddingVertical: 8 }} onPress={here} accessibilityRole="button">Ou usar onde estou agora</Text>
+            <Text style={{ color: colors.holo, paddingVertical: 12 }} onPress={here} accessibilityRole="button">Ou usar onde estou agora</Text>
           </>
         )}
       </Card>
