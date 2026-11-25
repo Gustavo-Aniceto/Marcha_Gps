@@ -77,8 +77,8 @@ function Gate() {
   );
 }
 
-const clerkKey = pickClerkKey(typeof window !== 'undefined' && window.location ? window.location.hostname : null,
-  process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY, process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY_PROD);
+const clerkKey: string = pickClerkKey(typeof window !== 'undefined' && window.location ? window.location.hostname : null,
+  process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY, process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY_PROD) ?? '';
 if (!clerkKey) throw new Error('Configure EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY no app/.env');
 
 export default function RootLayout() {
