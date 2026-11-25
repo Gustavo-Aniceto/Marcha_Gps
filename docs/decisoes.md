@@ -9,7 +9,11 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 - Entrada só por **convite**; quem convida é o padrinho e responde pelo convidado.
 - **Todo convite vale uma vez só, pra sempre** (principalmente o de fundador): usou, ninguém mais usa, nem se a conta de quem usou for apagada. Se duas pessoas tentarem ao mesmo tempo, só uma entra.
 - **Ordem do primeiro acesso:** 1) digita o código do convite (o app confere sem login); 2) entra com a conta que preferir: Google, Facebook ou e-mail (código no e-mail ou senha); 3) escolhe o nome de usuário. Quem já é membro toca em "Já sou membro · Entrar".
-- **Verificação do membro** além do convite: 2 membros confirmam que conhecem + check-in presencial (QR escaneado por admin). Sem isso: não vê localização da equipe nem entra em comboio.
+- **Convite só dá acesso ao app.** Dois tipos: código de fundador (só o Adm Master gera; quem usa pode registrar uma equipe) e convite pro app (quem é verificado em alguma equipe gera, gasta 1 dos convites, vale 7 dias). Nenhum convite coloca ninguém em equipe.
+- **Entrar numa equipe = pedir.** Na página da equipe (ou na lista "Equipes da cena") a pessoa toca em "Pedir pra entrar" (mensagem opcional). Quem aprova é o fundador ou admin daquela equipe; quem aprovou vira o padrinho. Recusado só pede de novo depois de 7 dias. Um pedido aberto por equipe.
+- **Registrar equipe** só quem entrou com código de fundador que ainda não virou equipe (ou o Adm Master).
+- **Página da equipe** no jeito das páginas do Facebook: capa, foto (logo), bio (até 600 letras) e Instagram, editados pelo fundador/admin. Fotos sobem pelo serviço de fotos como tipo `post`.
+- **Verificação do membro** depois de aprovado: 2 membros confirmam que conhecem + check-in presencial (QR escaneado por admin). Sem isso: não vê localização da equipe nem entra em comboio.
 - Só o **Adm Master** (dono do app) libera equipes novas. **Código de fundador não vence** e fica ligado pra sempre à equipe que nasceu dele: na aba Equipes o master vê a lista de códigos (livre / quem usou / pedido em análise / nome da equipe). O dono da equipe manda nome, cidade, Instagram, nº de membros, fotos de prova e faz chamada de vídeo.
 
 ## Carro
