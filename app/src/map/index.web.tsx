@@ -12,6 +12,15 @@ import { glyphFor, parseReportImageId, reportImageId } from '../lib/reportGlyphs
 
 const MapCtx = createContext<maplibregl.Map | null>(null);
 
+/**
+ * O estilo (as camadas do mapa) já foi lido e aceita camadas novas?
+ * Não usar map.isStyleLoaded(): ele fica falso enquanto os quadradinhos do mapa carregam,
+ * e aí a linha da rota (e os avisos) nunca eram desenhados.
+ */
+function styleReady(map: maplibregl.Map): boolean {
+  return !!(map as unknown as { style?: { _loaded?: boolean } }).style?._loaded;
+}
+
 interface MapProps {
   style?: StyleProp<ViewStyle>;
   mapStyle: unknown;
@@ -76,6 +85,8 @@ export function Map({ style, mapStyle, compass, onPress, children, attributionPo
           'sky-horizon-blend': 0.6, 'horizon-fog-blend': 0.6, 'fog-ground-blend': 0.4,
         });
       } catch { /* versão sem céu */ }
+      // crédito começa fechado (só o "i"); toca pra abrir
+      el.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
       setMap(m);
     });
     const ro = new ResizeObserver(() => m.resize());
@@ -292,7 +303,7 @@ export function RouteLine({ coords, route, trim }: { coords: { lat: number; lon:
   useEffect(() => {
     if (!map) return;
     const ensure = () => {
-      if (!map.isStyleLoaded()) return;
+      if (!styleReady(map)) return;
       const src = map.getSource('rota') as maplibregl.GeoJSONSource | undefined;
       if (src) { src.setData(data.current); return; }
       map.addSource('rota', { type: 'geojson', data: data.current });
@@ -415,7 +426,7 @@ export function ReportsLayer({ reports }: { reports: MapReport[] }) {
       map.addImage(e.id, drawReportImage(p.kind, p.speed), { pixelRatio: 2 });
     };
     const ensure = () => {
-      if (!map.isStyleLoaded()) return;
+      if (!styleReady(map)) return;
       const src = map.getSource('avisos') as maplibregl.GeoJSONSource | undefined;
       if (src) { src.setData(data.current); return; }
       map.addSource('avisos', { type: 'geojson', data: data.current });

@@ -83,7 +83,7 @@ export function Composer({ crewId = null, scopeName = 'todo mundo', onPosted, in
         <Pressable onPress={() => quick('post')} accessibilityRole="button" accessibilityLabel="Escrever post"
                    style={{ flex: 1, minHeight: 44, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 22,
                             borderWidth: 1, borderColor: colors.line, backgroundColor: colors.bg }}>
-          <Text style={{ color: colors.textMuted, fontSize: 15 }} numberOfLines={1}>Fala pra {scopeName}…</Text>
+          <Text style={{ color: colors.textMuted, fontSize: 15 }} numberOfLines={1}>Escreve um post…</Text>
         </Pressable>
         <Pressable onPress={() => quick('carro')} accessibilityRole="button" accessibilityLabel="Postar foto do carro" hitSlop={4}
                    style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
