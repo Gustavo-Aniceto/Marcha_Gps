@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { verifyJwt, type Jwk } from '../src/jwt.ts';
+import { issuerList, verifyFromIssuers, verifyJwt, type Jwk } from '../src/jwt.ts';
 import { extFor, keyFor, KEY_RE, looksLikeImage } from '../src/uploads.ts';
 
 const ISS = 'https://exemplo.clerk.accounts.dev';
@@ -65,4 +65,31 @@ test('regras de arquivo', () => {
   assert.match(k, KEY_RE);
   // mesmo formato que o banco aceita (check_own_photo_key / posts.photo_key)
   assert.match(k, /^[a-z]+\/[A-Za-z0-9_-]+\/[0-9a-f-]{36}\.(jpg|png|webp)$/);
+});
+
+test('vários emissores: aceita teste e produção, cada um com a sua chave', async () => {
+  const dev = await keys(), prod = await keys();
+  const PROD = 'https://clerk.marchagps.eu.org';
+  const list = issuerList(` ${ISS}, ${PROD}/ `);
+  assert.deepEqual(list, [ISS, PROD]);
+  const jwksOf = async (iss: string) => (iss === ISS ? dev.jwks : prod.jwks);
+  const t1 = await sign(dev.priv, good);
+  const t2 = await sign(prod.priv, { ...good, iss: PROD });
+  assert.equal((await verifyFromIssuers(t1, list, jwksOf, { now })).iss, ISS);
+  assert.equal((await verifyFromIssuers(t2, list, jwksOf, { now })).iss, PROD);
+});
+
+test('vários emissores: emissor fora da lista é recusado antes de baixar chave', async () => {
+  const dev = await keys();
+  let fetched = false;
+  const t = await sign(dev.priv, { ...good, iss: 'https://mau.example' });
+  await assert.rejects(verifyFromIssuers(t, [ISS], async () => { fetched = true; return dev.jwks; }, { now }), /emissor_invalido/);
+  assert.equal(fetched, false);
+});
+
+test('vários emissores: token de um emissor assinado com a chave de outro não passa', async () => {
+  const dev = await keys(), prod = await keys();
+  const PROD = 'https://clerk.marchagps.eu.org';
+  const forged = await sign(dev.priv, { ...good, iss: PROD });
+  await assert.rejects(verifyFromIssuers(forged, [ISS, PROD], async (i) => (i === ISS ? dev.jwks : prod.jwks), { now }), /assinatura_invalida|chave_desconhecida/);
 });

@@ -1,4 +1,4 @@
-// Login: tela nativa do Clerk (Google, Apple, Facebook ou código no e-mail). Vem depois do convite.
+// Login: tela nativa do Clerk (Google, Facebook ou código no e-mail). Vem depois do convite.
 import React from 'react';
 import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';

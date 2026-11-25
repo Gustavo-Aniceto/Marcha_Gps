@@ -2,8 +2,10 @@
 // barra de chegada embaixo, rota roxa, botões redondos), com o carro montado na garagem e os avisos do Radar.
 // Como no Waze: arrastar o mapa solta a câmera do carro; "Voltar pro carro" (ou 15 s parado, navegando) volta.
 // Mapa gratuito: MapLibre + OpenFreeMap (ver src/lib/mapStyle.ts).
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { displayPoint, Glide } from '../../src/lib/glide.ts';
+import { avoidPoints, blockingAhead, offerText, shouldOffer } from '../../src/lib/avoid.ts';
+import type { Route } from '../../src/lib/nav.ts';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Camera, Map as MapView, Marker, RouteLine } from '../../src/map';
@@ -21,7 +23,8 @@ import { db, type VisibleCar } from '../../src/lib/db';
 import { useSession } from '../../src/lib/session';
 import { useMapSettings } from '../../src/lib/mapSettings';
 import { useLocationSharing } from '../../src/lib/useLocationSharing';
-import { cameraFor } from '../../src/lib/mapCamera.ts';
+import { cameraFor, gpsQuality, navZoom, resolveTheme } from '../../src/lib/mapCamera.ts';
+import { useGlides } from '../../src/lib/useGlides';
 import { clearanceFor } from '../../src/lib/fitment.ts';
 import { kindInfo, type ReportKind } from '../../src/lib/reports.ts';
 import { haversineM } from '../../src/lib/geo.ts';
@@ -29,6 +32,20 @@ import { buildMapStyle } from '../../src/lib/mapStyle.ts';
 import { chrome, colors, fonts } from '../../src/theme/tokens.ts';
 
 interface Report { id: string; kind: ReportKind; lat: number; lon: number; base_risk: number; status: string; speed_limit: number | null }
+/** Avisos em cima da rota (com a distância desde o começo dela). */
+async function loadOnRoute(route: Route): Promise<{ item: Report; along: number }[]> {
+  let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+  for (const c of route.coords) {
+    minLat = Math.min(minLat, c.lat); maxLat = Math.max(maxLat, c.lat);
+    minLon = Math.min(minLon, c.lon); maxLon = Math.max(maxLon, c.lon);
+  }
+  const m = 0.002;
+  const { data } = await db.from('reports').select('id, kind, lat, lon, base_risk, status, speed_limit')
+    .gte('lat', minLat - m).lte('lat', maxLat + m).gte('lon', minLon - m).lte('lon', maxLon + m)
+    .limit(5000);
+  return obstaclesOnRoute(route, (data ?? []) as Report[]);
+}
+
 interface MyCar { color: string; neon: string | null; ride_height_cm: number; suspension: string; body_type: string; tint: string; spoiler: boolean }
 
 export default function Mapa() {
@@ -54,8 +71,12 @@ export default function Mapa() {
   const [reports, setReports] = useState<Report[]>([]);
   const [myCar, setMyCar] = useState<MyCar | null>(null);
   const cam = cameraFor(camera);
-  const mapStyle = useMemo(() => buildMapStyle(camera.theme), [camera.theme]);
-  const ui = camera.theme === 'dia' ? chrome.dia : chrome.noite;
+  // tema "auto": dia claro do nascer ao pôr do sol (confere a cada minuto)
+  const [clock, setClock] = useState(() => new Date());
+  useEffect(() => { const t = setInterval(() => setClock(new Date()), 60_000); return () => clearInterval(t); }, []);
+  const theme = resolveTheme(camera.theme, clock, null);
+  const mapStyle = useMemo(() => buildMapStyle(theme), [theme]);
+  const ui = theme === 'dia' ? chrome.dia : chrome.noite;
   const [menu, setMenu] = useState(false);
 
   useFocusEffect(useCallback(() => {
@@ -95,6 +116,15 @@ export default function Mapa() {
     nav.onFix(position);
   }, [position]);
 
+  // sinal do GPS: fraco (impreciso) ou perdido (sem leitura há 15 s)
+  const lastFixAt = useRef(0);
+  const [gps, setGps] = useState<'bom' | 'fraco' | 'perdido'>('bom');
+  useEffect(() => { if (position) { lastFixAt.current = Date.now(); setGps(gpsQuality(position.accuracy, 0)); } }, [position]);
+  useEffect(() => {
+    const t = setInterval(() => { if (lastFixAt.current) setGps(gpsQuality(position?.accuracy ?? null, Date.now() - lastFixAt.current)); }, 3000);
+    return () => clearInterval(t);
+  }, [position]);
+
   // carrinho e câmera deslizam entre as leituras do GPS (sem trancos); navegando, em cima da rota
   const glide = useMemo(() => new Glide(), []);
   useEffect(() => {
@@ -106,17 +136,43 @@ export default function Mapa() {
   const route = nav.route;
   useEffect(() => {
     if (!route) { setRouteReports([]); return; }
-    let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
-    for (const c of route.coords) {
-      minLat = Math.min(minLat, c.lat); maxLat = Math.max(maxLat, c.lat);
-      minLon = Math.min(minLon, c.lon); maxLon = Math.max(maxLon, c.lon);
-    }
-    const m = 0.002;
-    db.from('reports').select('id, kind, lat, lon, base_risk, status, speed_limit')
-      .gte('lat', minLat - m).lte('lat', maxLat + m).gte('lon', minLon - m).lte('lon', maxLon + m)
-      .limit(5000)
-      .then(({ data }) => setRouteReports(obstaclesOnRoute(route, (data ?? []) as Report[])));
+    let alive = true;
+    loadOnRoute(route).then((r) => { if (alive) setRouteReports(r); });
+    return () => { alive = false; };
   }, [route]);
+
+  // ---- rota que desvia do que pega no carro: o app acha e PERGUNTA (nunca troca sozinho) ----
+  const [offer, setOffer] = useState<{ route: Route; points: { lat: number; lon: number }[]; extra_s: number; avoided: number; total: number } | null>(null);
+  const askedFor = useRef<string | null>(null); // uma pergunta por destino
+  useEffect(() => {
+    const dest = nav.destination, along = nav.update?.snap.along, remaining = nav.update?.remaining_s;
+    if (nav.status !== 'navigating' || !dest || !route || !myCar || nav.avoiding || along == null || remaining == null) return;
+    if (askedFor.current === dest.id || !routeReports.length) return;
+    const blocking = blockingAhead(routeReports, myCar, along);
+    if (!blocking.length) return;
+    askedFor.current = dest.id;
+    let alive = true;
+    const t = setTimeout(async () => { // o servidor público de rotas pede 1 pedido por segundo
+      const points = avoidPoints(blocking);
+      const alt = await nav.findAlternative(points);
+      if (!alive || !alt) return;
+      const altBlocking = blockingAhead(await loadOnRoute(alt), myCar, 0);
+      if (!alive) return;
+      const d = shouldOffer({ blocking: blocking.length, remaining_s: remaining }, { blocking: altBlocking.length, time_s: alt.time_s });
+      if (!d.offer) return;
+      const o = { route: alt, points, extra_s: d.extra_s, avoided: d.avoided, total: blocking.length };
+      setOffer(o);
+      nav.speak(offerText(o).speak);
+    }, 1500);
+    return () => { alive = false; clearTimeout(t); };
+  }, [nav.status, nav.destination, route, routeReports, myCar, nav.avoiding]);
+  // sem resposta em 30 s: mantém o caminho; parou a navegação: some
+  useEffect(() => {
+    if (!offer) return;
+    const t = setTimeout(() => setOffer(null), 30_000);
+    return () => clearTimeout(t);
+  }, [offer]);
+  useEffect(() => { if (!navigating) { setOffer(null); askedFor.current = null; } }, [navigating]);
 
   // na navegação: o próximo obstáculo da rota (até 300 m) que pega no meu carro, ou radar
   const routeAlert = useMemo(() => {
@@ -176,7 +232,8 @@ export default function Mapa() {
   const next = nav.update?.next;
   // rua em que você está agora (a da manobra anterior à próxima)
   const street = route && next ? route.maneuvers[next.index - 1]?.street || route.maneuvers[0]?.street || '' : '';
-  const others = cars.filter((c) => c.user_id !== profile?.id);
+  const others = useMemo(() => cars.filter((c) => c.user_id !== profile?.id), [cars, profile?.id]);
+  const glideOf = useGlides(others);
   const picked = others.find((c) => c.user_id === pickedId) ?? null;
 
   return (
@@ -186,7 +243,7 @@ export default function Mapa() {
         <Camera
           key={`camera-${recenter}`}
           trackUserLocation={camera.threeD || navigating ? 'course' : 'default'}
-          zoom={navigating ? Math.max(cam.zoom, 16.5) : cam.zoom}
+          zoom={navigating ? navZoom(Math.max(cam.zoom, 16.5), kmh, nav.update?.next?.distance_m ?? null) : cam.zoom}
           pitch={cam.pitch}
           duration={600}
           follow={position}
@@ -198,7 +255,7 @@ export default function Mapa() {
           padTop={navigating ? 240 : 120}
         />
 
-        {route && <RouteLine coords={route.coords} />}
+        {route && <RouteLine coords={route.coords} route={route} trim={web ? glide : null} />}
 
         {reports.map((r) => (
           <Marker key={r.id} id={`aviso-${r.id}`} lngLat={[r.lon, r.lat]}>
@@ -209,13 +266,13 @@ export default function Mapa() {
         {/* todo mundo que o banco libera (visible_cars cuida de fantasma, equipe, zona privada e atraso) */}
         {others.map((c) => web ? (
           <React.Fragment key={c.user_id}>
-            <Marker id={`carro-${c.user_id}`} lngLat={[c.lon, c.lat]} rotation={c.heading ?? 0}>
+            <Marker id={`carro-${c.user_id}`} lngLat={[c.lon, c.lat]} rotation={c.heading ?? 0} glide={glideOf(c)}>
               <Pressable onPress={() => setPickedId(c.user_id)} accessibilityRole="button" accessibilityLabel={`Ver perfil de @${c.username}`} hitSlop={8}>
                 <CarMarker color={c.car?.color} neon={c.car?.neon} heading={0} approximate={c.approximate}
                            body={c.car?.body_type} tint={c.car?.tint} spoiler={c.car?.spoiler} />
               </Pressable>
             </Marker>
-            <Marker id={`nome-${c.user_id}`} lngLat={[c.lon, c.lat]}>
+            <Marker id={`nome-${c.user_id}`} lngLat={[c.lon, c.lat]} glide={glideOf(c)}>
               <View style={{ paddingBottom: 64 }} pointerEvents="none">
                 <Text style={[s.carLabel, c.same_crew && s.carLabelCrew]}>@{c.username}</Text>
               </View>
@@ -307,6 +364,13 @@ export default function Mapa() {
         </Pressable>
       )}
 
+      {gps !== 'bom' && permission === 'granted' && (
+        <View style={[s.gpsPill, { top: navigating ? 150 : 108, backgroundColor: ui.panel, borderColor: colors.warn }]} pointerEvents="none"
+              accessibilityLiveRegion="polite">
+          <Text style={[s.gpsText, { color: ui.text }]}>{gps === 'perdido' ? 'Sem sinal de GPS' : 'GPS fraco'}</Text>
+        </View>
+      )}
+
       {alert && (
         <View style={[s.banner, { top: navigating ? 150 : 108 }]} accessibilityLiveRegion="polite">
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -324,6 +388,25 @@ export default function Mapa() {
           </View>
         </View>
       )}
+
+      {offer && (() => {
+        const t = offerText(offer);
+        return (
+          <View style={[s.offer, { bottom: BOTTOM_NAV + 58, backgroundColor: ui.panel, borderColor: colors.warn }]} accessibilityLiveRegion="polite">
+            <Text style={[s.offerTitle, { color: ui.text }]}>{t.title}</Text>
+            <Text style={[s.offerText, { color: ui.sub }]}>{t.detail}</Text>
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 6 }}>
+              <Pressable style={[s.offerBtn, { borderColor: ui.border }]} onPress={() => setOffer(null)} accessibilityRole="button">
+                <Text style={[s.offerBtnText, { color: ui.text }]}>Manter caminho</Text>
+              </Pressable>
+              <Pressable style={[s.offerBtn, { backgroundColor: colors.warn, borderColor: colors.warn }]} accessibilityRole="button"
+                         onPress={() => { nav.switchToAlternative(offer.route, offer.points); setOffer(null); }}>
+                <Text style={[s.offerBtnText, { color: colors.ink }]}>Trocar rota</Text>
+              </Pressable>
+            </View>
+          </View>
+        );
+      })()}
 
       {!!nav.error && nav.status !== 'routing' && (
         <Pressable style={[s.info, { top: navigating ? 150 : 108, backgroundColor: ui.panel, borderColor: ui.border }]} onPress={() => nav.stop()} accessibilityRole="alert">
@@ -489,6 +572,14 @@ const s = StyleSheet.create({
                paddingHorizontal: 18, borderRadius: 26, borderWidth: 1,
                shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 5 },
   searchText: { fontSize: 17, fontWeight: '600' },
+  gpsPill: { position: 'absolute', right: 12, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, zIndex: 30 },
+  gpsText: { fontSize: 13, fontWeight: '700' },
+  offer: { position: 'absolute', left: 12, right: 12, padding: 14, gap: 2, borderRadius: 12, borderWidth: 2, zIndex: 40,
+           maxWidth: 520, alignSelf: 'center' },
+  offerTitle: { fontSize: 15, fontWeight: '800' },
+  offerText: { fontSize: 14 },
+  offerBtn: { flex: 1, minHeight: 46, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  offerBtnText: { fontSize: 15, fontWeight: '800' },
   carLabel: { fontFamily: fonts.mono, fontSize: 10, color: colors.holo, backgroundColor: 'rgba(6,12,22,0.88)',
               borderWidth: 1, borderColor: colors.lineStrong, paddingHorizontal: 5, paddingVertical: 1 },
   carLabelCrew: { color: colors.neon, borderColor: colors.neon },

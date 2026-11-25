@@ -7,6 +7,7 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { colors } from '../theme/tokens.ts';
 import { lerpAngle, type Glide } from '../lib/glide.ts';
+import { snapToRoute, type Route } from '../lib/nav.ts';
 
 const MapCtx = createContext<maplibregl.Map | null>(null);
 
@@ -260,8 +261,11 @@ export function Marker({ lngLat, children, rotation, glide }: MarkerProps) {
   return createPortal(children, el);
 }
 
-/** Linha da rota da navegação (some e volta sozinha quando o tema do mapa troca). */
-export function RouteLine({ coords }: { coords: { lat: number; lon: number }[] }) {
+/**
+ * Linha da rota da navegação (some e volta sozinha quando o tema do mapa troca).
+ * Com `route` + `trim`, o pedaço que já ficou pra trás do carro some (como nos apps de trânsito).
+ */
+export function RouteLine({ coords, route, trim }: { coords: { lat: number; lon: number }[]; route?: Route | null; trim?: Glide | null }) {
   const map = useContext(MapCtx);
   const data = useRef<GeoJSON.Feature>({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [] } });
   data.current = {
@@ -300,6 +304,25 @@ export function RouteLine({ coords }: { coords: { lat: number; lon: number }[] }
     const src = map?.getSource('rota') as maplibregl.GeoJSONSource | undefined;
     src?.setData(data.current);
   }, [map, coords]);
+
+  // apaga o que já foi andado, ~5 vezes por segundo, seguindo o mesmo carrinho que desliza
+  useEffect(() => {
+    if (!map || !route || !trim || route.coords.length < 2) return;
+    let hint = 0, lastSeg = -1, lastLat = 0, lastLon = 0;
+    const id = setInterval(() => {
+      const p = trim.at(performance.now());
+      const src = map.getSource('rota') as maplibregl.GeoJSONSource | undefined;
+      if (!p || !src) return;
+      const snap = snapToRoute(route, p, hint);
+      if (snap.off > 40) return; // fora da rota: deixa a linha inteira
+      hint = snap.seg;
+      if (snap.seg === lastSeg && Math.abs(snap.point.lat - lastLat) < 1e-6 && Math.abs(snap.point.lon - lastLon) < 1e-6) return;
+      lastSeg = snap.seg; lastLat = snap.point.lat; lastLon = snap.point.lon;
+      const rest = route.coords.slice(snap.seg + 1).map((c) => [c.lon, c.lat]);
+      src.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [[snap.point.lon, snap.point.lat], ...rest] } });
+    }, 200);
+    return () => clearInterval(id);
+  }, [map, route, trim]);
 
   return null;
 }

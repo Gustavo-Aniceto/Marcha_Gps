@@ -32,11 +32,13 @@ export async function searchPlaces(q: string, near?: { lat: number; lon: number 
   return lugares;
 }
 
-export function fetchRoute(from: { lat: number; lon: number; heading?: number | null }, to: { lat: number; lon: number }) {
+/** `evitar`: pontos (lombadas/valetas) que a rota deve desviar, se der. */
+export function fetchRoute(from: { lat: number; lon: number; heading?: number | null }, to: { lat: number; lon: number },
+  evitar: { lat: number; lon: number }[] = []) {
   return call<RouteResponse>('/rota', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ de: from, para: to }),
+    body: JSON.stringify(evitar.length ? { de: from, para: to, evitar } : { de: from, para: to }),
   });
 }
 

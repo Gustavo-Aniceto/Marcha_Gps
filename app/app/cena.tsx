@@ -8,6 +8,7 @@ import { Camera, Map as MapView, Marker } from '../src/map';
 import { CarMarker } from '../src/components/CarMarker';
 import { ProfileSheet } from '../src/components/ProfileSheet';
 import { Glide } from '../src/lib/glide.ts';
+import { useGlides } from '../src/lib/useGlides';
 import { db, type VisibleCar } from '../src/lib/db';
 import { useSession } from '../src/lib/session';
 import { useLocationSharing } from '../src/lib/useLocationSharing';
@@ -44,7 +45,8 @@ export default function Cena() {
     return () => { alive = false; clearInterval(t); };
   }, []);
 
-  const shown = onlyCrew ? cars.filter((c) => c.same_crew) : cars;
+  const shown = useMemo(() => (onlyCrew ? cars.filter((c) => c.same_crew) : cars), [cars, onlyCrew]);
+  const glideOf = useGlides(cars);
   const sel = shown.find((c) => c.user_id === selected) ?? null;
 
   return (
@@ -62,7 +64,7 @@ export default function Cena() {
           </Marker>
         )}
         {shown.map((c) => (
-          <Marker key={c.user_id} id={`cena-${c.user_id}`} lngLat={[c.lon, c.lat]}>
+          <Marker key={c.user_id} id={`cena-${c.user_id}`} lngLat={[c.lon, c.lat]} glide={glideOf(c)}>
             <Pressable onPress={() => setSelected(c.user_id)} accessibilityRole="button" accessibilityLabel={`Ver perfil de @${c.username}`}
                        hitSlop={8}>
               <CarMarker color={c.car?.color} neon={c.car?.neon} heading={c.heading} label={`@${c.username}`}

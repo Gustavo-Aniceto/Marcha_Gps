@@ -97,3 +97,13 @@ test('sem rota: ponto do GPS', () => {
   const p = { ...north(5), accuracy: 5 };
   assert.deepEqual(displayPoint(p, null), north(5));
 });
+
+test('carro de outra pessoa (posição a cada ~10 s): desliza o intervalo todo, sem parar no meio', () => {
+  const g = new Glide({ maxMs: 12_000, teleportM: 800 });
+  g.push(north(0), 0);
+  g.push(north(140), 10_000);
+  g.push(north(280), 20_000);
+  assert.ok(Math.abs(distM(g.at(25_000)!, north(210))) < 0.5);
+  g.push(north(900), 30_000); // 620 m em 10 s ainda desliza (não teletransporta)
+  assert.ok(distM(g.at(30_000)!, north(280)) < 0.5);
+});

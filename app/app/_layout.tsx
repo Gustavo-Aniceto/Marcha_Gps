@@ -15,6 +15,7 @@ import { clearPendingInvite, loadPendingInvite } from '../src/lib/pendingInvite'
 import { db } from '../src/lib/db';
 import { MapSettingsProvider } from '../src/lib/mapSettings';
 import { colors } from '../src/theme/tokens.ts';
+import { pickClerkKey } from '../src/lib/clerkKey.ts';
 
 // Manda cada um pro lugar certo: sem login -> entrar; logado sem convite -> convite; senão -> abas.
 // As telas do app só existem (Stack.Protected) pra quem já entrou com convite: o mapa nem monta antes disso.
@@ -76,7 +77,8 @@ function Gate() {
   );
 }
 
-const clerkKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
+const clerkKey = pickClerkKey(typeof window !== 'undefined' && window.location ? window.location.hostname : null,
+  process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY, process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY_PROD);
 if (!clerkKey) throw new Error('Configure EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY no app/.env');
 
 export default function RootLayout() {

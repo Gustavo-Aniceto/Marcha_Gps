@@ -54,3 +54,25 @@ export async function verifyJwt(
   if (typeof c.sub !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(c.sub)) throw new AuthError('usuario_invalido');
   return c;
 }
+
+/** Emissores aceitos: CLERK_ISSUER pode ter vários, separados por vírgula (ex.: modo teste e produção juntos). */
+export function issuerList(raw: string | undefined): string[] {
+  return (raw ?? '').split(',').map((x) => x.trim().replace(/\/+$/, '')).filter(Boolean);
+}
+
+/** Lê o emissor do token SEM conferir a assinatura (só pra escolher qual chave baixar). */
+export function peekIssuer(token: string): string | null {
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  try { const c = decodeJson<{ iss?: unknown }>(parts[1]); return typeof c.iss === 'string' ? c.iss : null; } catch { return null; }
+}
+
+/** Confere o token contra o emissor dele, desde que esteja na lista. */
+export async function verifyFromIssuers(
+  token: string, issuers: string[], jwksOf: (issuer: string) => Promise<Jwk[]>, opts: { now?: number; leewaySec?: number } = {},
+): Promise<Claims> {
+  const iss = peekIssuer(token);
+  if (!iss) throw new AuthError('token_malformado');
+  if (!issuers.includes(iss)) throw new AuthError('emissor_invalido');
+  return verifyJwt(token, await jwksOf(iss), { ...opts, issuer: iss });
+}

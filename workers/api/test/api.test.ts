@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parsePhoton, photonUrl, normalizeQuery } from '../src/geocode.ts';
-import { parseValhalla, valhallaBody, validPoint, RouteError } from '../src/route.ts';
+import { cleanAvoid, MAX_AVOID, parseValhalla, valhallaBody, validPoint, RouteError } from '../src/route.ts';
 import { RateLimiter } from '../src/limits.ts';
 import { overpassQuery, neonSqlUrl, TILES } from '../src/obstacles.ts';
 
@@ -86,4 +86,20 @@ test('importação: 12 quadrados cobrem as 3 cidades e a consulta do Overpass é
   for (const t of TILES) assert.match(t.id, /^[a-z_]{1,30}$/);
   assert.equal(neonSqlUrl('postgresql://importador:segredo@ep-x-123-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require'),
     'https://ep-x-123.c-2.sa-east-1.aws.neon.tech/sql');
+});
+
+test('rota desviando: manda os pontos a evitar pro Valhalla', () => {
+  const de = { lat: -23.55, lon: -46.63 }, para = { lat: -23.50, lon: -46.60 };
+  const evitar = cleanAvoid([{ lat: -23.53, lon: -46.62 }, { lat: 'x', lon: 1 }, { lat: -23.55, lon: -46.6301 }], de, para);
+  assert.equal(evitar.length, 1, 'ignora inválido e o que fica colado na saída');
+  const b = valhallaBody(de, para, evitar) as { exclude_locations?: unknown[] };
+  assert.deepEqual(b.exclude_locations, [{ lat: -23.53, lon: -46.62 }]);
+  assert.equal((valhallaBody(de, para) as { exclude_locations?: unknown }).exclude_locations, undefined);
+});
+
+test('rota desviando: no máximo 40 pontos', () => {
+  const de = { lat: -23.55, lon: -46.63 }, para = { lat: -23.40, lon: -46.40 };
+  const muitos = Array.from({ length: 100 }, (_, i) => ({ lat: -23.52 + i * 0.001, lon: -46.55 }));
+  assert.equal(cleanAvoid(muitos, de, para).length, MAX_AVOID);
+  assert.deepEqual(cleanAvoid('nada', de, para), []);
 });

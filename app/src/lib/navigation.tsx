@@ -20,7 +20,16 @@ interface NavContext {
   start: (dest: Place, from: Fix | null) => void;
   stop: () => void;
   onFix: (fix: Fix) => void;
+  /** acha uma rota que desvia desses pontos, SEM trocar a atual (null se não deu) */
+  findAlternative: (avoid: Point[]) => Promise<Route | null>;
+  /** a pessoa aceitou: troca pra rota alternativa (e os recálculos continuam desviando) */
+  switchToAlternative: (r: Route, avoid: Point[]) => void;
+  speak: (text: string) => void;
+  /** rota atual já é a que desvia */
+  avoiding: boolean;
 }
+
+interface Point { lat: number; lon: number }
 
 const Ctx = createContext<NavContext | null>(null);
 const RECENTS_KEY = 'marcha.destinos.recentes';
@@ -48,6 +57,8 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
   const lastFix = useRef<Fix | null>(null);
   const lastReroute = useRef(0);
   const busy = useRef(false);
+  const avoid = useRef<Point[]>([]);
+  const [avoiding, setAvoiding] = useState(false);
   const live = useRef({ status, destination, route, voice });
   live.current = { status, destination, route, voice };
 
@@ -82,7 +93,7 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
     setStatus(reroute ? 'rerouting' : 'routing');
     setError(null);
     try {
-      const r = buildRoute(await fetchRoute({ lat: from.lat, lon: from.lon, heading: from.heading ?? null }, dest));
+      const r = buildRoute(await fetchRoute({ lat: from.lat, lon: from.lon, heading: from.heading ?? null }, dest, avoid.current));
       if (live.current.destination?.id !== dest.id) return; // cancelou no meio
       navState.current = initialNavState();
       setRoute(r);
@@ -105,6 +116,7 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
   const start = useCallback((dest: Place, from: Fix | null) => {
     // Safari só deixa falar depois de um toque: já fala aqui, no toque
     say('Calculando a rota.', live.current.voice);
+    avoid.current = []; setAvoiding(false);
     setDestination(dest);
     setRoute(null);
     setUpdate(null);
@@ -120,6 +132,7 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
 
   const stop = useCallback(() => {
     Speech.stop();
+    avoid.current = []; setAvoiding(false);
     setStatus('idle');
     setDestination(null);
     setRoute(null);
@@ -144,8 +157,34 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
     }
   }, [calc]);
 
-  const value = useMemo(() => ({ status, destination, route, update, error, voice, recents, setVoice, start, stop, onFix }),
-    [status, destination, route, update, error, voice, recents, setVoice, start, stop, onFix]);
+  const findAlternative = useCallback(async (points: Point[]) => {
+    const fix = lastFix.current, dest = live.current.destination;
+    if (!fix || !dest || !points.length) return null;
+    try {
+      const r = buildRoute(await fetchRoute({ lat: fix.lat, lon: fix.lon, heading: fix.heading ?? null }, dest, points));
+      return live.current.destination?.id === dest.id ? r : null;
+    } catch { return null; }
+  }, []);
+
+  const switchToAlternative = useCallback((r: Route, points: Point[]) => {
+    const fix = lastFix.current;
+    if (!fix || !live.current.destination) return;
+    avoid.current = points; setAvoiding(true);
+    navState.current = initialNavState();
+    setRoute(r);
+    setStatus('navigating');
+    const first = navStep(r, navState.current, fix);
+    navState.current = first.state;
+    setUpdate(first);
+    lastReroute.current = Date.now();
+    say(`Rota trocada. ${r.maneuvers[0]?.speak ?? ''}`, live.current.voice);
+  }, []);
+
+  const speak = useCallback((text: string) => say(text, live.current.voice), []);
+
+  const value = useMemo(() => ({ status, destination, route, update, error, voice, recents, setVoice, start, stop, onFix,
+    findAlternative, switchToAlternative, speak, avoiding }),
+    [status, destination, route, update, error, voice, recents, setVoice, start, stop, onFix, findAlternative, switchToAlternative, speak, avoiding]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

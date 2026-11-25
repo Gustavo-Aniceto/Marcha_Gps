@@ -2,7 +2,7 @@
 //   POST /upload?tipo=media|carro|post   (corpo = a imagem; Authorization: Bearer <token do Clerk>)
 //        -> { key }  a chave que o app grava no banco
 //   GET  /img/<key>                         -> a imagem (chave impossível de adivinhar)
-import { AuthError, verifyJwt, type Jwk } from './jwt';
+import { AuthError, issuerList, verifyFromIssuers, type Jwk } from './jwt';
 import { preflight, withCors } from './cors';
 import { KEY_RE, KINDS, MAX_BYTES, extFor, keyFor, looksLikeImage, type Kind } from './uploads';
 
@@ -16,14 +16,15 @@ export interface Env {
   CLERK_ISSUER: string; // ex.: https://xxx.clerk.accounts.dev
 }
 
-let jwksCache: { keys: Jwk[]; at: number } | null = null;
-
+// chaves públicas de cada emissor (modo teste e produção do Clerk), guardadas por 10 min
+const jwksCache = new Map<string, { keys: Jwk[]; at: number }>();
 async function getJwks(issuer: string): Promise<Jwk[]> {
-  if (jwksCache && Date.now() - jwksCache.at < 10 * 60_000) return jwksCache.keys;
+  const hit = jwksCache.get(issuer);
+  if (hit && Date.now() - hit.at < 10 * 60_000) return hit.keys;
   const res = await fetch(`${issuer}/.well-known/jwks.json`);
   if (!res.ok) throw new Error('jwks_indisponivel');
   const body = (await res.json()) as { keys: Jwk[] };
-  jwksCache = { keys: body.keys, at: Date.now() };
+  jwksCache.set(issuer, { keys: body.keys, at: Date.now() });
   return body.keys;
 }
 
@@ -58,7 +59,7 @@ async function handle(req: Request, env: Env): Promise<Response> {
     const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '');
     let sub: string;
     try {
-      const claims = await verifyJwt(token, await getJwks(env.CLERK_ISSUER), { issuer: env.CLERK_ISSUER });
+      const claims = await verifyFromIssuers(token, issuerList(env.CLERK_ISSUER), getJwks);
       sub = claims.sub;
     } catch (e) {
       return json({ error: e instanceof AuthError ? e.message : 'nao_autenticado' }, 401);

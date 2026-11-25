@@ -44,7 +44,8 @@ export function Marker({ rotation: _r, glide: _g, ...props }: React.ComponentPro
 }
 
 // Linha da rota da navegação
-export function RouteLine({ coords }: { coords: { lat: number; lon: number }[] }) {
+/** `route`/`trim` só a versão web usa (apaga o trecho já andado). */
+export function RouteLine({ coords }: { coords: { lat: number; lon: number }[]; route?: unknown; trim?: Glide | null }) {
   if (coords.length < 2) return null;
   const data = {
     type: 'Feature' as const,

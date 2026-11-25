@@ -3,7 +3,7 @@ main = "src/index.ts"
 compatibility_date = "2026-11-01"
 
 [vars]
-CLERK_ISSUER = "https://great-aphid-3258.clerk.accounts.dev"
+CLERK_ISSUER = "https://great-aphid-3258.clerk.accounts.dev,https://clerk.marchagps.eu.org" # teste e produção (separados por vírgula)
 # IMPORT_DATABASE_URL é segredo: wrangler secret put IMPORT_DATABASE_URL (usuário "importador" do Neon)
 
 [triggers]

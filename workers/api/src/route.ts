@@ -34,7 +34,29 @@ export function validPoint(p: unknown): p is Point {
     && Math.abs(q.lat) <= 90 && Math.abs(q.lon) <= 180;
 }
 
-export function valhallaBody(from: From, to: Point) {
+export const MAX_AVOID = 40;
+
+/** Pontos a evitar (lombadas/valetas que pegam no carro): só os válidos, longe da saída e da chegada, no máximo 40. */
+export function cleanAvoid(raw: unknown, from: Point, to: Point): Point[] {
+  if (!Array.isArray(raw)) return [];
+  const out: Point[] = [];
+  for (const p of raw) {
+    if (!validPoint(p)) continue;
+    // perto da saída/chegada o Valhalla não acha caminho nenhum: deixa esses de fora
+    if (distM(p, from) < 60 || distM(p, to) < 60) continue;
+    out.push({ lat: +p.lat.toFixed(6), lon: +p.lon.toFixed(6) });
+    if (out.length >= MAX_AVOID) break;
+  }
+  return out;
+}
+
+function distM(a: Point, b: Point): number {
+  const r = Math.PI / 180, R = 6_371_000;
+  const x = (b.lon - a.lon) * r * Math.cos(((a.lat + b.lat) / 2) * r), y = (b.lat - a.lat) * r;
+  return Math.hypot(x, y) * R;
+}
+
+export function valhallaBody(from: From, to: Point, avoid: Point[] = []) {
   const start: Record<string, unknown> = { lat: from.lat, lon: from.lon, type: 'break' };
   // com a direção do carro, a rota não manda dar meia-volta logo de cara (importante no recálculo)
   if (from.heading != null && Number.isFinite(from.heading)) {
@@ -45,6 +67,7 @@ export function valhallaBody(from: From, to: Point) {
     locations: [start, { lat: to.lat, lon: to.lon, type: 'break' }],
     costing: 'auto',
     directions_options: { units: 'kilometers', language: 'pt-BR' },
+    ...(avoid.length ? { exclude_locations: avoid.map((p) => ({ lat: p.lat, lon: p.lon })) } : {}),
   };
 }
 

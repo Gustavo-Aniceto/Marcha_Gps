@@ -24,7 +24,15 @@ export function lerpAngle(a: number | null, b: number | null, k: number): number
   return (a + turn(a, b) * k + 360) % 360;
 }
 
+export interface GlideOptions { maxMs?: number; teleportM?: number }
+
 export class Glide {
+  private maxMs: number;
+  private teleportM: number;
+  constructor(opts: GlideOptions = {}) {
+    this.maxMs = opts.maxMs ?? MAX_GLIDE_MS;
+    this.teleportM = opts.teleportM ?? TELEPORT_M;
+  }
   private from: GlidePoint | null = null;
   private to: GlidePoint | null = null;
   private t0 = 0;
@@ -40,7 +48,7 @@ export class Glide {
     if (!this.to) { this.from = this.to = p; this.dur = 0; this.t0 = now; this.version++; return; }
     const cur = this.at(now)!;
     const d = distM(cur, p);
-    if (d > TELEPORT_M) { this.from = this.to = p; this.dur = 0; this.t0 = now; this.version++; return; }
+    if (d > this.teleportM) { this.from = this.to = p; this.dur = 0; this.t0 = now; this.version++; return; }
     if (distM(this.to, p) < STILL_M) {
       // parado: só deixa a direção girar se ela mudou de verdade
       if (p.heading == null || this.to.heading == null || Math.abs(turn(this.to.heading, p.heading)) < 3) return;
@@ -49,7 +57,7 @@ export class Glide {
       this.from = cur; this.to = { ...p, heading: p.heading ?? cur.heading };
     }
     this.t0 = now;
-    this.dur = Math.min(MAX_GLIDE_MS, Math.max(MIN_GLIDE_MS, interval));
+    this.dur = Math.min(this.maxMs, Math.max(MIN_GLIDE_MS, interval));
     this.version++;
   }
 

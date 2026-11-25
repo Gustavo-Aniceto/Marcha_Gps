@@ -13,11 +13,11 @@ export default function CameraMapa() {
   return (
     <Screen>
       <Title>Câmera do mapa</Title>
-      <Mono>{camera.theme.toUpperCase()} · {camera.threeD ? '3D' : '2D'} · ÂNG {cam.pitch}° · RAIO {camera.radiusM} M</Mono>
+      <Mono>{camera.theme === 'auto' ? 'AUTOMÁTICO' : camera.theme.toUpperCase()} · {camera.threeD ? '3D' : '2D'} · ÂNG {cam.pitch}° · RAIO {camera.radiusM} M</Mono>
 
       <Label>Visual do mapa</Label>
-      <Pills options={[{ value: 'noite', label: 'Noite (azul)' }, { value: 'dia', label: 'Dia (claro)' }]}
-             value={camera.theme} onChange={(v) => setCamera({ ...camera, theme: v as 'noite' | 'dia' })} />
+      <Pills options={[{ value: 'auto', label: 'Automático (pelo sol)' }, { value: 'noite', label: 'Noite (azul)' }, { value: 'dia', label: 'Dia (claro)' }]}
+             value={camera.theme} onChange={(v) => setCamera({ ...camera, theme: v as 'auto' | 'noite' | 'dia' })} />
 
       <Label>Visão</Label>
       <Pills options={[{ value: 1, label: '3D' }, { value: 0, label: '2D plano' }]}
