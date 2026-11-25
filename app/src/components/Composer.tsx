@@ -28,13 +28,15 @@ export function Composer({ crewId = null, scopeName = 'todo mundo', onPosted, in
   const [options, setOptions] = useState(['', '']);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // fechada ocupa uma linha só; abre ao tocar (economiza tela no feed e no perfil)
+  const [open, setOpen] = useState(false);
 
   async function pickPhoto() {
     const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
     if (!r.canceled && r.assets[0]) { setPhoto(r.assets[0].uri); setError(null); }
   }
 
-  function reset() { setText(''); setPhoto(null); setOptions(['', '']); }
+  function reset() { setText(''); setPhoto(null); setOptions(['', '']); setOpen(false); }
 
   async function publish() {
     if (!profile) return;
@@ -72,12 +74,35 @@ export function Composer({ crewId = null, scopeName = 'todo mundo', onPosted, in
     : mode === 'carro' ? 'Legenda da foto (opcional): setup, rodas, altura…'
     : `Fala pra ${scopeName}… rolê, setup, foto`;
 
+  if (!open && !text && !photo) {
+    const quick = (m: PostKind) => { setMode(m); setError(null); setOpen(true); };
+    return (
+      <View style={{ backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.line, borderRadius: 10, padding: 10,
+                     flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        {profile && <Avatar username={profile.username} avatarKey={profile.avatar_key} size={36} />}
+        <Pressable onPress={() => quick('post')} accessibilityRole="button" accessibilityLabel="Escrever post"
+                   style={{ flex: 1, minHeight: 44, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 22,
+                            borderWidth: 1, borderColor: colors.line, backgroundColor: colors.bg }}>
+          <Text style={{ color: colors.textMuted, fontSize: 15 }} numberOfLines={1}>Fala pra {scopeName}…</Text>
+        </Pressable>
+        <Pressable onPress={() => quick('carro')} accessibilityRole="button" accessibilityLabel="Postar foto do carro" hitSlop={4}
+                   style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ fontSize: 20 }}>📷</Text>
+        </Pressable>
+        <Pressable onPress={() => quick('enquete')} accessibilityRole="button" accessibilityLabel="Criar enquete" hitSlop={4}
+                   style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ fontSize: 20 }}>📊</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   return (
     <View style={{ backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.line, borderRadius: 10, padding: 12, gap: 10 }}>
       <Pills options={MODES} value={mode} onChange={(m) => { setMode(m); setError(null); }} />
       <View style={{ flexDirection: 'row', gap: 10 }}>
         {profile && <Avatar username={profile.username} avatarKey={profile.avatar_key} />}
-        <TextInput value={text} onChangeText={setText} multiline maxLength={mode === 'enquete' ? 300 : 1000}
+        <TextInput value={text} onChangeText={setText} multiline autoFocus maxLength={mode === 'enquete' ? 300 : 1000}
                    placeholder={placeholder} placeholderTextColor={colors.textMuted}
                    style={{ flex: 1, minHeight: mode === 'enquete' ? 44 : 60, color: colors.text, fontSize: 15, textAlignVertical: 'top' }}
                    accessibilityLabel={mode === 'enquete' ? 'Pergunta da enquete' : 'Escrever post'} />
@@ -126,6 +151,11 @@ export function Composer({ crewId = null, scopeName = 'todo mundo', onPosted, in
         )}
         <View style={{ flex: 1 }}><Button title={mode === 'enquete' ? 'Criar enquete' : 'Postar'} onPress={publish} loading={busy} /></View>
       </View>
+      {!busy && (
+        <Pressable onPress={reset} accessibilityRole="button" style={{ minHeight: 36, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ color: colors.textMuted }}>Cancelar</Text>
+        </Pressable>
+      )}
       <ErrorText>{error}</ErrorText>
     </View>
   );

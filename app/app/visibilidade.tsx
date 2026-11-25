@@ -81,7 +81,7 @@ export default function Visibilidade() {
 
   return (
     <Screen>
-      <Title>Quem vê meu carro</Title>
+      <Title back>Quem vê meu carro</Title>
       <Pills options={MODES.map((m) => ({ value: m.value, label: m.label }))} value={mode} onChange={setMode} />
       <Body dim>{MODES.find((m) => m.value === mode)!.sub}</Body>
 

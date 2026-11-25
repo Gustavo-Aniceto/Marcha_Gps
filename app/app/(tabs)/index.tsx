@@ -2,13 +2,14 @@
 // barra de chegada embaixo, rota roxa, botões redondos), com o carro montado na garagem e os avisos do Radar.
 // Como no Waze: arrastar o mapa solta a câmera do carro; "Voltar pro carro" (ou 15 s parado, navegando) volta.
 // Mapa gratuito: MapLibre + OpenFreeMap (ver src/lib/mapStyle.ts).
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { displayPoint, Glide } from '../../src/lib/glide.ts';
 import { avoidPoints, blockingAhead, offerText, shouldOffer } from '../../src/lib/avoid.ts';
 import type { Route } from '../../src/lib/nav.ts';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Camera, Map as MapView, Marker, RouteLine } from '../../src/map';
+import { Camera, Map as MapView, Marker, ReportsLayer, RouteLine } from '../../src/map';
 import { ManeuverIcon } from '../../src/components/ManeuverIcon';
 import { useNavigation } from '../../src/lib/navigation';
 import { rememberPosition } from '../../src/lib/lastPosition';
@@ -56,6 +57,9 @@ export default function Mapa() {
   const share = !!profile && profile.visibility !== 'ghost';
   const nav = useNavigation();
   const navigating = nav.status !== 'idle';
+  // navegando a barra de abas some: o painel de baixo sobe acima da barrinha do iPhone
+  const insets = useSafeAreaInsets();
+  const NAV_H = BOTTOM_NAV + insets.bottom;
   const { position, permission, retry } = useLocationSharing(share, null, navigating);
   const [recenter, setRecenter] = useState(0);
   // câmera presa no carro (true) ou solta porque a pessoa está olhando o mapa (false)
@@ -241,7 +245,7 @@ export default function Mapa() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <MapView style={{ flex: 1 }} mapStyle={mapStyle} logo={false} compass={false}
-           attribution attributionPosition={{ bottom: 8, left: 8 }} onPress={() => setPickedId(null)}>
+           attribution attributionPosition={{ top: 150, right: 4 }} onPress={() => setPickedId(null)}>
         <Camera
           key={`camera-${recenter}`}
           trackUserLocation={camera.threeD || navigating ? 'course' : 'default'}
@@ -259,11 +263,7 @@ export default function Mapa() {
 
         {route && <RouteLine coords={route.coords} route={route} trim={web ? glide : null} />}
 
-        {reports.map((r) => (
-          <Marker key={r.id} id={`aviso-${r.id}`} lngLat={[r.lon, r.lat]}>
-            <ReportIcon kind={r.kind} unconfirmed={r.status === 'unconfirmed'} speedLimit={r.speed_limit} />
-          </Marker>
-        ))}
+        <ReportsLayer reports={reports} />
 
         {/* todo mundo que o banco libera (visible_cars cuida de fantasma, equipe, zona privada e atraso) */}
         {others.map((c) => web ? (
@@ -301,7 +301,7 @@ export default function Mapa() {
 
       {/* ---------- em cima ---------- */}
       {navigating ? (
-        <View style={s.maneuver} accessibilityLiveRegion="polite">
+        <View style={[s.maneuver, { paddingTop: insets.top + 14 }]} accessibilityLiveRegion="polite">
           {nav.status === 'routing' || !next ? (
             <Text style={s.maneuverStreet}>{nav.status === 'routing'
               ? (!position ? 'Esperando o GPS achar você… (libere a localização se o navegador perguntar)' : 'Calculando a rota…')
@@ -322,19 +322,19 @@ export default function Mapa() {
         </View>
       ) : (
         <>
-          <Pressable style={[s.round, s.menuBtn, { backgroundColor: ui.button, borderColor: ui.border }]} onPress={() => setMenu((m) => !m)}
+          <Pressable style={[s.round, s.menuBtn, { top: insets.top + 12, backgroundColor: ui.button, borderColor: ui.border }]} onPress={() => setMenu((m) => !m)}
                      accessibilityRole="button" accessibilityLabel="Menu do mapa" accessibilityState={{ expanded: menu }}>
             <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={ui.icon} strokeWidth={2.2} strokeLinecap="round">
               <Path d="M4 7h16M4 12h16M4 17h16" />
             </Svg>
           </Pressable>
-          <Pressable style={[s.cenaPill, { backgroundColor: ui.button, borderColor: ui.border }]} onPress={() => router.push('/cena')}
+          <Pressable style={[s.cenaPill, { top: insets.top + 16, backgroundColor: ui.button, borderColor: ui.border }]} onPress={() => router.push('/cena')}
                      accessibilityRole="button" accessibilityLabel={`Abrir a Cena ao vivo, ${others.length} carros no mapa`}>
             <View style={[s.dot, { backgroundColor: share ? '#3DDC84' : ui.sub }]} />
             <Text style={[s.cenaText, { color: ui.text }]}>Cena ao vivo · {others.length + (position ? 1 : 0)}</Text>
           </Pressable>
           {menu && (
-            <View style={[s.menu, { backgroundColor: ui.panel, borderColor: ui.border }]}>
+            <View style={[s.menu, { top: insets.top + 64, backgroundColor: ui.panel, borderColor: ui.border }]}>
               <Text style={[s.menuHead, { color: ui.sub }]}>
                 {share ? (profile?.visibility === 'scene' ? 'Você aparece na Cena ao vivo' : 'Você aparece só pra sua equipe') : 'Modo fantasma: ninguém te vê'}
               </Text>
@@ -343,6 +343,7 @@ export default function Mapa() {
                 { l: 'Visual e câmera do mapa', to: '/camera-mapa' },
                 { l: 'Cena ao vivo', to: '/cena' },
                 { l: 'Garagem (meu carro)', to: '/garagem' },
+                { l: 'Como usar o app', to: '/tutorial' },
               ].map((o) => (
                 <Pressable key={o.to} style={s.menuItem} onPress={() => { setMenu(false); router.push(o.to as never); }} accessibilityRole="button">
                   <Text style={[s.menuText, { color: ui.text }]}>{o.l}</Text>
@@ -394,7 +395,7 @@ export default function Mapa() {
       {offer && (() => {
         const t = offerText(offer);
         return (
-          <View style={[s.offer, { bottom: BOTTOM_NAV + 58, backgroundColor: ui.panel, borderColor: colors.warn }]} accessibilityLiveRegion="polite">
+          <View style={[s.offer, { bottom: NAV_H + 58, backgroundColor: ui.panel, borderColor: colors.warn }]} accessibilityLiveRegion="polite">
             <Text style={[s.offerTitle, { color: ui.text }]}>{t.title}</Text>
             <Text style={[s.offerText, { color: ui.sub }]}>{t.detail}</Text>
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 6 }}>
@@ -419,19 +420,19 @@ export default function Mapa() {
       {/* ---------- embaixo ---------- */}
       {/* nome da rua em que você está (navegando) */}
       {navigating && !!street && nav.status !== 'arrived' && (
-        <View style={[s.streetPill, { bottom: BOTTOM_NAV + 10 }]} pointerEvents="none">
+        <View style={[s.streetPill, { bottom: NAV_H + 10 }]} pointerEvents="none">
           <Text style={s.streetText} numberOfLines={1}>{street}</Text>
         </View>
       )}
 
       {position && (
-        <View style={[s.speedo, { bottom: (navigating ? BOTTOM_NAV : BOTTOM_IDLE) + 12 }]} pointerEvents="none">
+        <View style={[s.speedo, { bottom: (navigating ? NAV_H : BOTTOM_IDLE) + 12 }]} pointerEvents="none">
           <Speedometer kmh={kmh} limit={speedRadar?.limit} over={over} radarDist={speedRadar?.dist} theme={ui} />
         </View>
       )}
 
       {/* avisar (amarelo, embaixo à direita) */}
-      <Pressable style={[s.reportBtn, { bottom: (navigating ? BOTTOM_NAV : BOTTOM_IDLE) + 12 }]} onPress={() => router.push('/radar')}
+      <Pressable style={[s.reportBtn, { bottom: (navigating ? NAV_H : BOTTOM_IDLE) + 12 }]} onPress={() => router.push('/radar')}
                  accessibilityRole="button" accessibilityLabel="Avisar buraco, lombada, radar, blitz">
         <Svg width={34} height={34} viewBox="0 0 24 24">
           <Path d="M12 3.2 22 20.5H2Z" fill="#14171C" stroke="#14171C" strokeWidth={1.4} strokeLinejoin="round" />
@@ -441,7 +442,7 @@ export default function Mapa() {
 
       {/* minha localização / voltar pro carro, e ver a rota inteira */}
       {following ? (
-        <Pressable style={[s.round, s.sideBtn, { bottom: (navigating ? BOTTOM_NAV : BOTTOM_IDLE) + 86, backgroundColor: ui.button, borderColor: ui.border }]}
+        <Pressable style={[s.round, s.sideBtn, { bottom: (navigating ? NAV_H : BOTTOM_IDLE) + 86, backgroundColor: ui.button, borderColor: ui.border }]}
                    accessibilityRole="button" accessibilityLabel="Ir pra minha localização"
                    onPress={() => { if (!position) retry(); backToCar(); }}>
           <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={position ? chrome.locate : ui.sub} strokeWidth={2.2}>
@@ -449,14 +450,14 @@ export default function Mapa() {
           </Svg>
         </Pressable>
       ) : (
-        <Pressable style={[s.backBtn, { bottom: (navigating ? BOTTOM_NAV : BOTTOM_IDLE) + 86 }]} accessibilityRole="button"
+        <Pressable style={[s.backBtn, { bottom: (navigating ? NAV_H : BOTTOM_IDLE) + 86 }]} accessibilityRole="button"
                    accessibilityLabel="Voltar pro carro" onPress={() => { if (!position) retry(); backToCar(); }}>
           <Svg width={16} height={16} viewBox="0 0 24 24" fill="#FFFFFF"><Path d="M12 2 20 21 12 17 4 21Z" /></Svg>
           <Text style={s.backText}>Voltar pro carro</Text>
         </Pressable>
       )}
       {navigating && route && (
-        <Pressable style={[s.round, s.sideBtn, { bottom: BOTTOM_NAV + 146, backgroundColor: ui.button, borderColor: ui.border }]}
+        <Pressable style={[s.round, s.sideBtn, { bottom: NAV_H + 146, backgroundColor: ui.button, borderColor: ui.border }]}
                    accessibilityRole="button" accessibilityLabel="Ver a rota inteira"
                    onPress={() => { setFollowing(false); setFitKey((n) => n + 1); }}>
           <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={ui.icon} strokeWidth={2} strokeLinecap="round">
@@ -466,7 +467,7 @@ export default function Mapa() {
       )}
 
       {navigating ? (
-        <View style={[s.navPanel, { backgroundColor: ui.panel, borderColor: ui.border }]}>
+        <View style={[s.navPanel, { height: NAV_H, paddingBottom: 10 + insets.bottom, backgroundColor: ui.panel, borderColor: ui.border }]}>
           <Pressable style={[s.round, s.panelBtn, { backgroundColor: ui.button, borderColor: ui.border }]} onPress={() => router.push('/destino')}
                      accessibilityRole="button" accessibilityLabel="Trocar o destino">
             <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={ui.icon} strokeWidth={2.2} strokeLinecap="round">
@@ -514,7 +515,7 @@ export default function Mapa() {
       {picked && (
         <ProfileSheet key={picked.user_id} username={picked.username} car={picked.car} updatedAt={picked.updated_at}
                       statusHighlight={picked.same_crew} onClose={() => setPickedId(null)}
-                      bottom={(navigating ? BOTTOM_NAV : BOTTOM_IDLE) + 10}
+                      bottom={(navigating ? NAV_H : BOTTOM_IDLE) + 10}
                       status={picked.same_crew ? 'SUA EQUIPE' : picked.approximate ? 'REGIÃO APROXIMADA' : undefined} />
       )}
       <CarChooser ownerId={profile?.id} onChosen={() => setCarRev((r) => r + 1)} />

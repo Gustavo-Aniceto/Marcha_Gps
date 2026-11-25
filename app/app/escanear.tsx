@@ -41,7 +41,7 @@ export default function Escanear() {
   if (!permission.granted) {
     return (
       <Screen>
-        <Title>Check-in</Title>
+        <Title back="/equipes">Check-in</Title>
         <Button title="Liberar câmera" onPress={requestPermission} />
         <Button title="Voltar" variant="secondary" onPress={() => goBack(router)} />
       </Screen>

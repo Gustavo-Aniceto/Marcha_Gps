@@ -24,6 +24,9 @@ export const colors = {
   // linha da rota (roxa, como nos apps de trânsito mais usados)
   route: '#8C5BFF',
   routeCasing: '#3F2390',
+  // barra de abas lá embaixo
+  tabBar: '#0F1218',
+  tabBarLine: '#222836',
 } as const;
 
 // "Casca" do modo GPS (barras, botões redondos), no visual que o público já conhece de app de trânsito.

@@ -75,7 +75,7 @@ export default function EventoNovo() {
 
   return (
     <Screen>
-      <Title>Novo evento</Title>
+      <Title back="/equipes">Novo evento</Title>
       <Field label="Nome do evento" value={title} onChangeText={setTitle} maxLength={60} placeholder="Ex.: Encontro de sábado" />
 
       <Label>Dia</Label>

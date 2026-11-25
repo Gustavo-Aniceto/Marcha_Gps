@@ -7,6 +7,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, radius, touch, type ButtonShape } from '../theme/tokens.ts';
 import { inkOn, readableAccent } from '../lib/contrast.ts';
+import { useRouter } from 'expo-router';
+import { goBack } from '../lib/goBack';
 
 export function Screen({ children, scroll = true }: { children: React.ReactNode; scroll?: boolean }) {
   return (
@@ -18,8 +20,19 @@ export function Screen({ children, scroll = true }: { children: React.ReactNode;
   );
 }
 
-export function Title({ children }: { children: React.ReactNode }) {
-  return <Text style={s.title} accessibilityRole="header">{children}</Text>;
+/** Título da tela. Com `back`, ganha a setinha de voltar do lado (string = pra onde ir se não tiver tela anterior). */
+export function Title({ children, back }: { children: React.ReactNode; back?: boolean | string }) {
+  const router = useRouter();
+  if (!back) return <Text style={s.title} accessibilityRole="header">{children}</Text>;
+  return (
+    <View style={s.titleRow}>
+      <Pressable onPress={() => goBack(router, typeof back === 'string' ? back : '/')} accessibilityRole="button"
+                 accessibilityLabel="Voltar" hitSlop={10} style={({ pressed }) => [s.backBtn, pressed && { opacity: 0.7 }]}>
+        <Text style={s.backChevron}>‹</Text>
+      </Pressable>
+      <Text style={[s.title, { flex: 1 }]} accessibilityRole="header" numberOfLines={2}>{children}</Text>
+    </View>
+  );
 }
 
 export function Label({ children }: { children: React.ReactNode }) {
@@ -113,6 +126,10 @@ const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   content: { padding: 20, gap: 14 },
   title: { color: colors.text, fontFamily: fonts.display, fontSize: 26 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  backBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.lineStrong,
+             alignItems: 'center', justifyContent: 'center', backgroundColor: colors.panel },
+  backChevron: { color: colors.holo, fontSize: 24, lineHeight: 26, marginTop: -2 },
   label: { color: colors.textDim, fontSize: 13, fontWeight: '600' },
   body: { color: colors.text, fontSize: 14, lineHeight: 20 },
   mono: { fontFamily: fonts.mono, fontSize: 12, letterSpacing: 0.6 },

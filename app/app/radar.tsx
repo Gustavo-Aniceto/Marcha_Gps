@@ -46,7 +46,7 @@ export default function Radar() {
 
   return (
     <Screen>
-      <Title>O que tem aqui?</Title>
+      <Title back>O que tem aqui?</Title>
       <Body dim>Marca no ponto onde você está agora. Só faça isso parado ou com alguém no banco do passageiro.</Body>
       <Pills
         options={REPORT_KINDS.filter((k) => k.userCanReport).map((k) => ({ value: k.kind, label: k.label }))}

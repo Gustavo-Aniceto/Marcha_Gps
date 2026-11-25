@@ -73,6 +73,7 @@ function Gate() {
         <Stack.Screen name="post/[id]" />
         <Stack.Screen name="perfil/[username]" />
         <Stack.Screen name="equipe/[id]" />
+        <Stack.Screen name="tutorial" options={{ animation: 'fade' }} />
       </Stack.Protected>
     </Stack>
   );

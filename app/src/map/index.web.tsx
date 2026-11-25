@@ -8,6 +8,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { colors } from '../theme/tokens.ts';
 import { lerpAngle, type Glide } from '../lib/glide.ts';
 import { snapToRoute, type Route } from '../lib/nav.ts';
+import { glyphFor, parseReportImageId, reportImageId } from '../lib/reportGlyphs.ts';
 
 const MapCtx = createContext<maplibregl.Map | null>(null);
 
@@ -22,7 +23,7 @@ interface MapProps {
   children?: React.ReactNode;
 }
 
-export function Map({ style, mapStyle, compass, onPress, children }: MapProps) {
+export function Map({ style, mapStyle, compass, onPress, children, attributionPosition }: MapProps) {
   const holder = useRef<View>(null);
   const [map, setMap] = useState<maplibregl.Map | null>(null);
   const [failed, setFailed] = useState(false);
@@ -37,13 +38,28 @@ export function Map({ style, mapStyle, compass, onPress, children }: MapProps) {
       m = new maplibregl.Map({
         container: el,
         style: mapStyle as maplibregl.StyleSpecification,
-        attributionControl: { compact: true },
+        attributionControl: false,
         pitchWithRotate: true,
+        // celular com tela 3x: desenhar em 2x já fica nítido e custa bem menos pra placa de vídeo
+        pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+        fadeDuration: 120,
+        refreshExpiredTiles: false,
       });
     } catch {
       // navegador sem WebGL (aceleração de vídeo desligada, modo economia extrema etc.)
       setFailed(true);
       return;
+    }
+    // crédito do mapa (obrigatório) num canto que não fica embaixo dos botões da tela
+    const ap = attributionPosition ?? { top: 8, right: 8 };
+    const corner = `${ap.bottom != null ? 'bottom' : 'top'}-${ap.left != null ? 'left' : 'right'}` as maplibregl.ControlPosition;
+    m.addControl(new maplibregl.AttributionControl({ compact: true }), corner);
+    const box = el.querySelector(`.maplibregl-ctrl-${corner}`) as HTMLElement | null;
+    if (box) {
+      if (ap.top != null) box.style.top = `${ap.top}px`;
+      if (ap.bottom != null) box.style.bottom = `${ap.bottom}px`;
+      if (ap.left != null) box.style.left = `${ap.left}px`;
+      if (ap.right != null) box.style.right = `${ap.right}px`;
     }
     if (compass) m.addControl(new maplibregl.NavigationControl({ showZoom: false }), 'top-right');
     m.on('click', (e) => {
@@ -323,6 +339,116 @@ export function RouteLine({ coords, route, trim }: { coords: { lat: number; lon:
     }, 200);
     return () => clearInterval(id);
   }, [map, route, trim]);
+
+  return null;
+}
+
+export interface MapReport { id: string; kind: string; lat: number; lon: number; status: string; speed_limit?: number | null }
+
+/** Desenha um aviso (círculo laranja + desenho, e a placa do radar ao lado) num canvas, na hora em que o mapa pede. */
+function drawReportImage(kind: string, speed: number): ImageData {
+  const R = 2; // pixels por ponto de tela (nítido em celular)
+  const S = 30 * R, sign = speed ? Math.round(30 * 0.85) * R : 0;
+  const W = S + (sign ? sign - Math.round(S * 0.18) : 0) + 4 * R, H = S + 4 * R;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const c = cv.getContext('2d')!;
+  const cx = S / 2 + 2 * R, cy = H / 2;
+  c.shadowColor = 'rgba(0,0,0,0.5)'; c.shadowBlur = 3 * R; c.shadowOffsetY = R;
+  c.beginPath(); c.arc(cx, cy, S / 2 - R, 0, Math.PI * 2);
+  c.fillStyle = colors.warn; c.fill();
+  c.shadowColor = 'transparent';
+  c.lineWidth = 2 * R; c.strokeStyle = '#1A1006'; c.stroke();
+  // desenho 24x24 centrado, 66% do círculo
+  const g = (S * 0.66) / 24;
+  c.save();
+  c.translate(cx - 12 * g, cy - 12 * g); c.scale(g, g);
+  c.lineWidth = 2; c.lineCap = 'round'; c.lineJoin = 'round'; c.strokeStyle = colors.ink; c.fillStyle = colors.ink;
+  for (const p of glyphFor(kind)) {
+    c.beginPath();
+    if (p.t === 'path') {
+      const path = new Path2D(p.d);
+      if (p.fill) { c.globalAlpha = 0.85; c.fill(path); c.globalAlpha = 1; }
+      c.stroke(path);
+    } else if (p.t === 'rect') {
+      c.roundRect(p.x, p.y, p.w, p.h, p.rx); c.stroke();
+    } else {
+      c.arc(p.cx, p.cy, p.r, 0, Math.PI * 2);
+      if (p.fill) c.fill(); else c.stroke();
+    }
+  }
+  c.restore();
+  if (sign) {
+    const sx = cx + S / 2 - S * 0.18 + sign / 2, ring = Math.max(3, (sign / R) * 0.12) * R;
+    c.beginPath(); c.arc(sx, cy, sign / 2 - ring / 2, 0, Math.PI * 2);
+    c.fillStyle = colors.signFace; c.fill();
+    c.lineWidth = ring; c.strokeStyle = colors.signRing; c.stroke();
+    c.fillStyle = colors.ink; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.font = `800 ${Math.round(sign * (speed >= 100 ? 0.34 : 0.42))}px system-ui, sans-serif`;
+    c.fillText(String(speed), sx, cy + R);
+  }
+  return c.getImageData(0, 0, W, H);
+}
+
+/**
+ * Avisos do Radar como camada do próprio mapa (desenhada pela placa de vídeo junto com o mapa),
+ * em vez de um elemento HTML por aviso: com dezenas de lombadas na tela o mapa continua liso.
+ * Não confirmado fica meio apagado; de longe só aparecem os confirmados.
+ */
+export function ReportsLayer({ reports }: { reports: MapReport[] }) {
+  const map = useContext(MapCtx);
+  const data = useRef<GeoJSON.FeatureCollection>({ type: 'FeatureCollection', features: [] });
+  data.current = {
+    type: 'FeatureCollection',
+    features: reports.map((r) => ({
+      type: 'Feature', id: r.id,
+      properties: { img: reportImageId(r.kind, r.speed_limit), u: r.status === 'unconfirmed' ? 1 : 0, radar: r.kind === 'radar' ? 1 : 0 },
+      geometry: { type: 'Point', coordinates: [r.lon, r.lat] },
+    })),
+  };
+
+  useEffect(() => {
+    if (!map) return;
+    const onMissing = (e: { id: string }) => {
+      const p = parseReportImageId(e.id);
+      if (!p || map.hasImage(e.id)) return;
+      map.addImage(e.id, drawReportImage(p.kind, p.speed), { pixelRatio: 2 });
+    };
+    const ensure = () => {
+      if (!map.isStyleLoaded()) return;
+      const src = map.getSource('avisos') as maplibregl.GeoJSONSource | undefined;
+      if (src) { src.setData(data.current); return; }
+      map.addSource('avisos', { type: 'geojson', data: data.current });
+      map.addLayer({
+        id: 'avisos', type: 'symbol', source: 'avisos',
+        // de longe (zoom < 13) só confirmados e radares; perto, todos
+        filter: ['any', ['>=', ['zoom'], 13], ['==', ['get', 'u'], 0], ['==', ['get', 'radar'], 1]],
+        layout: {
+          'icon-image': ['get', 'img'],
+          'icon-size': ['interpolate', ['linear'], ['zoom'], 11, 0.7, 15, 1],
+          'icon-allow-overlap': true, 'icon-ignore-placement': true,
+          'symbol-sort-key': ['get', 'u'],
+        },
+        paint: { 'icon-opacity': ['case', ['==', ['get', 'u'], 1], 0.6, 1] },
+      });
+    };
+    map.on('styleimagemissing', onMissing);
+    ensure();
+    map.on('styledata', ensure);
+    return () => {
+      map.off('styleimagemissing', onMissing);
+      map.off('styledata', ensure);
+      try {
+        if (map.getLayer('avisos')) map.removeLayer('avisos');
+        if (map.getSource('avisos')) map.removeSource('avisos');
+      } catch { /* mapa já foi desmontado */ }
+    };
+  }, [map]);
+
+  const key = reports.map((r) => `${r.id}${r.status}${r.speed_limit ?? ''}`).join(',');
+  useEffect(() => {
+    (map?.getSource('avisos') as maplibregl.GeoJSONSource | undefined)?.setData(data.current);
+  }, [map, key]);
 
   return null;
 }

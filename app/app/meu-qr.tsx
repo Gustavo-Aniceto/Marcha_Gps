@@ -18,7 +18,7 @@ export default function MeuQr() {
 
   return (
     <Screen>
-      <Title>Seu QR de check-in</Title>
+      <Title back="/equipes">Seu QR de check-in</Title>
       <Mono>{(nome ?? 'EQUIPE').toUpperCase()} · @{profile?.username}</Mono>
       <Card style={{ alignItems: 'center', backgroundColor: '#FFFFFF' }}>
         {value

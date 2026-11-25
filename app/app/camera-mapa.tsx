@@ -13,7 +13,7 @@ export default function CameraMapa() {
 
   return (
     <Screen>
-      <Title>Câmera do mapa</Title>
+      <Title back>Câmera do mapa</Title>
       <Mono>{camera.theme === 'auto' ? 'AUTOMÁTICO' : camera.theme.toUpperCase()} · {camera.threeD ? '3D' : '2D'} · ÂNG {cam.pitch}° · RAIO {camera.radiusM} M</Mono>
 
       <Label>Visual do mapa</Label>

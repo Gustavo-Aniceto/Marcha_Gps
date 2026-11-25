@@ -32,6 +32,8 @@ interface FounderCode {
   request_status: string | null; request_name: string | null;
 }
 
+const ROLE: Record<string, string> = { founder: 'FUNDADOR', admin: 'ADMIN', member: 'MEMBRO' };
+const SHAPES: { v: ButtonShape; l: string }[] = [{ v: 'redondo', l: 'Redondo' }, { v: 'reto', l: 'Reto' }, { v: 'quadrado', l: 'Quadrado' }];
 const THEME_COLORS = ['#C6FF3D', '#3FA0FF', '#FF4D6D', '#FF8A1F', '#FFD233', '#B36BFF', '#29E0C8', '#FF5FC8', '#EDEFF2'];
 
 export default function Equipes() {
@@ -138,7 +140,7 @@ export default function Equipes() {
       {current && (
         <Card accent={accent}>
           <Text style={{ color: accent, fontSize: 20, fontWeight: '700' }}>{current.crews.name}</Text>
-          <Mono color={accent}>{current.role.toUpperCase()} · {current.status === 'verified' ? 'VERIFICADO' : 'EM VERIFICAÇÃO'}</Mono>
+          <Mono color={accent}>{ROLE[current.role] ?? current.role.toUpperCase()} · {current.status === 'verified' ? 'VERIFICADO' : 'EM VERIFICAÇÃO'}</Mono>
           <Text style={{ color: accent, fontWeight: '700', paddingVertical: 8 }} accessibilityRole="link"
                 onPress={() => router.push({ pathname: '/equipe/[id]', params: { id: current.crews.id } })}>
             Ver página da equipe ›
@@ -199,7 +201,7 @@ export default function Equipes() {
         <Card key={m.user_id}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             <Text style={{ color: colors.text, fontWeight: '600' }}>@{m.profiles.username}</Text>
-            <Mono color={m.status === 'verified' ? accent : colors.warn}>{m.status === 'verified' ? m.role.toUpperCase() : 'PENDENTE'}</Mono>
+            <Mono color={m.status === 'verified' ? accent : colors.warn}>{m.status === 'verified' ? ROLE[m.role] ?? m.role.toUpperCase() : 'PENDENTE'}</Mono>
           </View>
           {m.status === 'pending' && m.user_id !== profile?.id && isVerified && (
             <Button title="Confirmo que conheço" variant="secondary" color={current!.crews.color}
@@ -221,9 +223,22 @@ export default function Equipes() {
       {current && isAdmin && (
         <Card>
           <Label>Tema da equipe</Label>
-          <Pills options={THEME_COLORS.map((c) => ({ value: c, label: c }))} value={current.crews.color.toUpperCase()}
-                 onChange={(c) => call('set_crew_theme', { p_crew: selected, p_color: c, p_shape: current.crews.button_shape })} />
-          <Pills options={(['redondo', 'reto', 'quadrado'] as ButtonShape[]).map((s) => ({ value: s, label: s }))}
+          <Body dim>Cor</Body>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+            {THEME_COLORS.map((c) => {
+              const on = current.crews.color.toUpperCase() === c;
+              return (
+                <Pressable key={c} accessibilityRole="radio" accessibilityState={{ selected: on }} accessibilityLabel={`Cor ${c}`}
+                           onPress={() => call('set_crew_theme', { p_crew: selected, p_color: c, p_shape: current.crews.button_shape })}
+                           style={{ width: 44, height: 44, borderRadius: 22, borderWidth: on ? 3 : 1,
+                                    borderColor: on ? colors.text : colors.line, alignItems: 'center', justifyContent: 'center' }}>
+                  <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: c }} />
+                </Pressable>
+              );
+            })}
+          </View>
+          <Body dim>Formato dos botões</Body>
+          <Pills options={SHAPES.map((x) => ({ value: x.v, label: x.l }))}
                  value={current.crews.button_shape}
                  onChange={(s) => call('set_crew_theme', { p_crew: selected, p_color: current.crews.color, p_shape: s })} />
           <Body dim>Avisos de blitz, buraco e lombada continuam laranja pra todo mundo.</Body>

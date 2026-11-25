@@ -4,6 +4,7 @@ import React from 'react';
 import { Camera as NativeCamera, GeoJSONSource, Layer, Map as NativeMap, Marker as NativeMarker } from '@maplibre/maplibre-react-native';
 import { colors } from '../theme/tokens.ts';
 import type { Glide } from '../lib/glide.ts';
+import { ReportIcon } from '../components/ReportIcon';
 
 type NativeCameraProps = React.ComponentProps<typeof NativeCamera>;
 
@@ -60,4 +61,17 @@ export function RouteLine({ coords }: { coords: { lat: number; lon: number }[]; 
              paint={{ 'line-color': colors.route, 'line-width': 9 } as never} />
     </GeoJSONSource>
   );
+}
+
+export interface MapReport { id: string; kind: string; lat: number; lon: number; status: string; speed_limit?: number | null }
+
+/** Avisos do Radar no mapa do app nativo (no navegador viram camada do mapa, ver index.web.tsx). */
+export function ReportsLayer({ reports }: { reports: MapReport[] }) {
+  return (<>
+    {reports.map((r) => (
+      <NativeMarker key={r.id} id={`aviso-${r.id}`} lngLat={[r.lon, r.lat]}>
+        <ReportIcon kind={r.kind as never} unconfirmed={r.status === 'unconfirmed'} speedLimit={r.speed_limit} />
+      </NativeMarker>
+    ))}
+  </>);
 }

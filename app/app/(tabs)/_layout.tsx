@@ -1,7 +1,10 @@
-import React from 'react';
-import { Tabs } from 'expo-router';
+import React, { useEffect } from 'react';
+import { Tabs, useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { TUTORIAL_KEY } from '../../src/lib/tutorial.ts';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { colors } from '../../src/theme/tokens.ts';
+import { useNavigation } from '../../src/lib/navigation';
 
 const icons: Record<string, string> = {
   index: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z M9 4v14 M15 6v14',
@@ -23,13 +26,21 @@ function Icon({ name, color }: { name: string; color: string }) {
 }
 
 export default function TabsLayout() {
+  // navegando: a barra de abas some e o mapa ocupa a tela toda (como nos apps de GPS)
+  const navigating = useNavigation().status !== 'idle';
+  const router = useRouter();
+  // primeira vez no app: abre o tutorial (depois fica no menu ☰ do mapa, em "Como usar o app")
+  useEffect(() => {
+    AsyncStorage.getItem(TUTORIAL_KEY).then((v) => { if (!v) router.push('/tutorial'); }).catch(() => {});
+  }, []);
   return (
     <Tabs
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: colors.neon,
         tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: { backgroundColor: '#0F1218', borderTopColor: '#222836', height: 84, paddingTop: 8 },
+        tabBarStyle: navigating && route.name === 'index' ? { display: 'none' }
+          : { backgroundColor: colors.tabBar, borderTopColor: colors.tabBarLine, minHeight: 60, paddingTop: 6 },
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
         tabBarIcon: ({ color }) => <Icon name={route.name} color={color} />,
       })}

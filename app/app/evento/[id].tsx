@@ -54,7 +54,7 @@ export default function Evento() {
   return (
     <Screen>
       <Mono color={accent}>{ev.crews.name.toUpperCase()} · {kindLabel(ev.kind).toUpperCase()}</Mono>
-      <Title>{ev.title}</Title>
+      <Title back>{ev.title}</Title>
       <Body dim>{whenText(new Date(ev.starts_at))} · {going} {going === 1 ? 'vai' : 'vão'} · {media.filter((m) => m.status === 'accepted').length} mídias</Body>
       {win === 'aberto' && (
         <Button title="Fazer a mídia" color={ev.crews.color}
