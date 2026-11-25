@@ -16,6 +16,10 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 - **Verificação do membro** depois de aprovado: 2 membros confirmam que conhecem + check-in presencial (QR escaneado por admin). Sem isso: não vê localização da equipe nem entra em comboio.
 - Só o **Adm Master** (dono do app) libera equipes novas. **Código de fundador não vence** e fica ligado pra sempre à equipe que nasceu dele: na aba Equipes o master vê a lista de códigos (livre / quem usou / pedido em análise / nome da equipe). O dono da equipe manda nome, cidade, Instagram, nº de membros, fotos de prova e faz chamada de vídeo.
 
+## Primeiro acesso
+- Depois de escolher o nome de usuário, abre um **tutorial** curto (8 telas: boas-vindas, garagem, rota, avisar, quem vê, Cena ao vivo, equipes, feed). Dá pra pular e rever pelo menu ☰ → "Como usar o app".
+- Toda tela tem **voltar**; se a pessoa abriu direto na tela (link ou app recarregado), o voltar leva pro mapa (ou pra aba Equipes, nas telas de equipe).
+
 ## Carro
 - Cadastro por **fotos** (frente, traseira, laterais, roda; mínimo 3). IA reconhece modelo, ano, cor, altura e aro; o app usa o modelo 3D da base e ajusta.
 - **Montar pelo foto (feito):** na garagem a pessoa manda de 1 a 3 fotos do carro; uma IA com visão (Gemma 4 no Workers AI da Cloudflare, plano grátis, ~8 de 10 mil "neurônios"/dia por análise) diz tipo de carroceria, cor, marca, modelo, vidro, aerofólio e se está rebaixado. O app monta o carrinho com isso; a pessoa confere, ajusta se quiser e salva. As fotos ficam guardadas no carro (R2). Limite: 4 análises por minuto e 20 por dia por pessoa.
@@ -35,6 +39,7 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 - **Recalcula sozinho** quando sai da rota (2 leituras seguidas a mais de ~40 m, com folga se o GPS estiver ruim), quando fica muito longe (120 m) ou quando anda na contramão da rota por 3 leituras. Espera pelo menos 8 s entre recálculos e, se falhar, continua mostrando a rota antiga.
 - **Voz em português** com 400 m e na hora da manobra (dá pra deixar mudo). Tela não apaga enquanto navega.
 - **Movimento liso:** o carro desliza entre as leituras do GPS e o mapa anda junto (sem trancos); navegando, o carro anda em cima da linha da rota. Os outros carros também deslizam. A linha roxa some no trecho que já ficou pra trás. Mais rápido = mapa mais afastado pra ver longe; chegando devagar numa conversão, aproxima. Aparece "GPS fraco" / "Sem sinal de GPS" quando o sinal piora. Tema **Automático** (padrão): claro do nascer ao pôr do sol, escuro à noite.
+- **Mapa leve:** os avisos do Radar são desenhados como camada do próprio mapa (não um elemento por aviso); de longe só aparecem os confirmados e os radares. Navegando, a barra de abas some e o mapa ocupa a tela toda.
 - **Mapa solto como no Waze:** arrastar, girar ou dar zoom solta a câmera do carro e aparece "Voltar pro carro". Navegando, volta sozinho depois de 15 s sem mexer. Botão "ver a rota inteira" mostra o caminho todo na tela.
 - O mapa principal mostra **todo mundo que `visible_cars()` libera** (não só a equipe): o banco já aplica fantasma, só-equipe, posição aproximada, atraso e zonas privadas. Nome da equipe em verde, os outros em azul.
 - Avisos no mapa são **ícones** (radar, lombada, valeta, buraco, blitz, alagamento etc.) num círculo laranja, não etiqueta de texto. Não confirmado fica meio apagado.
