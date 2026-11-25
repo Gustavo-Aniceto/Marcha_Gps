@@ -27,7 +27,7 @@ export function CarMarker({
   body?: string | null; tint?: string | null; spoiler?: boolean | null; size?: number;
 }) {
   const glow = neon ? NEON[neon] : undefined;
-  const size = sizeProp ?? (me ? 64 : 54);
+  const size = sizeProp ?? (me ? 80 : 58);
   const parts = React.useMemo(() => carParts({ body, color, tint, spoiler }), [body, color, tint, spoiler]);
   return (
     <View style={{ alignItems: 'center' }} accessibilityLabel={me ? 'Seu carro' : label ? `Carro de ${label}` : 'Carro'}>

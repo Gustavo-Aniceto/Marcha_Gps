@@ -202,7 +202,7 @@ export default function Mapa() {
                          body={c.car?.body_type} tint={c.car?.tint} spoiler={c.car?.spoiler} />
             </Marker>
             <Marker id={`nome-${c.user_id}`} lngLat={[c.lon, c.lat]}>
-              <View style={{ paddingBottom: 60 }} pointerEvents="none">
+              <View style={{ paddingBottom: 64 }} pointerEvents="none">
                 <Text style={[s.carLabel, c.same_crew && s.carLabelCrew]}>@{c.username}</Text>
               </View>
             </Marker>
