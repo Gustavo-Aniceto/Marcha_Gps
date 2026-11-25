@@ -1,5 +1,5 @@
 // Primeira tela: o convite vem antes de tudo. Confere o código (sem login) e só então
-// leva pra entrar com a conta que a pessoa preferir (Google, Apple, Facebook ou e-mail).
+// leva pra entrar com a conta que a pessoa preferir (Google, Facebook ou e-mail).
 import React, { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';

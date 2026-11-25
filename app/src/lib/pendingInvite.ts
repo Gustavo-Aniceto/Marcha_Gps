@@ -1,5 +1,5 @@
 // Convite digitado antes do login: fica guardado no aparelho até a pessoa entrar
-// (no navegador sobrevive ao vai-e-volta do login com Google/Apple/Facebook).
+// (no navegador sobrevive ao vai-e-volta do login com Google/Facebook).
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const KEY = 'marcha.convite.pendente';

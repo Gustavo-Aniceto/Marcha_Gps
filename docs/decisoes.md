@@ -7,7 +7,7 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 
 ## Acesso e confiança
 - Entrada só por **convite**; quem convida é o padrinho e responde pelo convidado.
-- **Ordem do primeiro acesso:** 1) digita o código do convite (o app confere sem login); 2) entra com a conta que preferir: Google, Apple, Facebook ou e-mail (código no e-mail ou senha); 3) escolhe o nome de usuário. Quem já é membro toca em "Já sou membro · Entrar".
+- **Ordem do primeiro acesso:** 1) digita o código do convite (o app confere sem login); 2) entra com a conta que preferir: Google, Facebook ou e-mail (código no e-mail ou senha); 3) escolhe o nome de usuário. Quem já é membro toca em "Já sou membro · Entrar".
 - **Verificação do membro** além do convite: 2 membros confirmam que conhecem + check-in presencial (QR escaneado por admin). Sem isso: não vê localização da equipe nem entra em comboio.
 - Só o **Adm Master** (dono do app) libera equipes novas. O dono da equipe manda nome, cidade, Instagram, nº de membros, fotos de prova e faz chamada de vídeo.
 
@@ -28,6 +28,7 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 - "Para onde?" busca endereço ou lugar (estado de SP, puxando pra perto de você) e já sai navegando: linha da rota, próxima manobra com seta e distância, "depois: …", tempo restante, distância e horário de chegada.
 - **Recalcula sozinho** quando sai da rota (2 leituras seguidas a mais de ~40 m, com folga se o GPS estiver ruim), quando fica muito longe (120 m) ou quando anda na contramão da rota por 3 leituras. Espera pelo menos 8 s entre recálculos e, se falhar, continua mostrando a rota antiga.
 - **Voz em português** com 400 m e na hora da manobra (dá pra deixar mudo). Tela não apaga enquanto navega.
+- **Movimento liso:** o carro desliza entre as leituras do GPS e o mapa anda junto (sem trancos); navegando, o carro anda em cima da linha da rota. Os outros carros também deslizam. A linha roxa some no trecho que já ficou pra trás. Mais rápido = mapa mais afastado pra ver longe; chegando devagar numa conversão, aproxima. Aparece "GPS fraco" / "Sem sinal de GPS" quando o sinal piora. Tema **Automático** (padrão): claro do nascer ao pôr do sol, escuro à noite.
 - **Mapa solto como no Waze:** arrastar, girar ou dar zoom solta a câmera do carro e aparece "Voltar pro carro". Navegando, volta sozinho depois de 15 s sem mexer. Botão "ver a rota inteira" mostra o caminho todo na tela.
 - O mapa principal mostra **todo mundo que `visible_cars()` libera** (não só a equipe): o banco já aplica fantasma, só-equipe, posição aproximada, atraso e zonas privadas. Nome da equipe em verde, os outros em azul.
 - Avisos no mapa são **ícones** (radar, lombada, valeta, buraco, blitz, alagamento etc.) num círculo laranja, não etiqueta de texto. Não confirmado fica meio apagado.
@@ -35,7 +36,7 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 - Radar no mapa mostra a placa com a velocidade ao lado do ícone. Quem avisa um radar escolhe a velocidade da placa (ou "não sei"); radar sem velocidade ganha a de quem confirmar depois.
 - Durante a rota, o alerta laranja mostra o próximo obstáculo **em cima da rota** que pega no seu carro (pela altura da garagem) e radares com a velocidade.
 - Fontes gratuitas do OpenStreetMap: busca pelo Photon (Komoot) e rotas pelo Valhalla (FOSSGIS), passando pelo nosso serviço com login, cache e limite. Se o uso crescer, a troca é só no serviço (Valhalla próprio ou pago), sem atualizar o app.
-- Próximo passo: rota que **desvia** de lombada/valeta onde o carro não passa (o Valhalla aceita pontos a evitar).
+- **Rota que desvia** do que pega no seu carro (lombada alta, valeta, buraco… pela altura da garagem): o app procura sozinho um caminho alternativo, mas **nunca troca sem perguntar**. Aparece "Tem N obstáculos nesse caminho que pegam no seu carro · Achei outro caminho que desvia · +X min" com **Trocar rota** / **Manter caminho** (e a voz pergunta). Só oferece se desviar de algo e não for muito mais demorado (até 5 min a mais, ou até 50% do tempo que falta, nunca mais de 20 min). Uma pergunta por destino; sem resposta em 30 s, mantém. Se aceitou, os recálculos continuam desviando.
 
 ## Equipes
 - Fundador/admin cria **eventos**: Encontro, Rolê (comboio com rota que desvia de obstáculos) ou Pista (só autódromo/área fechada autorizada).
@@ -70,3 +71,4 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 - Banco: **Neon** (Postgres, região São Paulo) com a Data API.
 - Fotos: **Cloudflare R2** com um Worker que confere o login do Clerk (o armazenamento do Neon não existe na região de São Paulo).
 - Login: **Clerk** (`@clerk/expo`), código no e-mail. Escolhido porque o login do próprio Neon ainda não suporta app de celular (depende de cookie de navegador).
+- **Login pra muita gente, de graça:** modo produção do Clerk (grátis até 50 mil usuários que voltam no mês) no domínio grátis **marchagps.eu.org** (DNS na Cloudflare, grátis). Enquanto o eu.org não aprova o domínio, segue o modo de teste (até 100 contas). Entradas: **Google, Facebook e e-mail** ("Entrar com Apple" saiu: a Apple cobra US$ 99/ano). Plano B se o eu.org demorar demais: .com.br (~R$ 40/ano), só trocando o domínio no Clerk.
