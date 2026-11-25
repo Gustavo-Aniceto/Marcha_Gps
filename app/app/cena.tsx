@@ -22,14 +22,14 @@ export default function Cena() {
   // filtro: todos, todas as minhas equipes ou uma equipe só
   const [filter, setFilter] = useState<string>('todos');
   const [myCrews, setMyCrews] = useState<{ id: string; name: string }[]>([]);
+  const [cars, setCars] = useState<VisibleCar[]>([]);
+  const [selected, setSelected] = useState<string | null>(null);
+  const { profile } = useSession();
   useEffect(() => {
     if (!profile) return;
     db.from('crew_members').select('crews(id, name)').eq('user_id', profile.id).eq('status', 'verified').then(({ data }) =>
       setMyCrews(((data ?? []) as unknown as { crews: { id: string; name: string } }[]).map((r) => r.crews)));
   }, [profile]);
-  const [cars, setCars] = useState<VisibleCar[]>([]);
-  const [selected, setSelected] = useState<string | null>(null);
-  const { profile } = useSession();
   const share = !!profile && profile.visibility !== 'ghost';
   const { position } = useLocationSharing(share, null);
   const glide = useMemo(() => new Glide(), []);
