@@ -28,6 +28,11 @@ select t.login(:'founder');
 select t.ok(public.redeem_invite(:'code_founder', 'Founder.LF') is null, 'convite de fundador não tem equipe');
 select t.ok((select username from public.profiles where id = public.current_uid()) = 'founder.lf', 'username em minúsculo');
 select t.throws(format($$ select public.redeem_invite(%L, 'x123') $$, :'code_founder'), 'invite_used');
+-- outra pessoa (sem conta ainda) também não consegue usar o mesmo código de fundador
+select t.login('user_2outrofundador0000000000');
+select t.throws(format($$ select public.redeem_invite(%L, 'outro.fundador') $$, :'code_founder'), 'invite_used');
+select t.ok((select status from public.check_invite(:'code_founder')) = 'usado', 'conferência antes do login diz usado');
+select t.login(:'founder');
 -- membro comum não cria convite de fundador
 select t.throws($$ select public.create_invite(null) $$, 'forbidden');
 

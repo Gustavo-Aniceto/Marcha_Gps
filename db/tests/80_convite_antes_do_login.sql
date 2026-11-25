@@ -33,6 +33,17 @@ select status as s5 from public.check_invite(:'code') \gset
 reset role;
 select t.ok(:'s5' = 'usado', 'convite usado');
 
+-- a conta de quem usou foi apagada (used_by vira nulo): o código continua usado
+update public.invites set used_by = null where code = :'code';
+set local role anonymous;
+select status as s5b from public.check_invite(:'code') \gset
+reset role;
+select t.ok(:'s5b' = 'usado', 'conta apagada não libera o convite de novo');
+set local role authenticated;
+select t.login('user_2terceiro00000000000000c');
+select t.throws(format($$ select public.redeem_invite(%L, 'terceiro') $$, :'code'), 'invite_used');
+reset role;
+
 update public.invites set used_by = null, used_at = null, expires_at = now() - interval '1 day' where code = :'code';
 set local role anonymous;
 select status as s6 from public.check_invite(:'code') \gset
