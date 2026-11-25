@@ -42,7 +42,7 @@ export function fetchRoute(from: { lat: number; lon: number; heading?: number | 
   });
 }
 
-export interface InviteCheck { status: 'ok' | 'nao_existe' | 'usado' | 'vencido'; kind: 'fundador' | 'equipe' | null; crew_name: string | null }
+export interface InviteCheck { status: 'ok' | 'nao_existe' | 'usado' | 'vencido'; kind: 'fundador' | 'app' | 'equipe' | null; crew_name: string | null }
 
 /** Confere o convite antes do login (o serviço de rotas responde sem login, com limite por IP). */
 export async function checkInvite(code: string): Promise<InviteCheck> {

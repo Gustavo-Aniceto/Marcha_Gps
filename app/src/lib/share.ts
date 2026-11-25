@@ -23,7 +23,9 @@ export async function shareText(text: string): Promise<'shared' | 'copied' | 'fa
   }
 }
 
-export function inviteMessage(code: string, crewName: string | null): string {
-  const para = crewName ? `pra entrar na equipe ${crewName}` : 'pra registrar sua equipe';
-  return `Bora pro Marcha GPS! Seu convite ${para}: ${code}\nAbre https://marcha-gps.vercel.app e digita o código. Vale 7 dias.`;
+export function inviteMessage(code: string, kind: 'founder' | 'app'): string {
+  if (kind === 'founder') {
+    return `Bora pro Marcha GPS! Seu código de fundador pra registrar sua equipe: ${code}\nAbre https://marcha-gps.vercel.app e digita o código. Vale uma vez só.`;
+  }
+  return `Bora pro Marcha GPS! Seu convite: ${code}\nAbre https://marcha-gps.vercel.app e digita o código. Vale 7 dias. Lá dentro você pede pra entrar na sua equipe.`;
 }

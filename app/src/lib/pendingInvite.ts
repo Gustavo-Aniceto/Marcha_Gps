@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const KEY = 'marcha.convite.pendente';
 
-export interface PendingInvite { code: string; kind: 'fundador' | 'equipe'; crewName: string | null }
+export interface PendingInvite { code: string; kind: 'fundador' | 'app' | 'equipe'; crewName: string | null }
 
 export async function savePendingInvite(i: PendingInvite) {
   await AsyncStorage.setItem(KEY, JSON.stringify(i));

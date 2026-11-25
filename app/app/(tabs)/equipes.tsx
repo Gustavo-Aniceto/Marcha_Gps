@@ -1,6 +1,7 @@
-// Equipes: minhas equipes, membros, verificação, convites, tema; pedido de equipe nova; painel do Adm Master.
+// Equipes: minhas equipes, membros, verificação, pedidos pra entrar (o fundador aprova), lista de equipes,
+// convites pro app, pedido de equipe nova (só com código de fundador) e painel do Adm Master.
 import React, { useCallback, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Body, Button, Card, ErrorText, Field, Label, Mono, Pills, Screen, Title } from '../../src/components/ui';
 import { db } from '../../src/lib/db';
@@ -10,11 +11,20 @@ import { readableAccent } from '../../src/lib/contrast.ts';
 import { LAUNCH_CITIES } from '../../src/lib/geo.ts';
 import { colors, type ButtonShape } from '../../src/theme/tokens.ts';
 import { InviteCard } from '../../src/components/InviteCard';
+import { Avatar } from '../../src/components/Avatar';
 
 interface Crew { id: string; name: string; color: string; button_shape: ButtonShape; city_id: string }
 interface MyMembership { role: 'founder' | 'admin' | 'member'; status: 'pending' | 'verified'; crews: Crew }
 interface Member { user_id: string; role: string; status: string; xp: number; profiles: { username: string } }
-interface OpenInvite { code: string; crew_id: string | null; expires_at: string; crews: { name: string } | null }
+interface OpenInvite { code: string; expires_at: string }
+interface JoinRequest {
+  id: string; crew_id: string; crew_name: string; username: string; avatar_key: string | null;
+  message: string | null; created_at: string; car: string | null; crews_in: number;
+}
+interface DirCrew {
+  id: string; name: string; city: string; color: string; avatar_key: string | null;
+  member_count: number; i_am_member: boolean; my_request: string | null;
+}
 interface Request { id: string; requester_id: string; name: string; city_id: string; instagram: string | null; member_count: number; status: string }
 interface FounderCode {
   code: string; created_at: string; used_at: string | null; used_by: string | null;
@@ -39,6 +49,9 @@ export default function Equipes() {
   const [openInvites, setOpenInvites] = useState<OpenInvite[]>([]);
   const [founderInvite, setFounderInvite] = useState<string | null>(null);
   const [founderCodes, setFounderCodes] = useState<FounderCode[]>([]);
+  const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
+  const [directory, setDirectory] = useState<DirCrew[]>([]);
+  const [canRegister, setCanRegister] = useState(false);
 
   const load = useCallback(async () => {
     if (!profile) return;
@@ -57,11 +70,18 @@ export default function Equipes() {
     const { data: r } = await db.from('crew_requests')
       .select('id, requester_id, name, city_id, instagram, member_count, status').order('created_at', { ascending: false });
     setRequests((r ?? []) as Request[]);
-    // meus convites ainda não usados
-    const { data: inv } = await db.from('invites').select('code, crew_id, expires_at, crews(name)')
-      .eq('created_by', profile.id).is('used_by', null).not('crew_id', 'is', null).gt('expires_at', new Date().toISOString())
+    // meus convites pro app ainda não usados
+    const { data: inv } = await db.from('invites').select('code, expires_at')
+      .eq('created_by', profile.id).eq('kind', 'app').is('used_at', null).gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false }).limit(10);
-    setOpenInvites((inv ?? []) as unknown as OpenInvite[]);
+    setOpenInvites((inv ?? []) as OpenInvite[]);
+    // pedidos pra entrar nas equipes em que sou fundador/admin; lista de equipes; posso registrar equipe?
+    const [jr, dir, cr] = await Promise.all([
+      db.rpc('my_crews_join_requests'), db.rpc('crew_directory'), db.rpc('can_register_crew'),
+    ]);
+    setJoinRequests((jr.data ?? []) as JoinRequest[]);
+    setDirectory((dir.data ?? []) as DirCrew[]);
+    setCanRegister(cr.data === true);
     // só volta alguém pra quem é dono de equipe
     const { data: mc } = await db.rpc('master_contact');
     const names = (mc ?? []) as { username: string }[];
@@ -78,9 +98,9 @@ export default function Equipes() {
   const current = mine.find((m) => m.crews.id === selected);
   const isAdmin = current?.status === 'verified' && (current.role === 'founder' || current.role === 'admin');
   const isVerified = current?.status === 'verified';
+  const verifiedAnywhere = mine.some((m) => m.status === 'verified');
   const accent = current ? readableAccent(current.crews.color) : colors.neon;
-  // dono de equipe não registra outra; pedido em aberto aparece no lugar do formulário
-  const isFounder = mine.some((m) => m.role === 'founder');
+  // registrar equipe: só quem entrou com código de fundador (e ainda não tem equipe) ou o Adm Master
   const myOpenRequest = requests.find((r) => r.requester_id === profile?.id && (r.status === 'pending' || r.status === 'more_info'));
 
   async function call(fn: string, args: Record<string, unknown>) {
@@ -92,7 +112,7 @@ export default function Equipes() {
   }
 
   async function newInvite() {
-    const code = await call('create_invite', { p_crew: selected });
+    const code = await call('create_invite', { p_kind: 'app' });
     if (code) { setInvite(code as string); refreshProfile(); }
   }
 
@@ -136,12 +156,41 @@ export default function Equipes() {
         </Card>
       )}
 
-      {current && isVerified && (
+      {mine.length === 0 && (
+        <Card>
+          <Body>Você ainda não está em nenhuma equipe.</Body>
+          <Body dim>Ache a sua na lista abaixo e peça pra entrar. Quem aprova é o fundador da equipe.</Body>
+        </Card>
+      )}
+
+      {joinRequests.length > 0 && (
         <>
-          <Label>Convites ({profile?.invites_left ?? 0} restando)</Label>
-          <Body dim>Você responde por quem convidar.</Body>
-          <Button title="Gerar convite" color={current.crews.color} shape={current.crews.button_shape} onPress={newInvite} />
-          {invite && <InviteCard code={invite} crewName={current.crews.name} accent={accent} />}
+          <Label>Pedidos pra entrar ({joinRequests.length})</Label>
+          <Body dim>Você responde por quem aprovar. Depois a pessoa ainda passa pela verificação (confirmações + check-in).</Body>
+          {joinRequests.map((r) => (
+            <Card key={r.id}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Avatar username={r.username} avatarKey={r.avatar_key} size={44} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.holo, fontSize: 16, fontWeight: '700' }} accessibilityRole="link"
+                        onPress={() => router.push({ pathname: '/perfil/[username]', params: { username: r.username } })}>@{r.username}</Text>
+                  <Mono color={colors.textDim}>QUER ENTRAR NA {r.crew_name.toUpperCase()}</Mono>
+                </View>
+              </View>
+              {r.car ? <Body dim>Carro: {r.car}</Body> : null}
+              {r.crews_in > 0 ? <Body dim>Já é verificado em {r.crews_in} {r.crews_in === 1 ? 'equipe' : 'equipes'}.</Body> : null}
+              {r.message ? <Body>“{r.message}”</Body> : null}
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <View style={{ flex: 1 }}>
+                  <Button title="Aprovar" onPress={() => call('decide_join_request', { p_request: r.id, p_decision: 'approved' })} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Button title="Recusar" variant="secondary" color={colors.danger}
+                          onPress={() => call('decide_join_request', { p_request: r.id, p_decision: 'rejected' })} />
+                </View>
+              </View>
+            </Card>
+          ))}
         </>
       )}
 
@@ -181,14 +230,37 @@ export default function Equipes() {
         </Card>
       )}
 
-      {openInvites.filter((i) => i.code !== founderInvite && i.code !== invite).length > 0 && (
+      {(verifiedAnywhere || profile?.is_master) && (
         <>
-          <Label>Seus convites ainda não usados</Label>
-          {openInvites.filter((i) => i.code !== founderInvite && i.code !== invite).slice(0, 5).map((i) => (
-            <InviteCard key={i.code} code={i.code} crewName={i.crews?.name ?? null} expiresAt={i.expires_at} />
+          <Label>Convidar pro app{profile?.is_master ? '' : ` (${profile?.invites_left ?? 0} restando)`}</Label>
+          <Body dim>O convite só dá acesso ao app. Lá dentro a pessoa pede pra entrar na equipe e o fundador aprova. Você responde por quem convidar.</Body>
+          <Button title="Gerar convite" onPress={newInvite} />
+          {invite && <InviteCard code={invite} kind="app" />}
+          {openInvites.filter((i) => i.code !== invite).slice(0, 5).map((i) => (
+            <InviteCard key={i.code} code={i.code} kind="app" expiresAt={i.expires_at} />
           ))}
         </>
       )}
+
+      {directory.length > 0 && <Label>Equipes da cena</Label>}
+      {directory.map((d) => {
+        const tag = d.i_am_member ? 'VOCÊ FAZ PARTE' : d.my_request === 'pending' ? 'PEDIDO ENVIADO' : null;
+        return (
+          <Pressable key={d.id} accessibilityRole="link"
+                     onPress={() => router.push({ pathname: '/equipe/[id]', params: { id: d.id } })}>
+            <Card>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Avatar username={d.name} avatarKey={d.avatar_key} size={44} ring={readableAccent(d.color)} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700' }}>{d.name}</Text>
+                  <Body dim>{d.city} · {d.member_count} {d.member_count === 1 ? 'membro' : 'membros'}</Body>
+                </View>
+                <Mono color={tag ? readableAccent(d.color) : colors.holo}>{tag ?? 'VER ›'}</Mono>
+              </View>
+            </Card>
+          </Pressable>
+        );
+      })}
 
       <ErrorText>{error}</ErrorText>
 
@@ -204,10 +276,10 @@ export default function Equipes() {
           <Title>Adm Master</Title>
           <Body dim>O convite de fundador é pra quem vai registrar uma equipe nova. Depois você aprova o pedido aqui.</Body>
           <Button title="Gerar convite de fundador" onPress={async () => {
-            const code = await call('create_invite', { p_crew: null });
+            const code = await call('create_invite', { p_kind: 'founder' });
             if (code) setFounderInvite(code as string);
           }} />
-          {founderInvite && <InviteCard code={founderInvite} crewName={null} />}
+          {founderInvite && <InviteCard code={founderInvite} kind="founder" />}
           {founderCodes.length > 0 && <Label>Códigos de fundador ({founderCodes.length})</Label>}
           {founderCodes.map((f) => {
             const free = !f.used_at;
@@ -245,7 +317,7 @@ export default function Equipes() {
         </>
       )}
 
-      {!isFounder && (
+      {canRegister && (
         <Card>
           <Label>Registrar minha equipe</Label>
           {formSent || myOpenRequest

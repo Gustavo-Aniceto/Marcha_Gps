@@ -78,8 +78,18 @@ select t.ok((select kind = 'encontro' from public.events where title = 'Encontro
 -- dono de equipe não pede outra
 select t.throws(format($$ insert into public.crew_requests (requester_id, name, city_id, member_count) values (%L, 'Outra', 'sao_paulo', 5) $$, :'dono'),
                 'row-level security');
--- quem não é dono pede uma vez; segundo pedido em aberto não
+-- quem entrou com convite comum (sem código de fundador) não registra equipe
 select t.login(:'fora');
+select t.ok(not public.can_register_crew(), 'sem código de fundador não registra equipe');
+select t.throws(format($$ insert into public.crew_requests (requester_id, name, city_id, member_count) values (%L, 'Sem Codigo', 'sao_paulo', 5) $$, :'fora'),
+                'row-level security');
+-- com código de fundador pede uma vez; segundo pedido em aberto não
+select t.login(:'mst'); select public.create_invite('founder') as code_fora \gset
+reset role;
+update public.invites set used_by = :'fora', used_at = now() where code = :'code_fora';
+set local role authenticated;
+select t.login(:'fora');
+select t.ok(public.can_register_crew(), 'com código de fundador pode registrar');
 insert into public.crew_requests (requester_id, name, city_id, member_count) values (:'fora', 'Nova Equipe', 'sao_paulo', 5);
 select t.throws(format($$ insert into public.crew_requests (requester_id, name, city_id, member_count) values (%L, 'De novo', 'sao_paulo', 5) $$, :'fora'),
                 'row-level security');
@@ -102,7 +112,7 @@ select t.ok((select count(*) = 2 from public.profile_crews('dono.ab')), 'perfil 
 
 -- ---------- 6) códigos de fundador fixos ----------
 select t.login(:'mst');
-select public.create_invite(null) as code_f \gset
+select public.create_invite('founder') as code_f \gset
 select t.ok((select expires_at = 'infinity' from public.invites where code = :'code_f'), 'código de fundador não vence');
 select t.login('user_2novofund000000000000n');
 select public.redeem_invite(:'code_f', 'novo.fundador');

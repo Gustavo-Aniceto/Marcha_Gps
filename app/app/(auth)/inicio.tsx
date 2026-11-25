@@ -30,7 +30,7 @@ export default function Inicio() {
     }
     setBusy(false);
     if (r.status !== 'ok') { setError(inviteStatusText(r.status)); return; }
-    await savePendingInvite({ code, kind: r.kind ?? 'equipe', crewName: r.crew_name });
+    await savePendingInvite({ code, kind: r.kind ?? 'app', crewName: r.crew_name });
     router.push('/(auth)/entrar');
   }
 

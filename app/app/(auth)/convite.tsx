@@ -34,7 +34,7 @@ export default function Convite() {
       <Title>{fromBefore ? 'Escolha seu nome' : 'Tem convite?'}</Title>
       <Body dim>
         O Marcha GPS mostra onde seu carro está, então cada pessoa entra pela mão de alguém da cena, que responde por ela.
-        Depois de entrar, sua equipe ainda confirma que você é de lá.
+        Depois de entrar, você pede pra entrar na sua equipe e o fundador dela aprova.
       </Body>
       {!fromBefore && (
         <Field label="Código de convite" value={code} onChangeText={(t) => setCode(formatInviteCode(t))} autoCapitalize="characters"

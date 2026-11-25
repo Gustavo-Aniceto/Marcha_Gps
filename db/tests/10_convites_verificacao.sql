@@ -16,11 +16,11 @@ set local role authenticated;
 -- sem perfil não dá pra fazer nada
 select t.login(:'out');
 select t.throws($$ select public.create_report('lombada', -23.55, -46.63) $$, 'no_profile');
-select t.throws($$ select public.create_invite(null) $$, 'no_profile');
+select t.throws($$ select public.create_invite('founder') $$, 'no_profile');
 
 -- Adm Master gera convite de fundador
 select t.login(:'master');
-select public.create_invite(null) as code_founder \gset
+select public.create_invite('founder') as code_founder \gset
 select t.ok(:'code_founder' ~ '^[0-9A-F]{4}-[0-9A-F]{4}$', 'formato do código');
 
 -- o fundador entra
@@ -34,7 +34,7 @@ select t.throws(format($$ select public.redeem_invite(%L, 'outro.fundador') $$, 
 select t.ok((select status from public.check_invite(:'code_founder')) = 'usado', 'conferência antes do login diz usado');
 select t.login(:'founder');
 -- membro comum não cria convite de fundador
-select t.throws($$ select public.create_invite(null) $$, 'forbidden');
+select t.throws($$ select public.create_invite('founder') $$, 'forbidden');
 
 -- pede a equipe
 insert into public.crew_requests (requester_id, name, city_id, instagram, member_count, accepts_video_call)
@@ -55,9 +55,9 @@ select t.ok(public.is_crew_admin(:'crew'), 'fundador vira admin verificado');
 select t.ok((select invites_left from public.my_profile()) = 5, 'fundador ganha 5 convites');
 
 -- convites da equipe
-select public.create_invite(:'crew') as code_a \gset
-select public.create_invite(:'crew') as code_b \gset
-select public.create_invite(:'crew') as code_n \gset
+select public.create_invite('app') as code_a \gset
+select public.create_invite('app') as code_b \gset
+select public.create_invite('app') as code_n \gset
 select t.ok((select invites_left from public.my_profile()) = 2, 'convites descontados');
 select t.throws(format($$ select public.redeem_invite(%L, 'eu.mesmo') $$, :'code_a'), 'own_invite');
 
@@ -66,7 +66,31 @@ select t.login(:'b');  select public.redeem_invite(:'code_b', 'membro.b');
 select t.login(:'n');  select public.redeem_invite(:'code_n', 'novato.n');
 select t.throws(format($$ select public.redeem_invite(%L, 'outro') $$, :'code_n'), 'invite_used');
 
+-- o convite só dá acesso ao app: ninguém entrou na equipe ainda
+select t.ok(not public.is_crew_member(:'crew'), 'convite não coloca ninguém na equipe');
+
+-- cada um pede pra entrar; quem aprova é o fundador
+select t.login(:'a');  select public.request_join_crew(:'crew', 'sou do Gol branco') as jr_a \gset
+select t.throws(format($$ select public.request_join_crew(%L) $$, :'crew'), 'already_requested');
+select t.ok((select ((public.crew_page(:'crew'))->>'my_request') = 'pending'), 'página mostra meu pedido');
+select t.ok((select (public.crew_page(:'crew'))->'join_requests' = 'null'::jsonb), 'quem não é admin não vê os pedidos');
+-- não aprova o próprio pedido
+select t.throws(format($$ select public.decide_join_request(%L, 'approved') $$, :'jr_a'), 'forbidden');
+select t.login(:'b');  select public.request_join_crew(:'crew') as jr_b \gset
+select t.ok((select count(*) from public.crew_join_requests) = 1, 'cada um vê só o próprio pedido');
+select t.login(:'n');  select public.request_join_crew(:'crew') as jr_n \gset
+
+select t.login(:'founder');
+select t.ok((select count(*) from public.my_crews_join_requests()) = 3, 'fundador vê os 3 pedidos');
+select t.ok((select message from public.my_crews_join_requests() where username = 'membro.a') = 'sou do Gol branco', 'com a mensagem');
+select public.decide_join_request(:'jr_a', 'approved');
+select public.decide_join_request(:'jr_b', 'approved');
+select public.decide_join_request(:'jr_n', 'approved');
+select t.throws(format($$ select public.decide_join_request(%L, 'rejected') $$, :'jr_a'), 'already_reviewed');
+select t.ok((select sponsor_id from public.crew_members where crew_id = :'crew' and user_id = :'a') = :'founder', 'padrinho é quem aprovou');
+
 select t.login(:'a');
+select t.throws(format($$ select public.request_join_crew(%L) $$, :'crew'), 'already_member');
 select t.ok((select status from public.crew_members where user_id = public.current_uid()) = 'pending', 'entra pendente');
 select t.ok(not public.is_verified_anywhere(), 'pendente não é verificado');
 -- pendente não confirma ninguém
@@ -104,8 +128,8 @@ select t.ok((select count(*) from public.invites) = 0, 'não vê convites dos ou
 
 -- convites acabam
 select t.login(:'founder');
-select public.create_invite(:'crew'); select public.create_invite(:'crew');
-select t.throws(format($$ select public.create_invite(%L) $$, :'crew'), 'no_invites_left');
+select public.create_invite('app'); select public.create_invite('app');
+select t.throws(format($$ select public.create_invite('app') $$), 'no_invites_left');
 
 -- tema: só admin
 select public.set_crew_theme(:'crew', '#3fa0ff', 'redondo');

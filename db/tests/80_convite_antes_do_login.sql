@@ -4,7 +4,7 @@ begin;
 insert into public.profiles (id, username, is_master) values ('user_2master0000000000000000b', 'mestre', true);
 set local role authenticated;
 select t.login('user_2master0000000000000000b');
-select public.create_invite(null) as code \gset
+select public.create_invite('founder') as code \gset
 reset role;
 
 set local role anonymous;

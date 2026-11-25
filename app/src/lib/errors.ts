@@ -33,6 +33,14 @@ const MESSAGES: Record<string, string> = {
   invalid_visibility: 'Escolha quem pode ver seu carro de novo.',
   upload_failed: 'Não deu pra enviar a foto. Confere a internet e tenta de novo.',
   photo_too_big: 'Foto muito grande (máximo 8 MB).',
+  already_requested: 'Seu pedido pra essa equipe já foi enviado. Espera o fundador.',
+  recently_rejected: 'Seu pedido foi recusado há pouco. Dá pra pedir de novo depois de 7 dias.',
+  already_reviewed: 'Esse pedido já foi respondido.',
+  request_not_found: 'Pedido não encontrado.',
+  bio_too_long: 'A bio cabe até 600 letras.',
+  invalid_instagram: 'Instagram inválido: só o @, sem espaço (ex.: @minhaequipe).',
+  message_too_long: 'A mensagem cabe até 300 letras.',
+  crew_not_found: 'Equipe não encontrada.',
   contest_window_closed: 'Passou o prazo de 24 h pra contestar.',
 };
 

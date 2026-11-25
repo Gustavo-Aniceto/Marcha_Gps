@@ -21,7 +21,7 @@ export function InviteBadge() {
     <View style={{ borderWidth: 1, borderColor: colors.neon, borderRadius: 6, padding: 12, gap: 4, backgroundColor: colors.panel }}>
       <Text style={{ color: colors.neon, fontFamily: fonts.mono, fontSize: 12, letterSpacing: 1 }}>CONVITE OK · {invite.code}</Text>
       <Text style={{ color: colors.text, fontSize: 14 }}>
-        {invite.kind === 'fundador' ? 'Convite pra registrar sua equipe.' : `Equipe ${invite.crewName ?? ''}`.trim()}
+        {invite.kind === 'fundador' ? 'Convite pra registrar sua equipe.' : 'Convite pro app. Depois você pede pra entrar nas equipes.'}
         {' '}Agora entre com a conta que preferir.
       </Text>
       <Pressable onPress={async () => { await clearPendingInvite(); router.replace('/(auth)/inicio'); }} accessibilityRole="button">

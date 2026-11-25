@@ -10,7 +10,7 @@ insert into public.profiles (id, username, is_master) values (:'master', 'adm.ma
 set local role authenticated;
 
 select t.login(:'master');
-select public.create_invite(null) as code_f \gset
+select public.create_invite('founder') as code_f \gset
 select t.ok((select is_master from public.my_profile()), 'master se vê como master');
 
 select t.login(:'founder');
@@ -30,7 +30,7 @@ select t.ok((select count(*) from public.master_contact()) = 1, 'master vê o pr
 
 select t.login(:'founder');
 select t.ok((select username from public.master_contact()) = 'adm.master', 'fundador vê quem é o master');
-select public.create_invite(:'crew') as code_m \gset
+select public.create_invite('app') as code_m \gset
 
 select t.login(:'membro');
 select public.redeem_invite(:'code_m', 'membro.comum');
