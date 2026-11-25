@@ -5,7 +5,8 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import { ClerkProvider } from '@clerk/expo';
-import { ptBR } from '@clerk/localizations';
+// só o português (o pacote inteiro trazia todas as línguas e deixava o app ~4 MB mais pesado)
+import { ptBR } from '@clerk/localizations/pt-BR';
 import { tokenCache } from '../src/lib/clerkTokenCache';
 import { ChakraPetch_700Bold } from '@expo-google-fonts/chakra-petch';
 import { ShareTechMono_400Regular } from '@expo-google-fonts/share-tech-mono';
