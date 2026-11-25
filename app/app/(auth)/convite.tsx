@@ -42,6 +42,7 @@ export default function Convite() {
       )}
       <Field label="Nome de usuário" value={username} onChangeText={setUsername} autoCapitalize="none"
              placeholder="ex.: vini.fixa" maxLength={24} />
+      <Body dim>De 3 a 24 letras minúsculas, números, ponto ou _. É o @ que a galera vai ver.</Body>
       <ErrorText>{error}</ErrorText>
       <Button title="Entrar no Marcha GPS" onPress={redeem} loading={busy}
               disabled={code.trim().length < 9 || username.trim().length < 3} />

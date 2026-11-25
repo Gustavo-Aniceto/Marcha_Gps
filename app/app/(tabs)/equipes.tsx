@@ -132,7 +132,7 @@ export default function Equipes() {
     <Screen>
       <Title>Equipes</Title>
 
-      {mine.length > 0 && (
+      {mine.length > 1 && (
         <Pills options={mine.map((m) => ({ value: m.crews.id, label: m.crews.name }))}
                value={selected ?? ''} onChange={(v) => { setSelected(v); setInvite(null); }} />
       )}
