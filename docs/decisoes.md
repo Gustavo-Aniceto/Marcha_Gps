@@ -10,12 +10,13 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 - **Todo convite vale uma vez só, pra sempre** (principalmente o de fundador): usou, ninguém mais usa, nem se a conta de quem usou for apagada. Se duas pessoas tentarem ao mesmo tempo, só uma entra.
 - **Ordem do primeiro acesso:** 1) digita o código do convite (o app confere sem login); 2) entra com a conta que preferir: Google, Facebook ou e-mail (código no e-mail ou senha); 3) escolhe o nome de usuário. Quem já é membro toca em "Já sou membro · Entrar".
 - **Verificação do membro** além do convite: 2 membros confirmam que conhecem + check-in presencial (QR escaneado por admin). Sem isso: não vê localização da equipe nem entra em comboio.
-- Só o **Adm Master** (dono do app) libera equipes novas. O dono da equipe manda nome, cidade, Instagram, nº de membros, fotos de prova e faz chamada de vídeo.
+- Só o **Adm Master** (dono do app) libera equipes novas. **Código de fundador não vence** e fica ligado pra sempre à equipe que nasceu dele: na aba Equipes o master vê a lista de códigos (livre / quem usou / pedido em análise / nome da equipe). O dono da equipe manda nome, cidade, Instagram, nº de membros, fotos de prova e faz chamada de vídeo.
 
 ## Carro
 - Cadastro por **fotos** (frente, traseira, laterais, roda; mínimo 3). IA reconhece modelo, ano, cor, altura e aro; o app usa o modelo 3D da base e ajusta.
 - **Montar pelo foto (feito):** na garagem a pessoa manda de 1 a 3 fotos do carro; uma IA com visão (Gemma 4 no Workers AI da Cloudflare, plano grátis, ~8 de 10 mil "neurônios"/dia por análise) diz tipo de carroceria, cor, marca, modelo, vidro, aerofólio e se está rebaixado. O app monta o carrinho com isso; a pessoa confere, ajusta se quiser e salva. As fotos ficam guardadas no carro (R2). Limite: 4 análises por minuto e 20 por dia por pessoa.
 - **Tipo do carrinho no mapa:** hatch, sedã, perua, picape, picape grande, SUV, esportivo e van/Kombi, em 17 cores (desenhos próprios, vista de cima, estilo desenho). Vidro (fumê/limo) e aerofólio aparecem no desenho. É esse carrinho que aparece no mapa, na Cena e no perfil.
+- **Vários carros:** até 5 na garagem. Só um fica "no mapa" por vez (é ele que aparece no GPS, na Cena e no perfil). Quem tem mais de um carro, ao abrir o app, responde **"Com qual carro você vai sair?"**. Dá pra trocar na Garagem ("Usar este no mapa"). O perfil mostra os outros carros da garagem.
 - **Garagem** em 3D: altura, tipo de suspensão, aro, posição da roda, cambagem, cor, vidro, aerofólio, neon. Checa fitment e monta a lista de peças da base (marca "Serve" / "Atenção").
 
 ## Mapa
@@ -23,7 +24,7 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 - Mapa noite grafite azulado (ruas cinza, rodovias azuladas, parques verdes) ou dia claro (ruas brancas com contorno). Prédios planos e discretos (mapa limpo); o carro fica mais pra baixo da tela pra ver o caminho à frente; ângulo padrão 50°. O usuário escolhe 3D/2D, ângulo (20–88°) e raio de visão (40–220 m).
 - **Cena ao vivo** (fica no visual 2D cinza, aprovado): o mapa inteiro com o carrinho montado de quem escolheu aparecer, **e o seu carro** (com o seu @, pelo seu GPS). Sem demarcação nem filtro de cidade; filtro só por Todos / Minhas equipes. Tocar num carro (o seu também) abre o cartão do perfil da pessoa (ver Feed).
 - Quem pode ver a Cena: membro verificado de alguma equipe **ou o Adm Master** (`can_view_scene()`).
-- Visibilidade: **Fantasma** / **Só minhas equipes** / **Cena ao vivo**. Na Cena ao vivo: posição aproximada (~500 m) por padrão para quem não é da equipe, atraso opcional, some ao parar 10 min, só membros verificados veem, zonas privadas (casa/trabalho) escondem até da equipe.
+- Dá pra estar em **mais de uma equipe**. Visibilidade: **Fantasma** / **Minhas equipes** (todas juntas **ou uma equipe só**: as outras não te veem) / **Cena ao vivo**. Na Cena, o filtro vai de Todos / Minhas equipes / cada equipe. Na Cena ao vivo: posição aproximada (~500 m) por padrão para quem não é da equipe, atraso opcional, some ao parar 10 min, só membros verificados veem, zonas privadas (casa/trabalho) escondem até da equipe.
 
 ## Navegação
 - "Para onde?" busca endereço ou lugar (estado de SP, puxando pra perto de você) e já sai navegando: linha da rota, próxima manobra com seta e distância, "depois: …", tempo restante, distância e horário de chegada.
@@ -40,7 +41,9 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 - **Rota que desvia** do que pega no seu carro (lombada alta, valeta, buraco… pela altura da garagem): o app procura sozinho um caminho alternativo, mas **nunca troca sem perguntar**. Aparece "Tem N obstáculos nesse caminho que pegam no seu carro · Achei outro caminho que desvia · +X min" com **Trocar rota** / **Manter caminho** (e a voz pergunta). Só oferece se desviar de algo e não for muito mais demorado (até 5 min a mais, ou até 50% do tempo que falta, nunca mais de 20 min). Uma pergunta por destino; sem resposta em 30 s, mantém. Se aceitou, os recálculos continuam desviando.
 
 ## Equipes
-- Fundador/admin cria **eventos**: Encontro, Rolê (comboio com rota que desvia de obstáculos) ou Pista (só autódromo/área fechada autorizada).
+- Fundador/admin cria **eventos** só com nome, **dia no calendário**, **horário** (hora e minutos), duração, **local por busca de endereço** (não precisa estar lá) e quem vê. Não escolhe tipo (fica como encontro).
+- **Página da equipe:** cada equipe tem a sua página (nome, cidade, Instagram, fundador, membros, próximos eventos), separada do perfil pessoal de quem fundou. O fundador continua com o perfil dele normal; no perfil aparecem as equipes (★ nas que fundou).
+- Quem já é **dono de equipe não registra outra**; um pedido em aberto por vez. O **Adm Master também pode ter a própria equipe** (pede e aprova) e usar o app como qualquer um.
 - **Tema da equipe**: cor e formato dos botões. Aparece na tela/feed/rank da equipe e nas etiquetas do mapa. Cor escura é clareada automaticamente para leitura. Avisos de segurança continuam laranja para todos.
 - **Prova de presença: "fazer a mídia"**: foto pela câmera do app (galeria não vale), no local e no horário do evento; o app confere se o carro bate com a garagem. Vale +50 XP na equipe; admin pode contestar em 24 h.
 

@@ -227,7 +227,7 @@ begin
       values (v_code, p_crew, v_uid, case when p_crew is null then 'infinity'::timestamptz else now() + interval '7 days' end);
       exit;
     exception when unique_violation then
-      -- tenta outro código
+      null; -- tenta outro código
     end;
   end loop;
   return v_code;
