@@ -49,9 +49,9 @@ export function RouteLine({ coords }: { coords: { lat: number; lon: number }[] }
   return (
     <GeoJSONSource id="rota" data={data}>
       <Layer id="rota-borda" type="line" layout={{ 'line-join': 'round', 'line-cap': 'round' } as never}
-             paint={{ 'line-color': colors.bg, 'line-width': 11, 'line-opacity': 0.85 } as never} />
+             paint={{ 'line-color': colors.routeCasing, 'line-width': 14 } as never} />
       <Layer id="rota-linha" type="line" layout={{ 'line-join': 'round', 'line-cap': 'round' } as never}
-             paint={{ 'line-color': colors.holo, 'line-width': 7 } as never} />
+             paint={{ 'line-color': colors.route, 'line-width': 9 } as never} />
     </GeoJSONSource>
   );
 }

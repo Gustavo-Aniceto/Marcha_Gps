@@ -13,7 +13,7 @@
       "id": "fundo",
       "type": "background",
       "paint": {
-        "background-color": "#EEF1F6"
+        "background-color": "#EEEEEA"
       }
     },
     {
@@ -22,7 +22,7 @@
       "source": "openmaptiles",
       "source-layer": "park",
       "paint": {
-        "fill-color": "#CDE9C2"
+        "fill-color": "#C9E6BC"
       }
     },
     {
@@ -45,7 +45,7 @@
         ]
       ],
       "paint": {
-        "fill-color": "#CDE9C2",
+        "fill-color": "#C9E6BC",
         "fill-opacity": 0.7
       }
     },
@@ -55,7 +55,7 @@
       "source": "openmaptiles",
       "source-layer": "water",
       "paint": {
-        "fill-color": "#9CC9F0"
+        "fill-color": "#A9D3F2"
       }
     },
     {
@@ -71,7 +71,7 @@
         "Polygon"
       ],
       "paint": {
-        "fill-color": "#C9D1E0",
+        "fill-color": "#CACAC4",
         "fill-opacity": 0.6
       }
     },
@@ -102,7 +102,7 @@
         "line-join": "round"
       },
       "paint": {
-        "line-color": "#C9D1E0",
+        "line-color": "#CACAC4",
         "line-width": [
           "interpolate",
           [
@@ -118,6 +118,49 @@
           8,
           18,
           30
+        ]
+      }
+    },
+    {
+      "id": "ruas-menores-contorno",
+      "type": "line",
+      "source": "openmaptiles",
+      "source-layer": "transportation",
+      "minzoom": 14,
+      "filter": [
+        "in",
+        [
+          "get",
+          "class"
+        ],
+        [
+          "literal",
+          [
+            "minor",
+            "service",
+            "track"
+          ]
+        ]
+      ],
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      "paint": {
+        "line-color": "#CACAC4",
+        "line-width": [
+          "interpolate",
+          [
+            "exponential",
+            1.5
+          ],
+          [
+            "zoom"
+          ],
+          14,
+          3.5,
+          18,
+          18
         ]
       }
     },
@@ -234,7 +277,7 @@
         "line-join": "round"
       },
       "paint": {
-        "line-color": "#FFD8A8",
+        "line-color": "#FFE29A",
         "line-width": [
           "interpolate",
           [
@@ -281,9 +324,9 @@
             6
           ],
           0,
-          "#DDE3EE",
+          "#E2E2DB",
           60,
-          "#B8C3DA"
+          "#D2D2CA"
         ],
         "fill-extrusion-height": [
           "coalesce",
@@ -301,7 +344,7 @@
           ],
           0
         ],
-        "fill-extrusion-opacity": 0.9,
+        "fill-extrusion-opacity": 0.75,
         "fill-extrusion-vertical-gradient": true
       }
     },
@@ -337,7 +380,7 @@
         "text-letter-spacing": 0.05
       },
       "paint": {
-        "text-color": "#3E4657",
+        "text-color": "#454A53",
         "text-halo-color": "#FFFFFF",
         "text-halo-width": 1.2
       }
@@ -390,7 +433,7 @@
         "text-max-width": 8
       },
       "paint": {
-        "text-color": "#3E4657",
+        "text-color": "#454A53",
         "text-halo-color": "#FFFFFF",
         "text-halo-width": 1.5
       }
@@ -425,7 +468,7 @@
         "text-max-width": 9
       },
       "paint": {
-        "text-color": "#5B6B8C",
+        "text-color": "#5B6475",
         "text-halo-color": "#FFFFFF",
         "text-halo-width": 1.2
       }

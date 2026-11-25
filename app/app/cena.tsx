@@ -10,38 +10,35 @@ import { db, type VisibleCar } from '../src/lib/db';
 import { useSession } from '../src/lib/session';
 import { useLocationSharing } from '../src/lib/useLocationSharing';
 import { buildMapStyle, REGION_VIEW } from '../src/lib/mapStyle.ts';
-import { LAUNCH_CITIES } from '../src/lib/geo.ts';
 import { colors, fonts } from '../src/theme/tokens.ts';
 
-type CityFilter = 'todas' | (typeof LAUNCH_CITIES)[number]['id'];
 
 export default function Cena() {
   const router = useRouter();
   const mapStyle = useMemo(() => buildMapStyle('cena'), []);
-  const [city, setCity] = useState<CityFilter>('todas');
   const [onlyCrew, setOnlyCrew] = useState(false);
   const [cars, setCars] = useState<VisibleCar[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const { profile } = useSession();
   const share = !!profile && profile.visibility !== 'ghost';
   const { position } = useLocationSharing(share, null);
-  const [myCar, setMyCar] = useState<{ color: string; neon: string | null } | null>(null);
+  const [myCar, setMyCar] = useState<{ color: string; neon: string | null; body_type: string; tint: string; spoiler: boolean } | null>(null);
   useFocusEffect(useCallback(() => {
     if (!profile) return;
-    db.from('cars').select('color, neon').eq('owner_id', profile.id).eq('is_active', true).maybeSingle()
-      .then(({ data }) => setMyCar(data as { color: string; neon: string | null } | null));
+    db.from('cars').select('color, neon, body_type, tint, spoiler').eq('owner_id', profile.id).eq('is_active', true).maybeSingle()
+      .then(({ data }) => setMyCar(data as typeof myCar));
   }, [profile]));
 
   useEffect(() => {
     let alive = true;
     const load = async () => {
-      const { data, error } = await db.rpc('visible_cars', { p_city: city === 'todas' ? null : city });
+      const { data, error } = await db.rpc('visible_cars', { p_city: null });
       if (alive && !error) setCars((data ?? []) as VisibleCar[]);
     };
     load();
     const t = setInterval(load, 15_000);
     return () => { alive = false; clearInterval(t); };
-  }, [city]);
+  }, []);
 
   const shown = onlyCrew ? cars.filter((c) => c.same_crew) : cars;
   const sel = shown.find((c) => c.user_id === selected) ?? null;
@@ -54,6 +51,7 @@ export default function Cena() {
         {position && (
           <Marker id="cena-eu" lngLat={[position.lon, position.lat]}>
             <CarMarker me color={myCar?.color} neon={myCar?.neon} heading={position.heading}
+                       body={myCar?.body_type} tint={myCar?.tint} spoiler={myCar?.spoiler}
                        label={profile?.visibility === 'ghost' ? 'VOCÊ · FANTASMA' : 'VOCÊ'} />
           </Marker>
         )}
@@ -62,6 +60,7 @@ export default function Cena() {
             <Pressable onPress={() => setSelected(c.user_id)} accessibilityRole="button" accessibilityLabel={`Ver carro de @${c.username}`}
                        hitSlop={8}>
               <CarMarker color={c.car?.color} neon={c.car?.neon} heading={c.heading} label={`@${c.username}`}
+                         body={c.car?.body_type} tint={c.car?.tint} spoiler={c.car?.spoiler}
                          sameCrew={c.same_crew} approximate={c.approximate} />
             </Pressable>
           </Marker>
@@ -75,19 +74,11 @@ export default function Cena() {
           </Pressable>
           <View style={{ flex: 1 }}>
             <Text style={s.title}>Cena ao vivo</Text>
-            <Text style={s.mono}>SP · GUARULHOS · ITAQUÁ · {shown.length + (position ? 1 : 0)} {shown.length + (position ? 1 : 0) === 1 ? 'CARRO' : 'CARROS'}</Text>
+            <Text style={s.mono}>{shown.length + (position ? 1 : 0)} {shown.length + (position ? 1 : 0) === 1 ? 'CARRO' : 'CARROS'}</Text>
           </View>
           <Pressable onPress={() => router.push('/visibilidade')} style={s.chip} accessibilityRole="button">
             <Text style={[s.mono, { color: colors.neon }]}>QUEM ME VÊ</Text>
           </Pressable>
-        </View>
-        <View style={s.row}>
-          {([{ id: 'todas', name: 'Todas' }, ...LAUNCH_CITIES] as { id: CityFilter; name: string }[]).map((c) => (
-            <Pressable key={c.id} onPress={() => setCity(c.id)} style={[s.chip, city === c.id && s.chipOn]}
-                       accessibilityRole="button" accessibilityState={{ selected: city === c.id }}>
-              <Text style={[s.chipText, city === c.id && { color: colors.ink }]}>{c.name}</Text>
-            </Pressable>
-          ))}
         </View>
         <View style={s.row}>
           {[{ v: false, l: 'Todos' }, { v: true, l: 'Minhas equipes' }].map((o) => (

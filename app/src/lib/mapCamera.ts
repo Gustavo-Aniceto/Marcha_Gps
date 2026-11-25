@@ -7,7 +7,7 @@ export interface MapCameraSettings {
   radiusM: number; // 40 a 220 m à frente
 }
 
-export const DEFAULT_CAMERA: MapCameraSettings = { theme: 'noite', threeD: true, pitch: 62, radiusM: 110 };
+export const DEFAULT_CAMERA: MapCameraSettings = { theme: 'noite', threeD: true, pitch: 50, radiusM: 110 };
 
 export const PITCH_PRESETS = [
   { label: 'Atrás', pitch: 28 },

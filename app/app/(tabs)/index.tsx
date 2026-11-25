@@ -1,4 +1,5 @@
-// Mapa de navegação: 3D (noite ou dia), câmera de jogo, carros que visible_cars() libera e avisos do Radar.
+// Mapa de navegação no visual de app de trânsito que o público já conhece (barra preta da manobra em cima,
+// barra de chegada embaixo, rota roxa, botões redondos), com o carro montado na garagem e os avisos do Radar.
 // Como no Waze: arrastar o mapa solta a câmera do carro; "Voltar pro carro" (ou 15 s parado, navegando) volta.
 // Mapa gratuito: MapLibre + OpenFreeMap (ver src/lib/mapStyle.ts).
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -23,10 +24,10 @@ import { clearanceFor } from '../../src/lib/fitment.ts';
 import { kindInfo, type ReportKind } from '../../src/lib/reports.ts';
 import { haversineM } from '../../src/lib/geo.ts';
 import { buildMapStyle } from '../../src/lib/mapStyle.ts';
-import { colors, fonts } from '../../src/theme/tokens.ts';
+import { chrome, colors, fonts } from '../../src/theme/tokens.ts';
 
 interface Report { id: string; kind: ReportKind; lat: number; lon: number; base_risk: number; status: string; speed_limit: number | null }
-interface MyCar { color: string; neon: string | null; ride_height_cm: number; suspension: string }
+interface MyCar { color: string; neon: string | null; ride_height_cm: number; suspension: string; body_type: string; tint: string; spoiler: boolean }
 
 export default function Mapa() {
   const router = useRouter();
@@ -51,10 +52,12 @@ export default function Mapa() {
   const [myCar, setMyCar] = useState<MyCar | null>(null);
   const cam = cameraFor(camera);
   const mapStyle = useMemo(() => buildMapStyle(camera.theme), [camera.theme]);
+  const ui = camera.theme === 'dia' ? chrome.dia : chrome.noite;
+  const [menu, setMenu] = useState(false);
 
   useFocusEffect(useCallback(() => {
     if (!profile) return;
-    db.from('cars').select('color, neon, ride_height_cm, suspension')
+    db.from('cars').select('color, neon, ride_height_cm, suspension, body_type, tint, spoiler')
       .eq('owner_id', profile.id).eq('is_active', true).maybeSingle()
       .then(({ data }) => setMyCar(data as MyCar | null));
   }, [profile]));
@@ -161,6 +164,9 @@ export default function Mapa() {
   // começou uma navegação nova: câmera volta pro carro
   useEffect(() => { if (nav.status === 'routing') setFollowing(true); }, [nav.status]);
   const next = nav.update?.next;
+  // rua em que você está agora (a da manobra anterior à próxima)
+  const street = route && next ? route.maneuvers[next.index - 1]?.street || route.maneuvers[0]?.street || '' : '';
+  const others = cars.filter((c) => c.user_id !== profile?.id);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -188,13 +194,14 @@ export default function Mapa() {
         ))}
 
         {/* todo mundo que o banco libera (visible_cars cuida de fantasma, equipe, zona privada e atraso) */}
-        {cars.filter((c) => c.user_id !== profile?.id).map((c) => web ? (
+        {others.map((c) => web ? (
           <React.Fragment key={c.user_id}>
             <Marker id={`carro-${c.user_id}`} lngLat={[c.lon, c.lat]} rotation={c.heading ?? 0}>
-              <CarMarker color={c.car?.color} neon={c.car?.neon} heading={0} approximate={c.approximate} />
+              <CarMarker color={c.car?.color} neon={c.car?.neon} heading={0} approximate={c.approximate}
+                         body={c.car?.body_type} tint={c.car?.tint} spoiler={c.car?.spoiler} />
             </Marker>
             <Marker id={`nome-${c.user_id}`} lngLat={[c.lon, c.lat]}>
-              <View style={{ paddingBottom: 58 }} pointerEvents="none">
+              <View style={{ paddingBottom: 60 }} pointerEvents="none">
                 <Text style={[s.carLabel, c.same_crew && s.carLabelCrew]}>@{c.username}</Text>
               </View>
             </Marker>
@@ -202,76 +209,79 @@ export default function Mapa() {
         ) : (
           <Marker key={c.user_id} id={`carro-${c.user_id}`} lngLat={[c.lon, c.lat]}>
             <CarMarker color={c.car?.color} neon={c.car?.neon} heading={c.heading} label={`@${c.username}`}
-                       sameCrew={c.same_crew} approximate={c.approximate} />
+                       sameCrew={c.same_crew} approximate={c.approximate}
+                       body={c.car?.body_type} tint={c.car?.tint} spoiler={c.car?.spoiler} />
           </Marker>
         ))}
 
         {position && (
           <Marker id="meu-carro" lngLat={[position.lon, position.lat]} rotation={web ? position.heading ?? 0 : undefined}>
-            <CarMarker me color={myCar?.color} neon={myCar?.neon} heading={web ? 0 : position.heading} />
+            <CarMarker me color={myCar?.color} neon={myCar?.neon} heading={web ? 0 : position.heading}
+                       body={myCar?.body_type} tint={myCar?.tint} spoiler={myCar?.spoiler} />
           </Marker>
         )}
       </MapView>
 
-      {!navigating && (
-      <View style={s.topBar} pointerEvents="box-none">
-        <View style={s.chip}>
-          <Text style={s.chipText}>
-            {share ? (profile?.visibility === 'scene' ? 'VISÍVEL NA CENA' : 'VISÍVEL PRA EQUIPE') : 'MODO FANTASMA'}
-            {' · '}{cars.filter((c) => c.user_id !== profile?.id).length} NO MAPA
-          </Text>
-        </View>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <Pressable style={s.iconBtn} onPress={() => router.push('/visibilidade')} accessibilityRole="button"
-                     accessibilityLabel="Quem vê meu carro">
-            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={colors.holo} strokeWidth={1.9}>
-              <Path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><Circle cx={12} cy={12} r={3} />
-            </Svg>
-          </Pressable>
-          <Pressable style={s.iconBtn} onPress={() => router.push('/camera-mapa')} accessibilityRole="button"
-                     accessibilityLabel="Câmera do mapa"><Text style={s.iconText}>3D</Text></Pressable>
-        </View>
-      </View>
-      )}
-
-      {!navigating && (
-        <Pressable style={s.searchBar} onPress={() => router.push('/destino')} accessibilityRole="search"
-                   accessibilityLabel="Para onde? Buscar destino">
-          <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.holo} strokeWidth={2}>
-            <Circle cx={11} cy={11} r={7} /><Path d="m20 20-3.5-3.5" />
-          </Svg>
-          <Text style={s.searchText}>Para onde?</Text>
-        </Pressable>
-      )}
-
-      {navigating && (
+      {/* ---------- em cima ---------- */}
+      {navigating ? (
         <View style={s.maneuver} accessibilityLiveRegion="polite">
           {nav.status === 'routing' || !next ? (
-            <Text style={s.maneuverText}>{nav.status === 'routing'
+            <Text style={s.maneuverStreet}>{nav.status === 'routing'
               ? (!position ? 'Esperando o GPS achar você… (libere a localização se o navegador perguntar)' : 'Calculando a rota…')
               : nav.status === 'arrived' ? 'Você chegou' : 'Siga a rota'}</Text>
           ) : (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <View style={s.maneuverIcon}><ManeuverIcon kind={next.maneuver.kind} size={30} /></View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+              <ManeuverIcon kind={next.maneuver.kind} size={46} color={chrome.bannerText} />
               <View style={{ flex: 1 }}>
                 <Text style={s.maneuverDist}>{formatDistance(next.distance_m)}</Text>
-                <Text style={s.maneuverText} numberOfLines={2}>{next.maneuver.text}</Text>
+                <Text style={s.maneuverStreet} numberOfLines={1}>{next.maneuver.street || next.maneuver.text}</Text>
               </View>
             </View>
           )}
-          {nav.status === 'rerouting' && <Text style={s.rerouting}>RECALCULANDO A ROTA…</Text>}
+          {nav.status === 'rerouting' && <Text style={s.rerouting}>Recalculando a rota…</Text>}
           {nav.status === 'navigating' && nav.update?.after && next && next.distance_m < 400 && (
             <Text style={s.after} numberOfLines={1}>Depois: {nav.update.after.text}</Text>
           )}
         </View>
+      ) : (
+        <>
+          <Pressable style={[s.round, s.menuBtn, { backgroundColor: ui.button, borderColor: ui.border }]} onPress={() => setMenu((m) => !m)}
+                     accessibilityRole="button" accessibilityLabel="Menu do mapa" accessibilityState={{ expanded: menu }}>
+            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={ui.icon} strokeWidth={2.2} strokeLinecap="round">
+              <Path d="M4 7h16M4 12h16M4 17h16" />
+            </Svg>
+          </Pressable>
+          <Pressable style={[s.cenaPill, { backgroundColor: ui.button, borderColor: ui.border }]} onPress={() => router.push('/cena')}
+                     accessibilityRole="button" accessibilityLabel={`Abrir a Cena ao vivo, ${others.length} carros no mapa`}>
+            <View style={[s.dot, { backgroundColor: share ? '#3DDC84' : ui.sub }]} />
+            <Text style={[s.cenaText, { color: ui.text }]}>Cena ao vivo · {others.length + (position ? 1 : 0)}</Text>
+          </Pressable>
+          {menu && (
+            <View style={[s.menu, { backgroundColor: ui.panel, borderColor: ui.border }]}>
+              <Text style={[s.menuHead, { color: ui.sub }]}>
+                {share ? (profile?.visibility === 'scene' ? 'Você aparece na Cena ao vivo' : 'Você aparece só pra sua equipe') : 'Modo fantasma: ninguém te vê'}
+              </Text>
+              {[
+                { l: 'Quem vê meu carro', to: '/visibilidade' },
+                { l: 'Visual e câmera do mapa', to: '/camera-mapa' },
+                { l: 'Cena ao vivo', to: '/cena' },
+                { l: 'Garagem (meu carro)', to: '/garagem' },
+              ].map((o) => (
+                <Pressable key={o.to} style={s.menuItem} onPress={() => { setMenu(false); router.push(o.to as never); }} accessibilityRole="button">
+                  <Text style={[s.menuText, { color: ui.text }]}>{o.l}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </>
       )}
 
       {(permission === 'denied' || permission === 'unavailable') && (
-        <Pressable style={[s.info, { top: navigating ? 150 : 160 }]} onPress={retry} accessibilityRole="button">
-          <Text style={[s.infoText, { fontWeight: '700' }]}>
+        <Pressable style={[s.info, { top: navigating ? 150 : 108, backgroundColor: ui.panel, borderColor: ui.border }]} onPress={retry} accessibilityRole="button">
+          <Text style={[s.infoText, { color: ui.text, fontWeight: '700' }]}>
             {permission === 'denied' ? 'Localização bloqueada' : 'Não achei sua localização'}
           </Text>
-          <Text style={s.infoText}>
+          <Text style={[s.infoText, { color: ui.text }]}>
             {permission === 'denied'
               ? 'Libere a localização pra este site: no iPhone, Ajustes > Privacidade > Serviços de Localização > Safari (ou Chrome) > "Durante o uso". No Android, toque no cadeado ao lado do endereço > Permissões > Local. Depois toque aqui.'
               : 'Confira se o GPS do celular está ligado e toque aqui pra tentar de novo.'}
@@ -279,147 +289,183 @@ export default function Mapa() {
         </Pressable>
       )}
 
-      {following ? (
-        <Pressable style={[s.locateBtn, navigating && { bottom: 186 }]} accessibilityRole="button" accessibilityLabel="Ir pra minha localização"
-                   onPress={() => { if (!position) retry(); backToCar(); }}>
-          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={position ? colors.holo : colors.textMuted} strokeWidth={2}>
-            <Circle cx={12} cy={12} r={4} /><Path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
-          </Svg>
-        </Pressable>
-      ) : (
-        <Pressable style={[s.backBtn, { bottom: navigating ? 186 : 108 }]} accessibilityRole="button"
-                   accessibilityLabel="Voltar pro carro" onPress={() => { if (!position) retry(); backToCar(); }}>
-          <Svg width={18} height={18} viewBox="0 0 24 24" fill={colors.ink}>
-            <Path d="M12 2 20 21 12 17 4 21Z" />
-          </Svg>
-          <Text style={s.backText}>VOLTAR PRO CARRO</Text>
-        </Pressable>
-      )}
-
-      {navigating && route && (
-        <Pressable style={s.routeBtn} accessibilityRole="button" accessibilityLabel="Ver a rota inteira"
-                   onPress={() => { setFollowing(false); setFitKey((n) => n + 1); }}>
-          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.holo} strokeWidth={2} strokeLinecap="round">
-            <Circle cx={6} cy={18} r={2.5} /><Circle cx={18} cy={6} r={2.5} /><Path d="M8 16c4-1 2-7 8-8" strokeDasharray="2 3" />
-          </Svg>
-        </Pressable>
-      )}
-
       {alert && (
-        <View style={[s.banner, { top: navigating ? 150 : 160 }]} accessibilityLiveRegion="polite">
+        <View style={[s.banner, { top: navigating ? 150 : 108 }]} accessibilityLiveRegion="polite">
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <ReportIcon kind={alert.r.kind} size={36} />
-          <View style={{ flex: 1, gap: 2 }}>
-          <Text style={s.bannerTitle}>
-            {kindInfo(alert.r.kind).label}{alert.r.kind === 'radar' && alert.r.speed_limit ? ` ${alert.r.speed_limit} km/h` : ''} em {formatDistance(alert.dist)}
-          </Text>
-          <Text style={s.bannerText}>
-            {alert.c === 'aviso' ? (alert.r.kind === 'blitz' ? 'Blitz avisada pela comunidade.' : 'Respeite a velocidade da via.')
-              : alert.c === 'nao_passa' ? 'Seu carro não passa aqui. Desvie.' : myCar?.suspension === 'ar'
-              ? 'Raspa: sobe a suspensão antes.' : 'Seu carro raspa aqui. Passa devagar ou desvia.'}
-          </Text>
-          </View>
+            <ReportIcon kind={alert.r.kind} size={36} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={s.bannerTitle}>
+                {kindInfo(alert.r.kind).label}{alert.r.kind === 'radar' && alert.r.speed_limit ? ` ${alert.r.speed_limit} km/h` : ''} em {formatDistance(alert.dist)}
+              </Text>
+              <Text style={s.bannerText}>
+                {alert.c === 'aviso' ? (alert.r.kind === 'blitz' ? 'Blitz avisada pela comunidade.' : 'Respeite a velocidade da via.')
+                  : alert.c === 'nao_passa' ? 'Seu carro não passa aqui. Desvie.' : myCar?.suspension === 'ar'
+                  ? 'Raspa: sobe a suspensão antes.' : 'Seu carro raspa aqui. Passa devagar ou desvia.'}
+              </Text>
+            </View>
           </View>
         </View>
       )}
 
       {!!nav.error && nav.status !== 'routing' && (
-        <Pressable style={[s.info, { top: navigating ? 150 : 160 }]} onPress={() => nav.stop()} accessibilityRole="alert">
-          <Text style={s.infoText}>{nav.error}</Text>
+        <Pressable style={[s.info, { top: navigating ? 150 : 108, backgroundColor: ui.panel, borderColor: ui.border }]} onPress={() => nav.stop()} accessibilityRole="alert">
+          <Text style={[s.infoText, { color: ui.text }]}>{nav.error}</Text>
         </Pressable>
       )}
 
-      {navigating && (
-        <View style={s.navPanel}>
-          {nav.status === 'arrived' ? (
-            <View style={{ flex: 1 }}>
-              <Text style={s.navBig}>Chegou!</Text>
-              <Text style={s.navSmall} numberOfLines={1}>{nav.destination?.name}</Text>
-            </View>
-          ) : (
-            <View style={{ flex: 1 }}>
-              <Text style={s.navBig}>
-                {nav.update ? formatDuration(nav.update.remaining_s) : '—'}
-                <Text style={s.navSmall}>  {nav.update ? `${formatDistance(nav.update.remaining_m)} · chega ${formatArrival(new Date(), nav.update.remaining_s)}` : ''}</Text>
-              </Text>
-              <Text style={s.navSmall} numberOfLines={1}>{nav.destination?.name}</Text>
-            </View>
-          )}
-          <Pressable style={s.navBtn} onPress={() => nav.setVoice(!nav.voice)} accessibilityRole="switch"
-                     accessibilityState={{ checked: nav.voice }} accessibilityLabel="Voz da navegação">
-            <Text style={s.iconText}>{nav.voice ? 'VOZ' : 'MUDO'}</Text>
-          </Pressable>
-          <Pressable style={[s.navBtn, s.navStop]} onPress={nav.stop} accessibilityRole="button" accessibilityLabel="Encerrar navegação">
-            <Text style={s.navStopText}>{nav.status === 'arrived' ? 'FECHAR' : 'SAIR'}</Text>
-          </Pressable>
+      {/* ---------- embaixo ---------- */}
+      {/* nome da rua em que você está (navegando) */}
+      {navigating && !!street && nav.status !== 'arrived' && (
+        <View style={[s.streetPill, { bottom: BOTTOM_NAV + 10 }]} pointerEvents="none">
+          <Text style={s.streetText} numberOfLines={1}>{street}</Text>
         </View>
       )}
 
       {position && (
-        <View style={[s.speedo, { bottom: navigating ? 162 : 80 }]} pointerEvents="none">
-          <Speedometer kmh={kmh} limit={speedRadar?.limit} over={over} radarDist={speedRadar?.dist} />
+        <View style={[s.speedo, { bottom: (navigating ? BOTTOM_NAV : BOTTOM_IDLE) + 12 }]} pointerEvents="none">
+          <Speedometer kmh={kmh} limit={speedRadar?.limit} over={over} radarDist={speedRadar?.dist} theme={ui} />
         </View>
       )}
 
-      {!navigating && (
-        <Pressable style={s.cenaBtn} onPress={() => router.push('/cena')} accessibilityRole="button"
-                   accessibilityLabel="Abrir a Cena ao vivo">
-          <Text style={s.chipText}>CENA AO VIVO · {cars.length}</Text>
+      {/* avisar (amarelo, embaixo à direita) */}
+      <Pressable style={[s.reportBtn, { bottom: (navigating ? BOTTOM_NAV : BOTTOM_IDLE) + 12 }]} onPress={() => router.push('/radar')}
+                 accessibilityRole="button" accessibilityLabel="Avisar buraco, lombada, radar, blitz">
+        <Svg width={34} height={34} viewBox="0 0 24 24">
+          <Path d="M12 3.2 22 20.5H2Z" fill="#14171C" stroke="#14171C" strokeWidth={1.4} strokeLinejoin="round" />
+          <Path d="M12 10v6M9 13h6" stroke={chrome.report} strokeWidth={2.2} strokeLinecap="round" />
+        </Svg>
+      </Pressable>
+
+      {/* minha localização / voltar pro carro, e ver a rota inteira */}
+      {following ? (
+        <Pressable style={[s.round, s.sideBtn, { bottom: (navigating ? BOTTOM_NAV : BOTTOM_IDLE) + 86, backgroundColor: ui.button, borderColor: ui.border }]}
+                   accessibilityRole="button" accessibilityLabel="Ir pra minha localização"
+                   onPress={() => { if (!position) retry(); backToCar(); }}>
+          <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={position ? chrome.locate : ui.sub} strokeWidth={2.2}>
+            <Circle cx={12} cy={12} r={4} /><Path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+          </Svg>
+        </Pressable>
+      ) : (
+        <Pressable style={[s.backBtn, { bottom: (navigating ? BOTTOM_NAV : BOTTOM_IDLE) + 86 }]} accessibilityRole="button"
+                   accessibilityLabel="Voltar pro carro" onPress={() => { if (!position) retry(); backToCar(); }}>
+          <Svg width={16} height={16} viewBox="0 0 24 24" fill="#FFFFFF"><Path d="M12 2 20 21 12 17 4 21Z" /></Svg>
+          <Text style={s.backText}>Voltar pro carro</Text>
+        </Pressable>
+      )}
+      {navigating && route && (
+        <Pressable style={[s.round, s.sideBtn, { bottom: BOTTOM_NAV + 146, backgroundColor: ui.button, borderColor: ui.border }]}
+                   accessibilityRole="button" accessibilityLabel="Ver a rota inteira"
+                   onPress={() => { setFollowing(false); setFitKey((n) => n + 1); }}>
+          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={ui.icon} strokeWidth={2} strokeLinecap="round">
+            <Circle cx={6} cy={18} r={2.5} /><Circle cx={18} cy={6} r={2.5} /><Path d="M8 16c4-1 2-7 8-8" strokeDasharray="2 3" />
+          </Svg>
         </Pressable>
       )}
 
-      <Pressable style={[s.reportBtn, navigating && { bottom: 104 }]} onPress={() => router.push('/radar')} accessibilityRole="button"
-                 accessibilityLabel="Avisar buraco, lombada, blitz">
-        <Text style={{ color: colors.ink, fontWeight: '800', fontSize: 13 }}>AVISAR</Text>
-      </Pressable>
+      {navigating ? (
+        <View style={[s.navPanel, { backgroundColor: ui.panel, borderColor: ui.border }]}>
+          <Pressable style={[s.round, s.panelBtn, { backgroundColor: ui.button, borderColor: ui.border }]} onPress={() => router.push('/destino')}
+                     accessibilityRole="button" accessibilityLabel="Trocar o destino">
+            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={ui.icon} strokeWidth={2.2} strokeLinecap="round">
+              <Circle cx={11} cy={11} r={7} /><Path d="m20 20-3.5-3.5" />
+            </Svg>
+          </Pressable>
+          <View style={{ flex: 1, alignItems: 'center' }}>
+            {nav.status === 'arrived' ? (
+              <>
+                <Text style={[s.etaBig, { color: ui.text }]}>Chegou!</Text>
+                <Text style={[s.etaSmall, { color: ui.sub }]} numberOfLines={1}>{nav.destination?.name}</Text>
+              </>
+            ) : (
+              <>
+                <Text style={[s.etaBig, { color: ui.text }]}>{nav.update ? formatArrival(new Date(), nav.update.remaining_s) : '--:--'}</Text>
+                <Text style={[s.etaSmall, { color: ui.sub }]} numberOfLines={1}>
+                  {nav.update ? `${formatDuration(nav.update.remaining_s)} · ${formatDistance(nav.update.remaining_m)}` : nav.destination?.name}
+                </Text>
+              </>
+            )}
+          </View>
+          <Pressable style={[s.round, s.panelBtn, { backgroundColor: ui.button, borderColor: ui.border }]} onPress={() => nav.setVoice(!nav.voice)}
+                     accessibilityRole="switch" accessibilityState={{ checked: nav.voice }} accessibilityLabel="Voz da navegação">
+            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={ui.icon} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <Path d="M4 9v6h4l5 4V5L8 9Z" fill={ui.icon} />
+              {nav.voice ? <Path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11" /> : <Path d="m16 9 5 6M21 9l-5 6" />}
+            </Svg>
+          </Pressable>
+          <Pressable style={[s.round, s.panelBtn, { backgroundColor: colors.danger, borderColor: colors.danger }]} onPress={nav.stop}
+                     accessibilityRole="button" accessibilityLabel={nav.status === 'arrived' ? 'Fechar navegação' : 'Encerrar navegação'}>
+            <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={2.6} strokeLinecap="round">
+              <Path d="M6 6l12 12M18 6 6 18" />
+            </Svg>
+          </Pressable>
+        </View>
+      ) : (
+        <Pressable style={[s.searchBar, { backgroundColor: ui.panel, borderColor: ui.border }]} onPress={() => router.push('/destino')}
+                   accessibilityRole="search" accessibilityLabel="Para onde? Buscar destino">
+          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={ui.icon} strokeWidth={2.2} strokeLinecap="round">
+            <Circle cx={11} cy={11} r={7} /><Path d="m20 20-3.5-3.5" />
+          </Svg>
+          <Text style={[s.searchText, { color: ui.sub }]}>Para onde?</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
 
+// altura das barras de baixo (o resto se posiciona em cima delas)
+const BOTTOM_NAV = 86;
+const BOTTOM_IDLE = 72;
+
 const s = StyleSheet.create({
-  topBar: { position: 'absolute', top: 54, left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  chip: { backgroundColor: 'rgba(6,12,22,0.9)', borderWidth: 1, borderColor: colors.lineStrong, paddingHorizontal: 10, paddingVertical: 7 },
-  chipText: { fontFamily: fonts.mono, fontSize: 11, color: colors.holo, letterSpacing: 0.6 },
-  iconBtn: { width: 44, height: 44, borderRadius: 6, borderWidth: 1, borderColor: colors.lineStrong,
-             backgroundColor: 'rgba(6,12,22,0.9)', alignItems: 'center', justifyContent: 'center' },
-  iconText: { color: colors.holo, fontFamily: fonts.mono, fontSize: 14 },
-  banner: { position: 'absolute', left: 16, right: 16, padding: 12, borderRadius: 6, borderWidth: 1,
-            borderColor: colors.warn, backgroundColor: 'rgba(28,18,6,0.94)', gap: 2 },
+  round: { alignItems: 'center', justifyContent: 'center', borderWidth: 1,
+           shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
+  menuBtn: { position: 'absolute', top: 48, left: 14, width: 46, height: 46, borderRadius: 23 },
+  cenaPill: { position: 'absolute', top: 52, right: 14, height: 38, borderRadius: 19, borderWidth: 1, paddingHorizontal: 14,
+              flexDirection: 'row', alignItems: 'center', gap: 8,
+              shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
+  cenaText: { fontSize: 13, fontWeight: '700' },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  menu: { position: 'absolute', top: 100, left: 14, width: 250, borderRadius: 14, borderWidth: 1, paddingVertical: 6,
+          shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  menuHead: { fontSize: 12, paddingHorizontal: 14, paddingVertical: 8 },
+  menuItem: { minHeight: 46, justifyContent: 'center', paddingHorizontal: 14 },
+  menuText: { fontSize: 15, fontWeight: '600' },
+  maneuver: { position: 'absolute', top: 0, left: 0, right: 0, paddingTop: 46, paddingBottom: 14, paddingHorizontal: 18,
+              backgroundColor: chrome.banner, gap: 4,
+              shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 6 },
+  maneuverDist: { color: chrome.bannerText, fontSize: 28, fontWeight: '800' },
+  maneuverStreet: { color: chrome.street, fontSize: 17, fontWeight: '700' },
+  rerouting: { color: chrome.street, fontSize: 13, fontWeight: '600' },
+  after: { color: '#B9C0CC', fontSize: 13 },
+  info: { position: 'absolute', left: 14, right: 14, padding: 12, borderRadius: 12, borderWidth: 1 },
+  infoText: { fontSize: 14 },
+  banner: { position: 'absolute', left: 14, right: 14, padding: 12, borderRadius: 12, borderWidth: 1,
+            borderColor: colors.warn, backgroundColor: 'rgba(28,18,6,0.95)', gap: 2 },
   bannerTitle: { color: '#FFB070', fontFamily: fonts.display, fontSize: 17 },
   bannerText: { color: colors.warnText, fontSize: 13 },
-  locateBtn: { position: 'absolute', right: 16, bottom: 108, width: 48, height: 48, borderRadius: 24, borderWidth: 1,
-               borderColor: colors.lineStrong, backgroundColor: 'rgba(6,12,22,0.94)', alignItems: 'center', justifyContent: 'center' },
-  searchBar: { position: 'absolute', top: 108, left: 16, right: 16, minHeight: 46, flexDirection: 'row', alignItems: 'center', gap: 10,
-               paddingHorizontal: 14, borderRadius: 6, borderWidth: 1, borderColor: colors.lineStrong, backgroundColor: 'rgba(6,12,22,0.94)' },
-  searchText: { color: colors.textDim, fontSize: 16 },
-  maneuver: { position: 'absolute', top: 44, left: 12, right: 12, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8,
-              backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.lineStrong, gap: 4 },
-  maneuverIcon: { width: 44, height: 44, borderRadius: 8, backgroundColor: colors.neon, alignItems: 'center', justifyContent: 'center' },
-  maneuverDist: { color: colors.text, fontFamily: fonts.display, fontSize: 22 },
-  maneuverText: { color: colors.textDim, fontSize: 14 },
-  rerouting: { color: colors.holo, fontFamily: fonts.mono, fontSize: 12, letterSpacing: 1 },
-  after: { color: colors.textMuted, fontSize: 13 },
-  info: { position: 'absolute', left: 16, right: 16, padding: 12, borderRadius: 6, borderWidth: 1, borderColor: colors.lineStrong,
-          backgroundColor: colors.panel },
-  infoText: { color: colors.text, fontSize: 14 },
-  navPanel: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24,
-              flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.panel, borderTopWidth: 1, borderColor: colors.lineStrong },
-  navBig: { color: colors.neon, fontFamily: fonts.display, fontSize: 24 },
-  navSmall: { color: colors.textMuted, fontSize: 13, fontFamily: undefined },
-  navBtn: { minWidth: 56, height: 48, borderRadius: 6, borderWidth: 1, borderColor: colors.lineStrong, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
-  navStop: { backgroundColor: colors.danger, borderColor: colors.danger },
-  navStopText: { color: colors.ink, fontWeight: '800', fontSize: 13 },
-  speedo: { position: 'absolute', left: 16 },
+  streetPill: { position: 'absolute', alignSelf: 'center', maxWidth: '60%', backgroundColor: chrome.banner, borderRadius: 16,
+                paddingHorizontal: 14, paddingVertical: 6 },
+  streetText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
+  speedo: { position: 'absolute', left: 14 },
+  reportBtn: { position: 'absolute', right: 14, width: 64, height: 64, borderRadius: 32, backgroundColor: chrome.report,
+               alignItems: 'center', justifyContent: 'center',
+               shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 5 },
+  sideBtn: { position: 'absolute', right: 18, width: 52, height: 52, borderRadius: 26 },
+  backBtn: { position: 'absolute', right: 14, height: 46, paddingHorizontal: 16, borderRadius: 23, flexDirection: 'row',
+             alignItems: 'center', gap: 8, backgroundColor: chrome.locate,
+             shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
+  backText: { color: '#FFFFFF', fontWeight: '800', fontSize: 14 },
+  navPanel: { position: 'absolute', left: 0, right: 0, bottom: 0, height: BOTTOM_NAV, paddingHorizontal: 14, paddingBottom: 10,
+              flexDirection: 'row', alignItems: 'center', gap: 10, borderTopWidth: 1, borderTopLeftRadius: 18, borderTopRightRadius: 18,
+              shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: -2 }, elevation: 8 },
+  panelBtn: { width: 46, height: 46, borderRadius: 23 },
+  etaBig: { fontSize: 26, fontWeight: '800' },
+  etaSmall: { fontSize: 13, fontWeight: '600' },
+  searchBar: { position: 'absolute', left: 14, right: 14, bottom: 14, height: BOTTOM_IDLE - 20, flexDirection: 'row', alignItems: 'center', gap: 12,
+               paddingHorizontal: 18, borderRadius: 26, borderWidth: 1,
+               shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 5 },
+  searchText: { fontSize: 17, fontWeight: '600' },
   carLabel: { fontFamily: fonts.mono, fontSize: 10, color: colors.holo, backgroundColor: 'rgba(6,12,22,0.88)',
               borderWidth: 1, borderColor: colors.lineStrong, paddingHorizontal: 5, paddingVertical: 1 },
   carLabelCrew: { color: colors.neon, borderColor: colors.neon },
-  backBtn: { position: 'absolute', right: 16, height: 46, paddingHorizontal: 14, borderRadius: 23, flexDirection: 'row',
-             alignItems: 'center', gap: 8, backgroundColor: colors.holo },
-  backText: { color: colors.ink, fontWeight: '800', fontSize: 13, letterSpacing: 0.4 },
-  routeBtn: { position: 'absolute', left: 16, bottom: 104, width: 48, height: 48, borderRadius: 24, borderWidth: 1,
-              borderColor: colors.lineStrong, backgroundColor: 'rgba(6,12,22,0.94)', alignItems: 'center', justifyContent: 'center' },
-  cenaBtn: { position: 'absolute', left: 16, bottom: 24, minHeight: 44, paddingHorizontal: 12, justifyContent: 'center',
-             borderRadius: 6, borderWidth: 1, borderColor: colors.lineStrong, backgroundColor: 'rgba(6,12,22,0.9)' },
-  reportBtn: { position: 'absolute', right: 16, bottom: 24, width: 72, height: 72, borderRadius: 10,
-               backgroundColor: colors.warn, alignItems: 'center', justifyContent: 'center' },
 });

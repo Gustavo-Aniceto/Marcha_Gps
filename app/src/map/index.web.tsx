@@ -198,10 +198,10 @@ export function RouteLine({ coords }: { coords: { lat: number; lon: number }[] }
       map.addSource('rota', { type: 'geojson', data: data.current });
       map.addLayer({ id: 'rota-borda', type: 'line', source: 'rota',
         layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': colors.bg, 'line-width': 11, 'line-opacity': 0.85 } });
+        paint: { 'line-color': colors.routeCasing, 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 7, 16, 14, 19, 26] } });
       map.addLayer({ id: 'rota-linha', type: 'line', source: 'rota',
         layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': colors.holo, 'line-width': 7 } });
+        paint: { 'line-color': colors.route, 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 4.5, 16, 9.5, 19, 19] } });
     };
     ensure();
     map.on('styledata', ensure);

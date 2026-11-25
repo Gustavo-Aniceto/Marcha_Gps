@@ -1,6 +1,6 @@
 // Estilos do mapa (formato MapLibre), com os mapas gratuitos do OpenFreeMap (dados do OpenStreetMap).
-//   noite: 3D azul-escuro (rolê à noite)
-//   dia:   3D claro
+//   noite: escuro azulado, ruas cinza e rodovias azuis (visual de app de trânsito que o público já conhece)
+//   dia:   claro, ruas brancas com contorno
 //   cena:  2D cinza-escuro, pra ver os carros da galera na Cena ao vivo
 // Pra trocar de servidor de mapas (ex.: nossos próprios tiles), mude só TILES_URL/GLYPHS_URL.
 
@@ -32,16 +32,16 @@ interface Palette {
 }
 
 export const PALETTES: Record<MapTheme, Palette> = {
-  // GPS de videogame à noite: base azul-marinho, vias em azul neon, avenidas com brilho, prédios em bloco
+  // GPS à noite no visual que o público já conhece: fundo grafite azulado, ruas cinza, rodovias azuladas
   noite: {
-    background: '#0B1222', water: '#06101F', park: '#0F1F2A', roadMinor: '#2A3C66', roadMajor: '#4F86FF',
-    roadCasing: '#081020', building: '#18233F', buildingTop: '#3A4E86', glow: '#2F6BFF', motorway: '#9CC8FF',
-    label: '#B9C9EE', labelHalo: '#070C18', poi: '#7FA6E8', threeD: true,
+    background: '#232833', water: '#1F3854', park: '#244330', roadMinor: '#3E4553', roadMajor: '#5C6473',
+    roadCasing: '#1A1E26', building: '#2A303B', buildingTop: '#363D4B', glow: null, motorway: '#7389AB',
+    label: '#D5DAE3', labelHalo: '#232833', poi: '#9AA4B5', threeD: true,
   },
   dia: {
-    background: '#EEF1F6', water: '#9CC9F0', park: '#CDE9C2', roadMinor: '#FFFFFF', roadMajor: '#FFFFFF',
-    roadCasing: '#C9D1E0', building: '#DDE3EE', buildingTop: '#B8C3DA', glow: null, motorway: '#FFD8A8',
-    label: '#3E4657', labelHalo: '#FFFFFF', poi: '#5B6B8C', threeD: true,
+    background: '#EEEEEA', water: '#A9D3F2', park: '#C9E6BC', roadMinor: '#FFFFFF', roadMajor: '#FFFFFF',
+    roadCasing: '#CACAC4', building: '#E2E2DB', buildingTop: '#D2D2CA', glow: null, motorway: '#FFE29A',
+    label: '#454A53', labelHalo: '#FFFFFF', poi: '#5B6475', threeD: true,
   },
   cena: {
     background: '#191A1C', water: '#0F1012', park: '#1E2022', roadMinor: '#2B2D31', roadMajor: '#45484E',
@@ -92,6 +92,13 @@ export function buildMapStyle(theme: MapTheme): Record<string, unknown> {
         'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 8, 1.5, 14, 8, 18, 30],
       },
     },
+    ...(theme !== 'cena' ? [{
+      // contorno das ruas menores (rua branca/cinza com borda, como no app de trânsito)
+      id: 'ruas-menores-contorno', type: 'line', source: SOURCE, 'source-layer': 'transportation', minzoom: 14,
+      filter: ['in', ['get', 'class'], ['literal', MINOR]],
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': p.roadCasing, 'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 14, 3.5, 18, 18] },
+    }] : []),
     {
       id: 'ruas-menores', type: 'line', source: SOURCE, 'source-layer': 'transportation', minzoom: 12,
       filter: ['in', ['get', 'class'], ['literal', MINOR]],
@@ -129,7 +136,7 @@ export function buildMapStyle(theme: MapTheme): Record<string, unknown> {
               0, p.building, 60, p.buildingTop],
             'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 6],
             'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
-            'fill-extrusion-opacity': 0.9,
+            'fill-extrusion-opacity': 0.75,
             'fill-extrusion-vertical-gradient': true,
           },
         }

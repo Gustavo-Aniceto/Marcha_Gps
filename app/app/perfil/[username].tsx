@@ -19,6 +19,7 @@ import { colors, fonts } from '../../src/theme/tokens.ts';
 interface PublicProfile {
   id: string; username: string; avatar_key: string | null; joined_at: string; posts: number; mine: boolean;
   car: { make: string; model: string; year: number | null; color: string; ride_height_cm: number; suspension: string;
+         body_type?: string; tint?: string;
          rim: number; neon: string | null; spoiler: boolean } | null;
 }
 
@@ -89,7 +90,7 @@ export default function Perfil() {
                          flexDirection: 'row', alignItems: 'center', gap: 14 }}>
             {p.car ? (
               <>
-                <CarMarker color={p.car.color} neon={p.car.neon} heading={0} />
+                <CarMarker color={p.car.color} neon={p.car.neon} heading={0} body={p.car.body_type} tint={p.car.tint} spoiler={p.car.spoiler} size={96} />
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700' }}>{p.car.make} {p.car.model}{p.car.year ? ` ${p.car.year}` : ''}</Text>
                   <Text style={{ color: colors.neon, fontFamily: fonts.mono, fontSize: 12 }}>

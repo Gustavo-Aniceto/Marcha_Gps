@@ -1,6 +1,6 @@
 // Garagem: monta o carro que aparece no mapa. (Visual 3D e cadastro por foto vêm na próxima fase.)
 import React, { useCallback, useState } from 'react';
-import { Text } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Body, Button, Card, ErrorText, Field, Label, Mono, Pills, Screen, Title, Warning } from '../../src/components/ui';
 import { CarMarker } from '../../src/components/CarMarker';
@@ -8,25 +8,22 @@ import { db } from '../../src/lib/db';
 import { useSession } from '../../src/lib/session';
 import { checkFitment, tireFor, type Suspension, type WheelPosition } from '../../src/lib/fitment.ts';
 import { friendlyError } from '../../src/lib/errors.ts';
-import { colors } from '../../src/theme/tokens.ts';
+import { colors, fonts } from '../../src/theme/tokens.ts';
+import { BODIES, CAR_COLORS, type BodyType } from '../../src/lib/carBodies.ts';
 
 interface CarForm {
   id?: string;
-  make: string; model: string; year: string; color: string;
+  make: string; model: string; year: string; color: string; body_type: BodyType;
   ride_height_cm: number; suspension: Suspension; rim: number;
   wheel_position: WheelPosition; camber_deg: number;
   tint: 'nenhuma' | 'fume' | 'limo'; spoiler: boolean; neon: 'verde' | 'azul' | 'roxo' | null;
 }
 
 const EMPTY: CarForm = {
-  make: '', model: '', year: '', color: '#B9C0CB', ride_height_cm: 11, suspension: 'fixa', rim: 17,
+  make: '', model: '', year: '', color: '#B9C0CB', body_type: 'hatch', ride_height_cm: 11, suspension: 'fixa', rim: 17,
   wheel_position: 'alinhada', camber_deg: 0, tint: 'nenhuma', spoiler: false, neon: null,
 };
 
-const COLORS = [
-  ['#B9C0CB', 'Prata'], ['#2A2D34', 'Preto'], ['#EDEFF2', 'Branco'], ['#D23B3B', 'Vermelho'],
-  ['#2F6FE0', 'Azul'], ['#F2C230', 'Amarelo'], ['#F07A22', 'Laranja'], ['#3FA66B', 'Verde'],
-] as const;
 
 export default function Garagem() {
   const { profile } = useSession();
@@ -61,7 +58,7 @@ export default function Garagem() {
     setBusy(true); setError(null);
     const row = {
       owner_id: profile.id, make: car.make.trim(), model: car.model.trim(),
-      year, color: car.color, ride_height_cm: car.ride_height_cm,
+      year, color: car.color, body_type: car.body_type, ride_height_cm: car.ride_height_cm,
       suspension: car.suspension, rim: car.rim, wheel_position: car.wheel_position, camber_deg: car.camber_deg,
       tint: car.tint, spoiler: car.spoiler, neon: car.neon, updated_at: new Date().toISOString(),
     };
@@ -81,7 +78,7 @@ export default function Garagem() {
     <Screen>
       <Title>Garagem</Title>
       <Card style={{ alignItems: 'center' }}>
-        <CarMarker me color={car.color} neon={car.neon} heading={0} />
+        <CarMarker color={car.color} neon={car.neon} heading={0} body={car.body_type} tint={car.tint} spoiler={car.spoiler} size={150} />
         <Mono color={colors.neon}>VÃO {car.ride_height_cm} CM · ARO {car.rim} · {tireFor(car.rim) ?? '—'}</Mono>
       </Card>
 
@@ -90,6 +87,43 @@ export default function Garagem() {
       <Field label="Marca" value={car.make} onChangeText={(v) => set('make', v)} placeholder="Ex.: Volkswagen" />
       <Field label="Modelo" value={car.model} onChangeText={(v) => set('model', v)} placeholder="Ex.: Gol G5" />
       <Field label="Ano (opcional, 4 números)" value={car.year} onChangeText={(v) => set('year', v.replace(/\D/g, '').slice(0, 4))} keyboardType="number-pad" />
+
+      <Label>Tipo do carro</Label>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {BODIES.map((b) => {
+          const on = car.body_type === b.id;
+          return (
+            <Pressable key={b.id} onPress={() => set('body_type', b.id)} accessibilityRole="button"
+                       accessibilityState={{ selected: on }} accessibilityLabel={`${b.label}, ex.: ${b.example}`}
+                       style={{ width: '23%', minWidth: 76, alignItems: 'center', paddingVertical: 6, borderRadius: 8, borderWidth: 1.5,
+                                borderColor: on ? colors.neon : colors.line, backgroundColor: on ? 'rgba(198,255,61,0.08)' : colors.panel }}>
+              <CarMarker color={car.color} heading={0} body={b.id} tint={car.tint} size={56} />
+              <Text style={{ color: on ? colors.neon : colors.textDim, fontSize: 12, fontWeight: on ? '700' : '500' }}>{b.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      <Text style={{ color: colors.textMuted, fontSize: 12 }}>
+        Ex.: {BODIES.find((b) => b.id === car.body_type)?.example}
+      </Text>
+
+      <Label>Cor</Label>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+        {CAR_COLORS.map(([hex, name]) => {
+          const on = car.color.toUpperCase() === hex;
+          return (
+            <Pressable key={hex} onPress={() => set('color', hex)} accessibilityRole="button" accessibilityLabel={name}
+                       accessibilityState={{ selected: on }}
+                       style={{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center',
+                                borderWidth: 2, borderColor: on ? colors.neon : 'transparent' }}>
+              <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: hex, borderWidth: 1, borderColor: colors.lineStrong }} />
+            </Pressable>
+          );
+        })}
+      </View>
+      <Text style={{ color: colors.textMuted, fontSize: 12, fontFamily: fonts.mono }}>
+        {CAR_COLORS.find(([h]) => h === car.color.toUpperCase())?.[1] ?? 'Cor personalizada'}
+      </Text>
 
       <Label>Altura (vão livre)</Label>
       <Pills options={[[15, 'Original'], [11, 'Rebaixado'], [8, 'Baixo'], [5, 'Arrastando']].map(([v, l]) => ({ value: v as number, label: `${l} · ${v} cm` }))}
@@ -106,8 +140,6 @@ export default function Garagem() {
       <Label>Cambagem</Label>
       <Pills options={[[0, 'Zero'], [1.5, 'Leve'], [3, 'Média'], [5, 'Forte']].map(([v, l]) => ({ value: v as number, label: l as string }))}
              value={car.camber_deg} onChange={(v) => set('camber_deg', v)} />
-      <Label>Cor</Label>
-      <Pills options={COLORS.map(([hex, l]) => ({ value: hex as string, label: l }))} value={car.color} onChange={(v) => set('color', v)} />
       <Label>Vidros</Label>
       <Pills options={[['nenhuma', 'Sem película'], ['fume', 'Fumê'], ['limo', 'Limo']].map(([v, l]) => ({ value: v as CarForm['tint'], label: l }))}
              value={car.tint} onChange={(v) => set('tint', v)} />

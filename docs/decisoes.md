@@ -13,11 +13,13 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 
 ## Carro
 - Cadastro por **fotos** (frente, traseira, laterais, roda; mínimo 3). IA reconhece modelo, ano, cor, altura e aro; o app usa o modelo 3D da base e ajusta.
+- **Tipo do carrinho no mapa:** hatch, sedã, perua, picape, picape grande, SUV, esportivo e van/Kombi, em 17 cores (desenhos próprios, vista de cima, estilo desenho). Vidro (fumê/limo) e aerofólio aparecem no desenho. É esse carrinho que aparece no mapa, na Cena e no perfil.
 - **Garagem** em 3D: altura, tipo de suspensão, aro, posição da roda, cambagem, cor, vidro, aerofólio, neon. Checa fitment e monta a lista de peças da base (marca "Serve" / "Atenção").
 
 ## Mapa
-- Navegação em 3D "meio 2D" (prédios em bloco), câmera alta, carro por cima. Visual noite (azul-escuro) ou dia (claro). O usuário escolhe 3D/2D, ângulo (20–88°) e raio de visão (40–220 m).
-- **Cena ao vivo**: mapa de SP, Guarulhos e Itaquá com o carrinho montado de quem escolheu aparecer, **e o seu carro** (marcado "VOCÊ", pelo seu GPS). Filtro por cidade e por tipo (Todos / Minhas equipes / Em encontro). Tocar num carro mostra o carro e "Ver perfil".
+- **Modo GPS no visual que o público já conhece de app de trânsito** (pra quem vem de outro app achar familiar): barra preta da manobra em cima (seta, distância e nome da rua em azul), rota roxa, nome da rua atual numa etiqueta embaixo do carro, barra de baixo com horário de chegada, tempo e distância (trocar destino, voz, encerrar), velocímetro redondo embaixo à esquerda, botão amarelo de avisar embaixo à direita, botão redondo de localização, menu (☰) em cima à esquerda. Parado: barra "Para onde?" embaixo.
+- Mapa noite grafite azulado (ruas cinza, rodovias azuladas, parques verdes) ou dia claro (ruas brancas com contorno). Prédios em bloco discretos; ângulo padrão 50°. O usuário escolhe 3D/2D, ângulo (20–88°) e raio de visão (40–220 m).
+- **Cena ao vivo** (fica no visual 2D cinza, aprovado): o mapa inteiro com o carrinho montado de quem escolheu aparecer, **e o seu carro** (marcado "VOCÊ", pelo seu GPS). Sem demarcação nem filtro de cidade; filtro só por Todos / Minhas equipes. Tocar num carro mostra o carro e "Ver perfil".
 - Quem pode ver a Cena: membro verificado de alguma equipe **ou o Adm Master** (`can_view_scene()`).
 - Visibilidade: **Fantasma** / **Só minhas equipes** / **Cena ao vivo**. Na Cena ao vivo: posição aproximada (~500 m) por padrão para quem não é da equipe, atraso opcional, some ao parar 10 min, só membros verificados veem, zonas privadas (casa/trabalho) escondem até da equipe.
 
