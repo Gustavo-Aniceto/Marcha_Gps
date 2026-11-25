@@ -15,7 +15,12 @@ interface Crew { id: string; name: string; color: string; button_shape: ButtonSh
 interface MyMembership { role: 'founder' | 'admin' | 'member'; status: 'pending' | 'verified'; crews: Crew }
 interface Member { user_id: string; role: string; status: string; xp: number; profiles: { username: string } }
 interface OpenInvite { code: string; crew_id: string | null; expires_at: string; crews: { name: string } | null }
-interface Request { id: string; name: string; city_id: string; instagram: string | null; member_count: number; status: string }
+interface Request { id: string; requester_id: string; name: string; city_id: string; instagram: string | null; member_count: number; status: string }
+interface FounderCode {
+  code: string; created_at: string; used_at: string | null; used_by: string | null;
+  crew_id: string | null; crew_name: string | null; crew_status: string | null;
+  request_status: string | null; request_name: string | null;
+}
 
 const THEME_COLORS = ['#C6FF3D', '#3FA0FF', '#FF4D6D', '#FF8A1F', '#FFD233', '#B36BFF', '#29E0C8', '#FF5FC8', '#EDEFF2'];
 
@@ -33,6 +38,7 @@ export default function Equipes() {
   const [master, setMaster] = useState<string | null>(null);
   const [openInvites, setOpenInvites] = useState<OpenInvite[]>([]);
   const [founderInvite, setFounderInvite] = useState<string | null>(null);
+  const [founderCodes, setFounderCodes] = useState<FounderCode[]>([]);
 
   const load = useCallback(async () => {
     if (!profile) return;
@@ -49,17 +55,22 @@ export default function Equipes() {
       setMembers((m ?? []) as unknown as Member[]);
     }
     const { data: r } = await db.from('crew_requests')
-      .select('id, name, city_id, instagram, member_count, status').order('created_at', { ascending: false });
+      .select('id, requester_id, name, city_id, instagram, member_count, status').order('created_at', { ascending: false });
     setRequests((r ?? []) as Request[]);
     // meus convites ainda não usados
     const { data: inv } = await db.from('invites').select('code, crew_id, expires_at, crews(name)')
-      .eq('created_by', profile.id).is('used_by', null).gt('expires_at', new Date().toISOString())
+      .eq('created_by', profile.id).is('used_by', null).not('crew_id', 'is', null).gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false }).limit(10);
     setOpenInvites((inv ?? []) as unknown as OpenInvite[]);
     // só volta alguém pra quem é dono de equipe
     const { data: mc } = await db.rpc('master_contact');
     const names = (mc ?? []) as { username: string }[];
     setMaster(profile.is_master ? null : names[0]?.username ?? null);
+    // Adm Master: todos os códigos de fundador, com quem usou e a equipe que nasceu de cada um
+    if (profile.is_master) {
+      const { data: fc } = await db.rpc('master_founder_codes');
+      setFounderCodes((fc ?? []) as FounderCode[]);
+    }
   }, [profile, selected]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -68,6 +79,9 @@ export default function Equipes() {
   const isAdmin = current?.status === 'verified' && (current.role === 'founder' || current.role === 'admin');
   const isVerified = current?.status === 'verified';
   const accent = current ? readableAccent(current.crews.color) : colors.neon;
+  // dono de equipe não registra outra; pedido em aberto aparece no lugar do formulário
+  const isFounder = mine.some((m) => m.role === 'founder');
+  const myOpenRequest = requests.find((r) => r.requester_id === profile?.id && (r.status === 'pending' || r.status === 'more_info'));
 
   async function call(fn: string, args: Record<string, unknown>) {
     setError(null);
@@ -105,6 +119,10 @@ export default function Equipes() {
         <Card accent={accent}>
           <Text style={{ color: accent, fontSize: 20, fontWeight: '700' }}>{current.crews.name}</Text>
           <Mono color={accent}>{current.role.toUpperCase()} · {current.status === 'verified' ? 'VERIFICADO' : 'EM VERIFICAÇÃO'}</Mono>
+          <Text style={{ color: accent, fontWeight: '700', paddingVertical: 8 }} accessibilityRole="link"
+                onPress={() => router.push({ pathname: '/equipe/[id]', params: { id: current.crews.id } })}>
+            Ver página da equipe ›
+          </Text>
           {current.status === 'pending' && (
             <>
               <Body dim>
@@ -190,6 +208,28 @@ export default function Equipes() {
             if (code) setFounderInvite(code as string);
           }} />
           {founderInvite && <InviteCard code={founderInvite} crewName={null} />}
+          {founderCodes.length > 0 && <Label>Códigos de fundador ({founderCodes.length})</Label>}
+          {founderCodes.map((f) => {
+            const free = !f.used_at;
+            const status = free ? 'LIVRE · NÃO VENCE'
+              : f.crew_name ? `EQUIPE ${f.crew_name.toUpperCase()}${f.crew_status === 'suspended' ? ' · SUSPENSA' : ''}`
+              : f.request_name ? `PEDIDO "${f.request_name.toUpperCase()}" ${f.request_status === 'more_info' ? '· PEDI MAIS PROVAS' : f.request_status === 'rejected' ? '· RECUSADO' : '· ESPERANDO'}`
+              : 'AINDA SEM PEDIDO DE EQUIPE';
+            return (
+              <Card key={f.code}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                  <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700', letterSpacing: 1 }} selectable>{f.code}</Text>
+                  <Mono color={free ? colors.neon : colors.textDim}>{free ? 'LIVRE' : 'USADO'}</Mono>
+                </View>
+                {!free && <Body>@{f.used_by ?? '—'}</Body>}
+                <Mono color={f.crew_name ? colors.neon : colors.textDim}>{status}</Mono>
+                {f.crew_id && (
+                  <Text style={{ color: colors.holo, fontWeight: '700', paddingVertical: 6 }} accessibilityRole="link"
+                        onPress={() => router.push({ pathname: '/equipe/[id]', params: { id: f.crew_id! } })}>Abrir equipe ›</Text>
+                )}
+              </Card>
+            );
+          })}
           {requests.filter((r) => r.status === 'pending' || r.status === 'more_info').length === 0 && (
             <Body dim>Nenhum pedido de equipe esperando.</Body>
           )}
@@ -205,10 +245,10 @@ export default function Equipes() {
         </>
       )}
 
-      {!profile?.is_master && (
+      {!isFounder && (
         <Card>
           <Label>Registrar minha equipe</Label>
-          {formSent || requests.some((r) => r.status === 'pending')
+          {formSent || myOpenRequest
             ? <Body dim>Pedido enviado. O Adm Master vai olhar as provas e marcar uma chamada de vídeo.</Body>
             : <>
                 <Body dim>Toda equipe é liberada pelo Adm Master. Mostra que ela existe de verdade.</Body>

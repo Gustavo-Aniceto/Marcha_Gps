@@ -14,6 +14,7 @@ import { useSession } from '../../src/lib/session';
 import { friendlyError } from '../../src/lib/errors.ts';
 import { photoUrl, uploadPhoto } from '../../src/lib/photos';
 import { loadFeed, type Post, type PostKind } from '../../src/lib/social';
+import { readableAccent } from '../../src/lib/contrast.ts';
 import { colors, fonts } from '../../src/theme/tokens.ts';
 
 interface PublicProfile {
@@ -22,6 +23,10 @@ interface PublicProfile {
          body_type?: string; tint?: string;
          rim: number; neon: string | null; spoiler: boolean } | null;
 }
+
+interface ProfileCrew { crew_id: string; name: string; color: string; role: string }
+interface GarageCar { id: string; make: string; model: string; year: number | null; color: string; body_type: string;
+                      tint: string; spoiler: boolean; neon: string | null; is_active: boolean }
 
 const SUSP: Record<string, string> = { original: 'Original', fixa: 'Fixa', rosca: 'Rosca', ar: 'A ar' };
 
@@ -42,6 +47,8 @@ export default function Perfil() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('tudo');
+  const [crews, setCrews] = useState<ProfileCrew[]>([]);
+  const [garage, setGarage] = useState<GarageCar[]>([]);
 
   const load = useCallback(async () => {
     if (!username) return;
@@ -49,6 +56,9 @@ export default function Perfil() {
     if (!data) { setMissing(true); return; }
     const pp = data as PublicProfile;
     setP(pp);
+    // equipes (cada uma tem a sua página) e os outros carros da garagem
+    db.rpc('profile_crews', { p_username: username }).then(({ data: c }) => setCrews((c ?? []) as ProfileCrew[]));
+    db.rpc('profile_garage', { p_username: username }).then(({ data: g }) => setGarage((g ?? []) as GarageCar[]));
     setPosts(await loadFeed({ author: pp.id, limit: 60, kind: tab === 'tudo' ? null : tab }).catch(() => []));
   }, [username, tab]);
 
@@ -84,6 +94,20 @@ export default function Perfil() {
             </Text>
             {p.mine && <View style={{ width: 200 }}><Button title="Trocar foto" variant="secondary" onPress={changePhoto} loading={busy} /></View>}
             <ErrorText>{error}</ErrorText>
+            {crews.length > 0 && (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+                {crews.map((c) => (
+                  <Pressable key={c.crew_id} accessibilityRole="link" accessibilityLabel={`Página da equipe ${c.name}`}
+                             onPress={() => router.push({ pathname: '/equipe/[id]', params: { id: c.crew_id } })}
+                             style={{ minHeight: 36, paddingHorizontal: 12, borderRadius: 18, borderWidth: 1, justifyContent: 'center',
+                                      borderColor: readableAccent(c.color) }}>
+                    <Text style={{ color: readableAccent(c.color), fontWeight: '700' }}>
+                      {c.role === 'founder' ? '★ ' : ''}{c.name}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
           </View>
 
           <View style={{ backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.line, borderRadius: 12, padding: 14,
@@ -102,6 +126,19 @@ export default function Perfil() {
               <Text style={{ color: colors.textMuted, flex: 1 }}>{p.mine ? 'Você ainda não montou seu carro.' : 'Ainda não montou o carro.'}</Text>
             )}
           </View>
+          {garage.length > 1 && (
+            <>
+              <Text style={{ color: colors.textDim, fontWeight: '700' }}>Garagem ({garage.length} carros)</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {garage.filter((g) => !g.is_active).map((g) => (
+                  <View key={g.id} style={{ width: '31%', alignItems: 'center', padding: 6, borderRadius: 8, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.panel }}>
+                    <CarMarker color={g.color} neon={g.neon} heading={0} body={g.body_type} tint={g.tint} spoiler={g.spoiler} size={56} />
+                    <Text style={{ color: colors.textDim, fontSize: 12, textAlign: 'center' }} numberOfLines={2}>{g.make} {g.model}</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          )}
           {p.mine && <Button title={p.car ? 'Editar meu carro' : 'Montar meu carro'} variant="secondary" onPress={() => router.push('/(tabs)/garagem')} />}
 
           {p.mine && <Composer onPosted={load} initialMode={tab === 'tudo' ? 'post' : tab} key={`composer-${tab}`} />}

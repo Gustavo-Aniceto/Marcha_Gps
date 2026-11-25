@@ -1,4 +1,5 @@
-// Garagem: monta o carro que aparece no mapa. A pessoa manda fotos do carro e a IA monta o carrinho
+// Garagem: até 5 carros por pessoa; um deles é o que aparece no mapa ("Usar este no mapa").
+// Monta o carro que aparece no mapa. A pessoa manda fotos do carro e a IA monta o carrinho
 // (tipo, cor, vidro, aerofólio, marca e modelo); dá pra ajustar tudo à mão antes de salvar.
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, Text, View } from 'react-native';
@@ -23,6 +24,7 @@ interface CarForm {
   wheel_position: WheelPosition; camber_deg: number;
   tint: 'nenhuma' | 'fume' | 'limo'; spoiler: boolean; neon: 'verde' | 'azul' | 'roxo' | null;
   photo_paths?: string[];
+  is_active?: boolean;
 }
 
 const EMPTY: CarForm = {
@@ -34,6 +36,8 @@ const EMPTY: CarForm = {
 export default function Garagem() {
   const { profile } = useSession();
   const [car, setCar] = useState<CarForm>(EMPTY);
+  const [cars, setCars] = useState<CarForm[]>([]);
+  const [confirmRemove, setConfirmRemove] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -66,13 +70,46 @@ export default function Garagem() {
     }
   }
 
-  useFocusEffect(useCallback(() => {
+  const toForm = (d: Record<string, unknown>): CarForm =>
+    ({ ...EMPTY, ...(d as Partial<CarForm>), year: d.year ? String(d.year) : '', camber_deg: Number(d.camber_deg) });
+
+  // todos os carros da garagem; abre no que está no mapa (ou no que estava aberto)
+  const loadCars = useCallback(async (keepId?: string) => {
     if (!profile) return;
-    db.from('cars').select('*').eq('owner_id', profile.id).eq('is_active', true).maybeSingle()
-      .then(({ data }) => {
-        if (data) setCar({ ...EMPTY, ...data, year: data.year ? String(data.year) : '', camber_deg: Number(data.camber_deg) });
-      });
-  }, [profile]));
+    const { data } = await db.from('cars').select('*').eq('owner_id', profile.id)
+      .order('is_active', { ascending: false }).order('updated_at', { ascending: false });
+    const list = (data ?? []).map((d) => toForm(d as Record<string, unknown>));
+    setCars(list);
+    const pick = list.find((c) => c.id === keepId) ?? list[0];
+    if (pick) setCar(pick);
+  }, [profile]);
+
+  useFocusEffect(useCallback(() => { loadCars(car.id); }, [loadCars]));
+
+  function openCar(c: CarForm | null) {
+    setCar(c ?? EMPTY); setPhotos([]); setGuessText(null); setAiError(null); setMsg(null); setError(null); setConfirmRemove(false);
+  }
+
+  async function putOnMap() {
+    if (!car.id) return;
+    setBusy(true); setError(null);
+    const { error: e } = await db.rpc('set_active_car', { p_car: car.id });
+    setBusy(false);
+    if (e) { setError(friendlyError(e)); return; }
+    await loadCars(car.id);
+    setMsg(`Pronto: o ${car.make} ${car.model} é o carro do mapa agora.`);
+  }
+
+  async function removeCar() {
+    if (!car.id) return;
+    if (!confirmRemove) { setConfirmRemove(true); return; }
+    setBusy(true); setError(null);
+    const { error: e } = await db.from('cars').delete().eq('id', car.id);
+    setBusy(false); setConfirmRemove(false);
+    if (e) { setError(friendlyError(e)); return; }
+    setMsg('Carro tirado da garagem.');
+    await loadCars();
+  }
 
   const set = <K extends keyof CarForm>(k: K, v: CarForm[K]) => { setCar((c) => ({ ...c, [k]: v })); setMsg(null); };
   const fit = checkFitment({
@@ -111,14 +148,48 @@ export default function Garagem() {
     setBusy(false);
     if (e) console.warn('garagem: salvar carro', e);
     if (e || !data) { setError(e ? friendlyError(e) : 'Não consegui salvar. Tenta de novo.'); return; }
-    setCar((c) => ({ ...c, id: (data as { id: string }).id, photo_paths }));
+    const savedId = (data as { id: string }).id;
     setPhotos([]);
-    setMsg('Salvo! É esse carrinho que aparece no GPS e na Cena ao vivo, com o seu @.');
+    await loadCars(savedId);
+    const onMap = car.id ? car.is_active : cars.length === 0;
+    setMsg(onMap
+      ? 'Salvo! É esse carrinho que aparece no GPS e na Cena ao vivo, com o seu @.'
+      : 'Salvo na garagem. Toque em "Usar este no mapa" quando for sair com ele.');
   }
 
   return (
     <Screen>
       <Title>Garagem</Title>
+
+      {/* meus carros: um fica no mapa; os outros esperam na garagem */}
+      {cars.length > 0 && (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {cars.map((c) => {
+            const on = c.id === car.id;
+            return (
+              <Pressable key={c.id} onPress={() => openCar(c)} accessibilityRole="button" accessibilityState={{ selected: on }}
+                         accessibilityLabel={`${c.make} ${c.model}${c.is_active ? ', no mapa' : ''}`}
+                         style={{ width: '31%', minWidth: 96, alignItems: 'center', padding: 6, borderRadius: 8, borderWidth: 1.5,
+                                  borderColor: on ? colors.neon : colors.line, backgroundColor: on ? 'rgba(198,255,61,0.08)' : colors.panel }}>
+                <CarMarker color={c.color} neon={c.neon} heading={0} body={c.body_type} tint={c.tint} spoiler={c.spoiler} size={52} />
+                <Text style={{ color: on ? colors.neon : colors.text, fontSize: 12, fontWeight: '700', textAlign: 'center' }} numberOfLines={1}>
+                  {c.make} {c.model}
+                </Text>
+                {c.is_active && <Text style={{ color: colors.neon, fontSize: 10, fontFamily: fonts.mono }}>NO MAPA</Text>}
+              </Pressable>
+            );
+          })}
+          {cars.length < 5 && (
+            <Pressable onPress={() => openCar(null)} accessibilityRole="button" accessibilityLabel="Adicionar outro carro"
+                       style={{ width: '31%', minWidth: 96, minHeight: 92, alignItems: 'center', justifyContent: 'center', borderRadius: 8,
+                                borderWidth: 1.5, borderStyle: 'dashed', borderColor: !car.id ? colors.neon : colors.line }}>
+              <Text style={{ color: !car.id ? colors.neon : colors.textDim, fontSize: 26 }}>+</Text>
+              <Text style={{ color: !car.id ? colors.neon : colors.textDim, fontSize: 12, fontWeight: '700' }}>Outro carro</Text>
+            </Pressable>
+          )}
+        </View>
+      )}
+      {cars.length > 0 && !car.id && <Body dim>Carro novo: monte abaixo e salve. Ele fica na garagem até você escolher sair com ele.</Body>}
 
       <Card style={{ gap: 10 }}>
         <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700' }}>Monte seu carrinho pelas fotos</Text>
@@ -221,7 +292,14 @@ export default function Garagem() {
 
       <ErrorText>{error}</ErrorText>
       {msg && <Card accent={colors.neon}><Text style={{ color: colors.neon, fontWeight: '700' }}>{msg}</Text></Card>}
-      <Button title="Salvar e usar no mapa" onPress={save} loading={busy} />
+      <Button title={car.id ? 'Salvar alterações' : cars.length === 0 ? 'Salvar e usar no mapa' : 'Salvar na garagem'} onPress={save} loading={busy} />
+      {car.id && !car.is_active && (
+        <Button title="Usar este no mapa" variant="secondary" onPress={putOnMap} loading={busy} />
+      )}
+      {car.id && (
+        <Button title={confirmRemove ? 'Toque de novo pra tirar da garagem' : 'Tirar da garagem'} variant="secondary"
+                color={colors.danger} onPress={removeCar} />
+      )}
     </Screen>
   );
 }

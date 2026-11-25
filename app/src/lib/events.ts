@@ -37,3 +37,42 @@ export function whenText(startsAt: Date, now: Date = new Date()): string {
   const dd = `${String(startsAt.getDate()).padStart(2, '0')}/${String(startsAt.getMonth() + 1).padStart(2, '0')}`;
   return sameDay ? `hoje, ${hh}:${mm}` : `${dias[startsAt.getDay()]}, ${dd} · ${hh}:${mm}`;
 }
+
+// ---------- calendário do "Novo evento" ----------
+
+export const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto',
+  'setembro', 'outubro', 'novembro', 'dezembro'];
+export const WEEKDAYS_SHORT = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+
+/** Semanas do mês (domingo a sábado); null = casinha vazia antes do dia 1 ou depois do último. */
+export function monthGrid(year: number, month: number): (Date | null)[][] {
+  const first = new Date(year, month, 1);
+  const days = new Date(year, month + 1, 0).getDate();
+  const cells: (Date | null)[] = Array(first.getDay()).fill(null);
+  for (let d = 1; d <= days; d++) cells.push(new Date(year, month, d));
+  while (cells.length % 7) cells.push(null);
+  const weeks: (Date | null)[][] = [];
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+  return weeks;
+}
+
+export function sameDay(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+/** Dia que já passou (hoje ainda vale). */
+export function isPastDay(d: Date, now: Date = new Date()): boolean {
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return d.getTime() < today.getTime();
+}
+
+/** Junta o dia escolhido no calendário com a hora e os minutos, no fuso do celular. */
+export function atTime(day: Date, hour: number, minute: number): Date {
+  return new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour, minute, 0, 0);
+}
+
+/** Mês seguinte/anterior (sem passar do mês atual pra trás). */
+export function shiftMonth(year: number, month: number, delta: number): { year: number; month: number } {
+  const d = new Date(year, month + delta, 1);
+  return { year: d.getFullYear(), month: d.getMonth() };
+}

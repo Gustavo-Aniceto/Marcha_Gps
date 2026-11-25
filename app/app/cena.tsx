@@ -19,7 +19,14 @@ import { colors, fonts } from '../src/theme/tokens.ts';
 export default function Cena() {
   const router = useRouter();
   const mapStyle = useMemo(() => buildMapStyle('cena'), []);
-  const [onlyCrew, setOnlyCrew] = useState(false);
+  // filtro: todos, todas as minhas equipes ou uma equipe só
+  const [filter, setFilter] = useState<string>('todos');
+  const [myCrews, setMyCrews] = useState<{ id: string; name: string }[]>([]);
+  useEffect(() => {
+    if (!profile) return;
+    db.from('crew_members').select('crews(id, name)').eq('user_id', profile.id).eq('status', 'verified').then(({ data }) =>
+      setMyCrews(((data ?? []) as unknown as { crews: { id: string; name: string } }[]).map((r) => r.crews)));
+  }, [profile]);
   const [cars, setCars] = useState<VisibleCar[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const { profile } = useSession();
@@ -45,7 +52,11 @@ export default function Cena() {
     return () => { alive = false; clearInterval(t); };
   }, []);
 
-  const shown = useMemo(() => (onlyCrew ? cars.filter((c) => c.same_crew) : cars), [cars, onlyCrew]);
+  const shown = useMemo(() => (
+    filter === 'todos' ? cars
+      : filter === 'equipes' ? cars.filter((c) => c.same_crew)
+      : cars.filter((c) => c.crews?.includes(filter))
+  ), [cars, filter]);
   const glideOf = useGlides(cars);
   const sel = shown.find((c) => c.user_id === selected) ?? null;
 
@@ -89,10 +100,11 @@ export default function Cena() {
           </Pressable>
         </View>
         <View style={s.row}>
-          {[{ v: false, l: 'Todos' }, { v: true, l: 'Minhas equipes' }].map((o) => (
-            <Pressable key={o.l} onPress={() => setOnlyCrew(o.v)} style={[s.chip, onlyCrew === o.v && s.chipOn]}
-                       accessibilityRole="button" accessibilityState={{ selected: onlyCrew === o.v }}>
-              <Text style={[s.chipText, onlyCrew === o.v && { color: colors.ink }]}>{o.l}</Text>
+          {[{ v: 'todos', l: 'Todos' }, { v: 'equipes', l: myCrews.length > 1 ? 'Minhas equipes' : 'Minha equipe' },
+            ...(myCrews.length > 1 ? myCrews.map((c) => ({ v: c.id, l: c.name })) : [])].map((o) => (
+            <Pressable key={o.v} onPress={() => setFilter(o.v)} style={[s.chip, filter === o.v && s.chipOn]}
+                       accessibilityRole="button" accessibilityState={{ selected: filter === o.v }}>
+              <Text style={[s.chipText, filter === o.v && { color: colors.ink }]}>{o.l}</Text>
             </Pressable>
           ))}
         </View>

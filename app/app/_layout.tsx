@@ -72,6 +72,7 @@ function Gate() {
         <Stack.Screen name="destino" options={{ presentation: 'modal' }} />
         <Stack.Screen name="post/[id]" />
         <Stack.Screen name="perfil/[username]" />
+        <Stack.Screen name="equipe/[id]" />
       </Stack.Protected>
     </Stack>
   );

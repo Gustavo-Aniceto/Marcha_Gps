@@ -16,6 +16,7 @@ import { formatArrival, formatDistance, formatDuration, nextObstacle, obstaclesO
 import Svg, { Circle, Path } from 'react-native-svg';
 import { CarMarker } from '../../src/components/CarMarker';
 import { ProfileSheet } from '../../src/components/ProfileSheet';
+import { CarChooser } from '../../src/components/CarChooser';
 import { ReportIcon } from '../../src/components/ReportIcon';
 import { Speedometer } from '../../src/components/Speedometer';
 import { isOverLimit, radarAhead, smoothKmh } from '../../src/lib/speed.ts';
@@ -79,12 +80,13 @@ export default function Mapa() {
   const ui = theme === 'dia' ? chrome.dia : chrome.noite;
   const [menu, setMenu] = useState(false);
 
+  const [carRev, setCarRev] = useState(0); // muda quando a pessoa escolhe com qual carro vai sair
   useFocusEffect(useCallback(() => {
     if (!profile) return;
     db.from('cars').select('color, neon, ride_height_cm, suspension, body_type, tint, spoiler')
       .eq('owner_id', profile.id).eq('is_active', true).maybeSingle()
       .then(({ data }) => setMyCar(data as MyCar | null));
-  }, [profile]));
+  }, [profile, carRev]));
 
   // carros visíveis: atualiza a cada 10 s
   useEffect(() => {
@@ -515,6 +517,7 @@ export default function Mapa() {
                       bottom={(navigating ? BOTTOM_NAV : BOTTOM_IDLE) + 10}
                       status={picked.same_crew ? 'SUA EQUIPE' : picked.approximate ? 'REGIÃO APROXIMADA' : undefined} />
       )}
+      <CarChooser ownerId={profile?.id} onChosen={() => setCarRev((r) => r + 1)} />
     </View>
   );
 }

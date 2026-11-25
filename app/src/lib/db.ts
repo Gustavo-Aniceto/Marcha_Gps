@@ -43,6 +43,8 @@ export interface VisibleCar {
     rim: number; wheel_position: string; camber_deg: number; tint: string; spoiler: boolean; neon: string | null;
     body_type?: string;
   } | null;
+  /** equipes que vocês dois fazem parte (verificados) */
+  crews?: string[] | null;
 }
 
 export interface Profile {
