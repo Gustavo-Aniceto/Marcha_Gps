@@ -46,8 +46,8 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 
 ## Equipes
 - Fundador/admin cria **eventos** só com nome, **dia no calendário**, **horário** (hora e minutos), duração, **local por busca de endereço** (não precisa estar lá) e quem vê. Não escolhe tipo (fica como encontro).
-- **Página da equipe:** cada equipe tem a sua página (nome, cidade, Instagram, fundador, membros, próximos eventos), separada do perfil pessoal de quem fundou. O fundador continua com o perfil dele normal; no perfil aparecem as equipes (★ nas que fundou).
-- Quem já é **dono de equipe não registra outra**; um pedido em aberto por vez. O **Adm Master também pode ter a própria equipe** (pede e aprova) e usar o app como qualquer um.
+- **Página da equipe:** cada equipe tem a sua página (capa, foto, bio, cidade, Instagram, fundador, membros, próximos eventos, botão "Pedir pra entrar" e, pro fundador/admin, os pedidos esperando), separada do perfil pessoal de quem fundou. O fundador continua com o perfil dele normal; no perfil aparecem as equipes (★ nas que fundou).
+- Cada código de fundador vira **uma equipe só**; um pedido em aberto por vez. Quem quer entrar numa equipe que já existe pede pela página dela. O **Adm Master também pode ter a própria equipe** (pede e aprova) e usar o app como qualquer um.
 - **Tema da equipe**: cor e formato dos botões. Aparece na tela/feed/rank da equipe e nas etiquetas do mapa. Cor escura é clareada automaticamente para leitura. Avisos de segurança continuam laranja para todos.
 - **Prova de presença: "fazer a mídia"**: foto pela câmera do app (galeria não vale), no local e no horário do evento; o app confere se o carro bate com a garagem. Vale +50 XP na equipe; admin pode contestar em 24 h.
 
