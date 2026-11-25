@@ -52,7 +52,7 @@ export default function Cena() {
           <Marker id="cena-eu" lngLat={[position.lon, position.lat]}>
             <CarMarker me color={myCar?.color} neon={myCar?.neon} heading={position.heading}
                        body={myCar?.body_type} tint={myCar?.tint} spoiler={myCar?.spoiler}
-                       label={profile?.visibility === 'ghost' ? 'VOCÊ · FANTASMA' : 'VOCÊ'} />
+                       label={`@${profile?.username ?? 'você'}${profile?.visibility === 'ghost' ? ' · fantasma' : ' · você'}`} sameCrew />
           </Marker>
         )}
         {shown.map((c) => (

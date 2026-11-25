@@ -2,6 +2,7 @@
 //   GET  /buscar?q=texto&lat=&lon=   -> { lugares: Place[] }   (precisa de login)
 //   POST /rota { de: {lat, lon, heading?}, para: {lat, lon} } -> Route   (precisa de login)
 //   GET  /convite?codigo=XXXX-XXXX -> { status, kind, crew_name }   (sem login, limite por IP)
+//   POST /carro/analisar { fotos: [dataURI] } -> CarGuess  (IA com visão monta o carrinho; precisa de login)
 // Agendado: importa lombadas e radares do OpenStreetMap, uma cidade por vez.
 import { AuthError, verifyJwt, type Jwk } from '../../fotos/src/jwt';
 import { preflight, withCors } from '../../fotos/src/cors';
@@ -9,16 +10,21 @@ import { normalizeQuery, parsePhoton, photonUrl } from './geocode';
 import { RouteError, parseValhalla, validPoint, valhallaBody, VALHALLA_URL } from './route';
 import { RateLimiter } from './limits';
 import { OVERPASS_URLS, TILES, neonSqlUrl, overpassQuery, type Tile } from './obstacles';
+import { VISION_MODEL, parseGuess, validPhotos, visionRequest } from './carro';
 
 interface Env {
   CLERK_ISSUER: string;
   IMPORT_DATABASE_URL?: string; // usuário "importador" do Neon (só pode chamar import_osm_obstacles)
+  AI?: { run(model: string, input: unknown): Promise<unknown> }; // Workers AI (montar carro pela foto)
 }
 
 const UA = 'MarchaGPS/0.1 (+https://marcha-gps.vercel.app)';
 const searchLimit = new RateLimiter(30, 60_000);
 const routeLimit = new RateLimiter(20, 60_000);
 const inviteLimit = new RateLimiter(10, 60_000); // por IP: conferir convite não precisa de login
+// IA de visão: poucas por pessoa (cota grátis de 10 mil "neurônios" por dia na conta)
+const carMinute = new RateLimiter(4, 60_000);
+const carDay = new RateLimiter(20, 24 * 60 * 60_000);
 
 let jwksCache: { keys: Jwk[]; at: number } | null = null;
 async function getJwks(issuer: string): Promise<Jwk[]> {
@@ -119,6 +125,24 @@ async function handle(req: Request, env: Env, ctx: ExecutionContext): Promise<Re
     } catch (e) {
       const code = e instanceof RouteError ? e.message : 'rota_indisponivel';
       return json({ error: code }, code === 'rota_indisponivel' ? 502 : 422);
+    }
+  }
+
+  if (req.method === 'POST' && url.pathname === '/carro/analisar') {
+    if (!env.AI) return json({ error: 'servico_nao_configurado' }, 503);
+    if (!carMinute.allow(user) || !carDay.allow(user)) return json({ error: 'muitas_analises' }, 429);
+    let input: unknown;
+    try { input = await req.json(); } catch { return json({ error: 'pedido_invalido' }, 400); }
+    const photos = validPhotos(input);
+    if (!photos) return json({ error: 'fotos_invalidas' }, 400);
+    try {
+      const guess = parseGuess(await env.AI.run(VISION_MODEL, visionRequest(photos)));
+      if (!guess) return json({ error: 'nao_reconheci' }, 422);
+      if (!guess.e_carro) return json({ error: 'nao_e_carro' }, 422);
+      return json(guess);
+    } catch (e) {
+      console.log('ia carro', String(e).slice(0, 300));
+      return json({ error: 'ia_indisponivel' }, 502);
     }
   }
 

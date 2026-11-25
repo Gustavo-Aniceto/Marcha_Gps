@@ -13,6 +13,7 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 
 ## Carro
 - Cadastro por **fotos** (frente, traseira, laterais, roda; mínimo 3). IA reconhece modelo, ano, cor, altura e aro; o app usa o modelo 3D da base e ajusta.
+- **Montar pelo foto (feito):** na garagem a pessoa manda de 1 a 3 fotos do carro; uma IA com visão (Gemma 4 no Workers AI da Cloudflare, plano grátis, ~8 de 10 mil "neurônios"/dia por análise) diz tipo de carroceria, cor, marca, modelo, vidro, aerofólio e se está rebaixado. O app monta o carrinho com isso; a pessoa confere, ajusta se quiser e salva. As fotos ficam guardadas no carro (R2). Limite: 4 análises por minuto e 20 por dia por pessoa.
 - **Tipo do carrinho no mapa:** hatch, sedã, perua, picape, picape grande, SUV, esportivo e van/Kombi, em 17 cores (desenhos próprios, vista de cima, estilo desenho). Vidro (fumê/limo) e aerofólio aparecem no desenho. É esse carrinho que aparece no mapa, na Cena e no perfil.
 - **Garagem** em 3D: altura, tipo de suspensão, aro, posição da roda, cambagem, cor, vidro, aerofólio, neon. Checa fitment e monta a lista de peças da base (marca "Serve" / "Atenção").
 

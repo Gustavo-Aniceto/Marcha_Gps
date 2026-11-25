@@ -26,6 +26,7 @@ Leia `docs/decisoes.md` antes de mudar regra de produto.
 - Busca e rota passam pelo `workers/api` (Worker `marcha-gps-api`): `GET /buscar` (Photon) e `POST /rota` (Valhalla do FOSSGIS, em pt-BR). Exigem login do Clerk; cache e limite por pessoa porque os servidores públicos pedem uso justo (Valhalla: 1 pedido/s). O app nunca chama Photon/Valhalla direto.
 - Lógica da navegação pura em `app/src/lib/nav.ts` (encaixe na rota, recálculo, voz, chegada) com testes; estado em `app/src/lib/navigation.tsx`.
 - Lombadas/radares do OpenStreetMap entram pelo agendamento de hora em hora do `marcha-gps-api`: o mapa é dividido em 12 quadrados (consulta curta, `[timeout:25]`) e cada um só é baixado de novo depois de 6 dias (`osm_import_due()` + tabela `import_runs`). Grava via `import_osm_obstacles()` com o usuário `importador` do Neon (só executa essas duas funções; segredo `IMPORT_DATABASE_URL` no Worker). Se o Overpass estiver fora, tenta outros servidores e de novo na hora seguinte.
+- Montar o carrinho pelo foto: `POST /carro/analisar` no `marcha-gps-api` (binding `AI`, modelo `@cf/google/gemma-4-26b-a4b-it`, `enable_thinking: false`, resposta em JSON com schema). Lógica pura em `workers/api/src/carro.ts`; no app `src/lib/carGuess.ts`. As listas de tipo/cor precisam bater com `carBodies.ts` (teste confere).
 - Publicar o Worker: o código vai como módulos ES (o `src` + `../fotos/src/jwt.ts` e `cors.ts`); manter `wrangler.toml` igual ao que está no ar.
 
 ## Mapa

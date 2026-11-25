@@ -1,6 +1,8 @@
-// Garagem: monta o carro que aparece no mapa. (Visual 3D e cadastro por foto vêm na próxima fase.)
+// Garagem: monta o carro que aparece no mapa. A pessoa manda fotos do carro e a IA monta o carrinho
+// (tipo, cor, vidro, aerofólio, marca e modelo); dá pra ajustar tudo à mão antes de salvar.
 import React, { useCallback, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, Text, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from 'expo-router';
 import { Body, Button, Card, ErrorText, Field, Label, Mono, Pills, Screen, Title, Warning } from '../../src/components/ui';
 import { CarMarker } from '../../src/components/CarMarker';
@@ -10,6 +12,9 @@ import { checkFitment, tireFor, type Suspension, type WheelPosition } from '../.
 import { friendlyError } from '../../src/lib/errors.ts';
 import { colors, fonts } from '../../src/theme/tokens.ts';
 import { BODIES, CAR_COLORS, type BodyType } from '../../src/lib/carBodies.ts';
+import { guessSummary, guessToCar } from '../../src/lib/carGuess.ts';
+import { analyzeCar, carErrorText, RoutingError } from '../../src/lib/routing';
+import { photoDataUri, photoUrl, uploadPhoto } from '../../src/lib/photos';
 
 interface CarForm {
   id?: string;
@@ -17,6 +22,7 @@ interface CarForm {
   ride_height_cm: number; suspension: Suspension; rim: number;
   wheel_position: WheelPosition; camber_deg: number;
   tint: 'nenhuma' | 'fume' | 'limo'; spoiler: boolean; neon: 'verde' | 'azul' | 'roxo' | null;
+  photo_paths?: string[];
 }
 
 const EMPTY: CarForm = {
@@ -31,6 +37,34 @@ export default function Garagem() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // fotos escolhidas agora (ainda não enviadas) e o resultado da IA
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [guessText, setGuessText] = useState<string | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  async function pickAndBuild() {
+    setAiError(null); setGuessText(null);
+    const r = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'], allowsMultipleSelection: true, selectionLimit: 3, quality: 0.8,
+    });
+    if (r.canceled || !r.assets?.length) return;
+    const uris = r.assets.slice(0, 3).map((a) => a.uri);
+    setPhotos(uris);
+    setAnalyzing(true);
+    try {
+      const data = await Promise.all(uris.map((u) => photoDataUri(u)));
+      const g = await analyzeCar(data);
+      const filled = guessToCar(g, car);
+      setCar((c) => ({ ...c, ...filled }));
+      setGuessText(guessSummary(g, BODIES.find((b) => b.id === g.body_type)?.label ?? g.body_type));
+      setMsg(null);
+    } catch (e) {
+      setAiError(carErrorText(e instanceof RoutingError ? e.message : e instanceof Error ? e.message : ''));
+    } finally {
+      setAnalyzing(false);
+    }
+  }
 
   useFocusEffect(useCallback(() => {
     if (!profile) return;
@@ -56,7 +90,14 @@ export default function Garagem() {
       setError(`Ano inválido: use 4 números, de 1950 a ${maxYear} (ex.: 2009). Ou deixa em branco.`); return;
     }
     setBusy(true); setError(null);
+    // fotos novas do carro sobem junto (ficam guardadas no carro)
+    let photo_paths = car.photo_paths ?? [];
+    if (photos.length) {
+      try { photo_paths = await Promise.all(photos.map((u) => uploadPhoto(u, 'carro'))); }
+      catch (x) { setBusy(false); setError(friendlyError(x)); return; }
+    }
     const row = {
+      photo_paths,
       owner_id: profile.id, make: car.make.trim(), model: car.model.trim(),
       year, color: car.color, body_type: car.body_type, ride_height_cm: car.ride_height_cm,
       suspension: car.suspension, rim: car.rim, wheel_position: car.wheel_position, camber_deg: car.camber_deg,
@@ -70,13 +111,42 @@ export default function Garagem() {
     setBusy(false);
     if (e) console.warn('garagem: salvar carro', e);
     if (e || !data) { setError(e ? friendlyError(e) : 'Não consegui salvar. Tenta de novo.'); return; }
-    setCar((c) => ({ ...c, id: (data as { id: string }).id }));
-    setMsg('Salvo! É esse carro que aparece no mapa, na sua localização.');
+    setCar((c) => ({ ...c, id: (data as { id: string }).id, photo_paths }));
+    setPhotos([]);
+    setMsg('Salvo! É esse carrinho que aparece no GPS e na Cena ao vivo, com o seu @.');
   }
 
   return (
     <Screen>
       <Title>Garagem</Title>
+
+      <Card style={{ gap: 10 }}>
+        <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700' }}>Monte seu carrinho pelas fotos</Text>
+        <Body dim>Manda de 1 a 3 fotos do seu carro (de lado, de frente ou de trás). A gente reconhece o tipo, a cor,
+          o vidro e o aerofólio e monta o carrinho que vai aparecer no mapa. Depois você confere e ajusta.</Body>
+        {(photos.length > 0 || (car.photo_paths?.length ?? 0) > 0) && (
+          <View style={{ flexDirection: 'row', gap: 6 }}>
+            {(photos.length ? photos : (car.photo_paths ?? []).map((k) => photoUrl(k) ?? '')).filter(Boolean).map((u) => (
+              <Image key={u} source={{ uri: u }} style={{ width: 84, height: 63, borderRadius: 6, backgroundColor: colors.panelAlt }}
+                     accessibilityLabel="Foto do carro" />
+            ))}
+          </View>
+        )}
+        {analyzing ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48 }}>
+            <ActivityIndicator color={colors.neon} />
+            <Text style={{ color: colors.textDim }}>Montando seu carrinho…</Text>
+          </View>
+        ) : (
+          <Button title={photos.length || car.photo_paths?.length ? '📷 Mandar outras fotos' : '📷 Mandar fotos do carro'}
+                  variant="secondary" onPress={pickAndBuild} />
+        )}
+        {guessText && (
+          <Text style={{ color: colors.neon, fontWeight: '700' }} accessibilityLiveRegion="polite">Reconheci: {guessText}</Text>
+        )}
+        <ErrorText>{aiError}</ErrorText>
+      </Card>
+
       <Card style={{ alignItems: 'center' }}>
         <CarMarker color={car.color} neon={car.neon} heading={0} body={car.body_type} tint={car.tint} spoiler={car.spoiler} size={150} />
         <Mono color={colors.neon}>VÃO {car.ride_height_cm} CM · ARO {car.rim} · {tireFor(car.rim) ?? '—'}</Mono>

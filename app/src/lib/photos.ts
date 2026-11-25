@@ -38,3 +38,13 @@ export async function uploadPhoto(uri: string, kind: PhotoKind): Promise<string>
   const { key } = (await res.json()) as { key: string };
   return key;
 }
+
+/** Foto pequena em data URI (pra IA reconhecer o carro): lado maior até 768 px, JPEG 70%. */
+export async function photoDataUri(uri: string, max = 768): Promise<string> {
+  const original = await ImageManipulator.manipulate(uri).renderAsync();
+  const target = resizeTarget(original.width, original.height, max);
+  const image = target ? await ImageManipulator.manipulate(uri).resize(target).renderAsync() : original;
+  const saved = await image.saveAsync({ compress: 0.7, format: SaveFormat.JPEG, base64: true });
+  if (!saved.base64) throw new Error('fotos_invalidas');
+  return `data:image/jpeg;base64,${saved.base64}`;
+}

@@ -1,6 +1,7 @@
 // Fala com o serviço de rotas (workers/api): busca de lugares e cálculo de rota.
 import { authToken } from './db';
 import type { RouteResponse } from './nav.ts';
+import type { CarGuess } from './carGuess.ts';
 
 const base = process.env.EXPO_PUBLIC_API_URL;
 
@@ -53,4 +54,26 @@ export async function checkInvite(code: string): Promise<InviteCheck> {
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new RoutingError((body as { error?: string }).error ?? 'convite_indisponivel');
   return body as InviteCheck;
+}
+
+/** IA olha as fotos (data URI JPEG) e diz tipo, cor, marca e modelo do carro. */
+export function analyzeCar(photos: string[]) {
+  return call<CarGuess>('/carro/analisar', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ fotos: photos }),
+  });
+}
+
+/** Mensagem pros erros do "montar pelas fotos". */
+export function carErrorText(code: string): string {
+  switch (code) {
+    case 'nao_e_carro': return 'Não achei um carro nessa foto. Manda uma foto do carro inteiro, de lado ou de frente.';
+    case 'nao_reconheci': return 'Não consegui reconhecer o carro. Tenta outra foto, com o carro inteiro e boa luz.';
+    case 'muitas_analises': return 'Muitas tentativas seguidas. Espera um pouco e tenta de novo.';
+    case 'fotos_invalidas': return 'Foto não aceita. Usa foto JPG ou PNG (até 3).';
+    case 'sem_internet': return 'Sem internet. Confere a conexão e tenta de novo.';
+    case 'nao_autenticado': case 'token_vencido': return 'Sua sessão expirou. Entre de novo.';
+    default: return 'A montagem automática está fora agora. Monta manualmente aqui embaixo ou tenta mais tarde.';
+  }
 }
