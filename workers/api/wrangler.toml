@@ -9,3 +9,7 @@ CLERK_ISSUER = "https://great-aphid-3258.clerk.accounts.dev"
 [triggers]
 # de hora em hora; cada faixa do mapa só é importada de novo depois de 6 dias (o banco controla)
 crons = ["7 * * * *"]
+
+# IA com visão (montar o carrinho pela foto)
+[ai]
+binding = "AI"
