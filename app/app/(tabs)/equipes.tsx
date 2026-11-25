@@ -13,7 +13,7 @@ import { colors, type ButtonShape } from '../../src/theme/tokens.ts';
 import { InviteCard } from '../../src/components/InviteCard';
 import { Avatar } from '../../src/components/Avatar';
 
-interface Crew { id: string; name: string; color: string; button_shape: ButtonShape; city_id: string }
+interface Crew { id: string; name: string; color: string; button_shape: ButtonShape; city_id: string; avatar_key: string | null }
 interface MyMembership { role: 'founder' | 'admin' | 'member'; status: 'pending' | 'verified'; crews: Crew }
 interface Member { user_id: string; role: string; status: string; xp: number; profiles: { username: string } }
 interface OpenInvite { code: string; expires_at: string }
@@ -58,7 +58,7 @@ export default function Equipes() {
   const load = useCallback(async () => {
     if (!profile) return;
     const { data } = await db.from('crew_members')
-      .select('role, status, crews(id, name, color, button_shape, city_id)').eq('user_id', profile.id);
+      .select('role, status, crews(id, name, color, button_shape, city_id, avatar_key)').eq('user_id', profile.id);
     const list = (data ?? []) as unknown as MyMembership[];
     setMine(list);
     const crewId = selected ?? list[0]?.crews.id ?? null;
@@ -139,8 +139,13 @@ export default function Equipes() {
 
       {current && (
         <Card accent={accent}>
-          <Text style={{ color: accent, fontSize: 20, fontWeight: '700' }}>{current.crews.name}</Text>
-          <Mono color={accent}>{ROLE[current.role] ?? current.role.toUpperCase()} · {current.status === 'verified' ? 'VERIFICADO' : 'EM VERIFICAÇÃO'}</Mono>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <Avatar username={current.crews.name} avatarKey={current.crews.avatar_key} size={52} ring={accent} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={{ color: accent, fontSize: 20, fontWeight: '700' }} numberOfLines={1}>{current.crews.name}</Text>
+              <Mono color={accent}>{ROLE[current.role] ?? current.role.toUpperCase()} · {current.status === 'verified' ? 'VERIFICADO' : 'EM VERIFICAÇÃO'}</Mono>
+            </View>
+          </View>
           <Text style={{ color: accent, fontWeight: '700', paddingVertical: 12, minHeight: 44 }} accessibilityRole="link"
                 onPress={() => router.push({ pathname: '/equipe/[id]', params: { id: current.crews.id } })}>
             Ver página da equipe ›
