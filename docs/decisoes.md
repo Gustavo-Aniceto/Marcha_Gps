@@ -45,6 +45,7 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 ## Feed (rede social da cena)
 - Posts com texto e foto, no **Geral** ou só pra equipe. Cada post mostra a foto de perfil, o @ e o carro do autor (da garagem).
 - Curtir (muda na hora), comentar (tela do post), compartilhar, apagar o próprio post; o dono do post pode apagar comentários nele.
+- **Tocar num carrinho no mapa** (Cena ao vivo ou GPS, inclusive o seu) abre um cartão com a foto e o @ da pessoa, o carrinho que ela montou (pela IA ou na mão), até 3 fotos reais do carro, tempo desde a última posição e o botão **Ver perfil completo**. Só aparece quem o `visible_cars()` já liberou.
 - Perfil de cada um: foto, carro montado e o mural com abas **Tudo / Fotos do carro (em grade) / Enquetes**. No próprio perfil (e no feed) dá pra postar: **post** (texto e foto), **foto do carro** (foto obrigatória) ou **enquete** (pergunta + 2 a 4 opções). Próximos eventos em cartões no topo do feed.
 - Enquete: voto secreto (só o total e a % aparecem), dá pra trocar o voto; o resultado aparece depois de votar (o autor sempre vê). Enquete só nasce pela `create_poll()`.
 

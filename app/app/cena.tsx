@@ -1,4 +1,4 @@
-// Cena ao vivo: mapa 2D cinza-escuro de SP, Guarulhos e Itaquá com o carrinho de quem escolheu aparecer.
+// Cena ao vivo: mapa 2D cinza-escuro com o carrinho de quem escolheu aparecer. Tocar num carro abre o cartão do perfil (ProfileSheet).
 // Quem aparece e onde é decidido no banco (visible_cars): aqui só desenha. O seu carro vem do seu GPS
 // (só você vê ele aqui do seu jeito; os outros te veem pelas regras da sua visibilidade).
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Camera, Map as MapView, Marker } from '../src/map';
 import { CarMarker } from '../src/components/CarMarker';
+import { ProfileSheet } from '../src/components/ProfileSheet';
 import { db, type VisibleCar } from '../src/lib/db';
 import { useSession } from '../src/lib/session';
 import { useLocationSharing } from '../src/lib/useLocationSharing';
@@ -50,14 +51,16 @@ export default function Cena() {
         <Camera initialViewState={{ center: REGION_VIEW.center, zoom: REGION_VIEW.zoom, pitch: 0 }} />
         {position && (
           <Marker id="cena-eu" lngLat={[position.lon, position.lat]}>
-            <CarMarker me color={myCar?.color} neon={myCar?.neon} heading={position.heading}
-                       body={myCar?.body_type} tint={myCar?.tint} spoiler={myCar?.spoiler}
-                       label={`@${profile?.username ?? 'você'}${profile?.visibility === 'ghost' ? ' · fantasma' : ' · você'}`} sameCrew />
+            <Pressable onPress={() => setSelected('eu')} accessibilityRole="button" accessibilityLabel="Ver o seu perfil" hitSlop={8}>
+              <CarMarker me color={myCar?.color} neon={myCar?.neon} heading={position.heading}
+                         body={myCar?.body_type} tint={myCar?.tint} spoiler={myCar?.spoiler}
+                         label={`@${profile?.username ?? 'você'}${profile?.visibility === 'ghost' ? ' · fantasma' : ' · você'}`} sameCrew />
+            </Pressable>
           </Marker>
         )}
         {shown.map((c) => (
           <Marker key={c.user_id} id={`cena-${c.user_id}`} lngLat={[c.lon, c.lat]}>
-            <Pressable onPress={() => setSelected(c.user_id)} accessibilityRole="button" accessibilityLabel={`Ver carro de @${c.username}`}
+            <Pressable onPress={() => setSelected(c.user_id)} accessibilityRole="button" accessibilityLabel={`Ver perfil de @${c.username}`}
                        hitSlop={8}>
               <CarMarker color={c.car?.color} neon={c.car?.neon} heading={c.heading} label={`@${c.username}`}
                          body={c.car?.body_type} tint={c.car?.tint} spoiler={c.car?.spoiler}
@@ -91,19 +94,13 @@ export default function Cena() {
       </View>
 
       {sel && (
-        <View style={s.card}>
-          <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700' }}>@{sel.username}</Text>
-          <Text style={{ color: colors.textDim, fontSize: 13 }}>
-            {sel.car ? `${sel.car.make} ${sel.car.model} · ${sel.car.ride_height_cm} cm · aro ${sel.car.rim}` : 'Carro ainda não montado'}
-          </Text>
-          <Text style={[s.mono, { color: sel.same_crew ? colors.neon : colors.holo }]}>
-            {sel.same_crew ? 'SUA EQUIPE · POSIÇÃO EXATA' : sel.approximate ? 'REGIÃO APROXIMADA (~500 M)' : 'POSIÇÃO LIBERADA PELA PESSOA'}
-          </Text>
-          <Pressable onPress={() => router.push({ pathname: '/perfil/[username]', params: { username: sel.username } })}
-                     accessibilityRole="link" style={{ minHeight: 40, justifyContent: 'center' }}>
-            <Text style={{ color: colors.neon, fontWeight: '700' }}>Ver perfil ›</Text>
-          </Pressable>
-        </View>
+        <ProfileSheet key={sel.user_id} username={sel.username} car={sel.car} updatedAt={sel.updated_at}
+                      statusHighlight={sel.same_crew} onClose={() => setSelected(null)} bottom={28}
+                      status={sel.same_crew ? 'SUA EQUIPE · POSIÇÃO EXATA' : sel.approximate ? 'REGIÃO APROXIMADA (~500 M)' : 'POSIÇÃO LIBERADA PELA PESSOA'} />
+      )}
+      {selected === 'eu' && profile && (
+        <ProfileSheet key="eu" username={profile.username} car={myCar} statusHighlight onClose={() => setSelected(null)} bottom={28}
+                      status={profile.visibility === 'ghost' ? 'MODO FANTASMA · SÓ VOCÊ SE VÊ' : 'VOCÊ NO MAPA'} />
       )}
     </View>
   );
@@ -121,6 +118,4 @@ const s = StyleSheet.create({
           borderColor: colors.lineStrong, backgroundColor: 'rgba(6,12,22,0.9)' },
   chipOn: { backgroundColor: colors.neon, borderColor: colors.neon },
   chipText: { color: colors.holo, fontSize: 12, fontWeight: '600' },
-  card: { position: 'absolute', left: 12, right: 12, bottom: 28, padding: 14, gap: 4, borderRadius: 8,
-          backgroundColor: 'rgba(6,12,22,0.95)', borderWidth: 1, borderColor: colors.lineStrong },
 });

@@ -12,6 +12,7 @@ import { rememberPosition } from '../../src/lib/lastPosition';
 import { formatArrival, formatDistance, formatDuration, nextObstacle, obstaclesOnRoute } from '../../src/lib/nav.ts';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { CarMarker } from '../../src/components/CarMarker';
+import { ProfileSheet } from '../../src/components/ProfileSheet';
 import { ReportIcon } from '../../src/components/ReportIcon';
 import { Speedometer } from '../../src/components/Speedometer';
 import { isOverLimit, radarAhead, smoothKmh } from '../../src/lib/speed.ts';
@@ -48,6 +49,7 @@ export default function Mapa() {
   const web = Platform.OS === 'web';
   const [routeReports, setRouteReports] = useState<{ item: Report; along: number }[]>([]);
   const [cars, setCars] = useState<VisibleCar[]>([]);
+  const [pickedId, setPickedId] = useState<string | null>(null); // carro tocado no mapa → cartão do perfil
   const [reports, setReports] = useState<Report[]>([]);
   const [myCar, setMyCar] = useState<MyCar | null>(null);
   const cam = cameraFor(camera);
@@ -167,11 +169,12 @@ export default function Mapa() {
   // rua em que você está agora (a da manobra anterior à próxima)
   const street = route && next ? route.maneuvers[next.index - 1]?.street || route.maneuvers[0]?.street || '' : '';
   const others = cars.filter((c) => c.user_id !== profile?.id);
+  const picked = others.find((c) => c.user_id === pickedId) ?? null;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <MapView style={{ flex: 1 }} mapStyle={mapStyle} logo={false} compass={false}
-           attribution attributionPosition={{ bottom: 8, left: 8 }}>
+           attribution attributionPosition={{ bottom: 8, left: 8 }} onPress={() => setPickedId(null)}>
         <Camera
           key={`camera-${recenter}`}
           trackUserLocation={camera.threeD || navigating ? 'course' : 'default'}
@@ -198,8 +201,10 @@ export default function Mapa() {
         {others.map((c) => web ? (
           <React.Fragment key={c.user_id}>
             <Marker id={`carro-${c.user_id}`} lngLat={[c.lon, c.lat]} rotation={c.heading ?? 0}>
-              <CarMarker color={c.car?.color} neon={c.car?.neon} heading={0} approximate={c.approximate}
-                         body={c.car?.body_type} tint={c.car?.tint} spoiler={c.car?.spoiler} />
+              <Pressable onPress={() => setPickedId(c.user_id)} accessibilityRole="button" accessibilityLabel={`Ver perfil de @${c.username}`} hitSlop={8}>
+                <CarMarker color={c.car?.color} neon={c.car?.neon} heading={0} approximate={c.approximate}
+                           body={c.car?.body_type} tint={c.car?.tint} spoiler={c.car?.spoiler} />
+              </Pressable>
             </Marker>
             <Marker id={`nome-${c.user_id}`} lngLat={[c.lon, c.lat]}>
               <View style={{ paddingBottom: 64 }} pointerEvents="none">
@@ -209,9 +214,11 @@ export default function Mapa() {
           </React.Fragment>
         ) : (
           <Marker key={c.user_id} id={`carro-${c.user_id}`} lngLat={[c.lon, c.lat]}>
-            <CarMarker color={c.car?.color} neon={c.car?.neon} heading={c.heading} label={`@${c.username}`}
-                       sameCrew={c.same_crew} approximate={c.approximate}
-                       body={c.car?.body_type} tint={c.car?.tint} spoiler={c.car?.spoiler} />
+            <Pressable onPress={() => setPickedId(c.user_id)} accessibilityRole="button" accessibilityLabel={`Ver perfil de @${c.username}`} hitSlop={8}>
+              <CarMarker color={c.car?.color} neon={c.car?.neon} heading={c.heading} label={`@${c.username}`}
+                         sameCrew={c.same_crew} approximate={c.approximate}
+                         body={c.car?.body_type} tint={c.car?.tint} spoiler={c.car?.spoiler} />
+            </Pressable>
           </Marker>
         ))}
 
@@ -408,6 +415,12 @@ export default function Mapa() {
           </Svg>
           <Text style={[s.searchText, { color: ui.sub }]}>Para onde?</Text>
         </Pressable>
+      )}
+      {picked && (
+        <ProfileSheet key={picked.user_id} username={picked.username} car={picked.car} updatedAt={picked.updated_at}
+                      statusHighlight={picked.same_crew} onClose={() => setPickedId(null)}
+                      bottom={(navigating ? BOTTOM_NAV : BOTTOM_IDLE) + 10}
+                      status={picked.same_crew ? 'SUA EQUIPE' : picked.approximate ? 'REGIÃO APROXIMADA' : undefined} />
       )}
     </View>
   );

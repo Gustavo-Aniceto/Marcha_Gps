@@ -8,6 +8,8 @@ update public.cars set year = 2009, updated_at = now() where owner_id = :'x' ret
 select t.throws(format($$ update public.cars set year = 9 where owner_id = %L $$, :'x'), 'cars_year_check');
 update public.cars set body_type = 'picape' where owner_id = :'x';
 select t.ok((select car->>'body_type' = 'picape' from public.public_profile('car.x')), 'perfil mostra a carroceria');
+update public.cars set photo_paths = array['carro/' || :'x' || '/a.jpg', 'carro/' || :'x' || '/b.jpg'] where owner_id = :'x';
+select t.ok((select jsonb_array_length(car->'photos') = 2 from public.public_profile('car.x')), 'perfil mostra as fotos do carro');
 select t.throws(format($$ update public.cars set body_type = 'foguete' where owner_id = %L $$, :'x'), 'cars_body_type_check');
 reset role;
 rollback;
