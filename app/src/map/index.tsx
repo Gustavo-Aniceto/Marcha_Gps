@@ -14,16 +14,18 @@ interface ExtraCameraProps {
   onUserGesture?: () => void;
   fitCoords?: { lat: number; lon: number }[] | null;
   fitKey?: number;
+  padTop?: number;
 }
 
 /** Mesma câmera do MapLibre, com as opções extras da versão web. */
-export function Camera({ follow: _follow, following = true, onUserGesture: _g, fitCoords, fitKey: _k, ...props }:
+export function Camera({ follow: _follow, following = true, onUserGesture: _g, fitCoords, fitKey: _k, padTop = 0, ...props }:
   NativeCameraProps & ExtraCameraProps) {
   if (fitCoords && fitCoords.length >= 2 && !following) {
     const lons = fitCoords.map((c) => c.lon), lats = fitCoords.map((c) => c.lat);
     return <NativeCamera bounds={[Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)] as never} />;
   }
-  return <NativeCamera {...props} trackUserLocation={following ? props.trackUserLocation : undefined} />;
+  return <NativeCamera {...props} trackUserLocation={following ? props.trackUserLocation : undefined}
+                       padding={{ paddingTop: padTop, paddingBottom: 0, paddingLeft: 0, paddingRight: 0 } as never} />;
 }
 
 type NativeMapProps = React.ComponentProps<typeof NativeMap>;

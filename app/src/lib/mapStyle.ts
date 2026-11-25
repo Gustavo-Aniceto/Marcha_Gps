@@ -1,4 +1,5 @@
 // Estilos do mapa (formato MapLibre), com os mapas gratuitos do OpenFreeMap (dados do OpenStreetMap).
+//   (prédios planos; a câmera inclinada do modo GPS continua)
 //   noite: escuro azulado, ruas cinza e rodovias azuis (visual de app de trânsito que o público já conhece)
 //   dia:   claro, ruas brancas com contorno
 //   cena:  2D cinza-escuro, pra ver os carros da galera na Cena ao vivo
@@ -36,12 +37,12 @@ export const PALETTES: Record<MapTheme, Palette> = {
   noite: {
     background: '#232833', water: '#1F3854', park: '#244330', roadMinor: '#3E4553', roadMajor: '#5C6473',
     roadCasing: '#1A1E26', building: '#2A303B', buildingTop: '#363D4B', glow: null, motorway: '#7389AB',
-    label: '#D5DAE3', labelHalo: '#232833', poi: '#9AA4B5', threeD: true,
+    label: '#D5DAE3', labelHalo: '#232833', poi: '#9AA4B5', threeD: false,
   },
   dia: {
     background: '#EEEEEA', water: '#A9D3F2', park: '#C9E6BC', roadMinor: '#FFFFFF', roadMajor: '#FFFFFF',
     roadCasing: '#CACAC4', building: '#E2E2DB', buildingTop: '#D2D2CA', glow: null, motorway: '#FFE29A',
-    label: '#454A53', labelHalo: '#FFFFFF', poi: '#5B6475', threeD: true,
+    label: '#454A53', labelHalo: '#FFFFFF', poi: '#5B6475', threeD: false,
   },
   cena: {
     background: '#191A1C', water: '#0F1012', park: '#1E2022', roadMinor: '#2B2D31', roadMajor: '#45484E',
@@ -141,8 +142,9 @@ export function buildMapStyle(theme: MapTheme): Record<string, unknown> {
           },
         }
       : {
+          // prédios planos e discretos (mapa limpo, como nos apps de trânsito)
           id: 'predios', type: 'fill', source: SOURCE, 'source-layer': 'building', minzoom: 15,
-          paint: { 'fill-color': p.building },
+          paint: { 'fill-color': p.building, 'fill-opacity': 0.8 },
         },
     {
       id: 'nomes-ruas', type: 'symbol', source: SOURCE, 'source-layer': 'transportation_name', minzoom: 14,

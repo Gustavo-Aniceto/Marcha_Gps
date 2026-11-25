@@ -27,11 +27,14 @@ for (const theme of themes) {
   });
 }
 
-test('noite e dia têm prédios 3D; cena é 2D', () => {
-  const has3d = (t: MapTheme) => (buildMapStyle(t) as { layers: L[] }).layers.some((l) => l.type === 'fill-extrusion');
-  assert.ok(has3d('noite'));
-  assert.ok(has3d('dia'));
-  assert.ok(!has3d('cena'));
+test('mapa limpo como nos apps de trânsito: prédios planos em todos os temas e rua menor com contorno no GPS', () => {
+  const layers = (t: MapTheme) => (buildMapStyle(t) as { layers: L[] }).layers;
+  for (const t of ['noite', 'dia', 'cena'] as MapTheme[]) {
+    assert.ok(!layers(t).some((l) => l.type === 'fill-extrusion'), t);
+    assert.ok(layers(t).some((l) => l.id === 'predios'), t);
+  }
+  assert.ok(layers('noite').some((l) => l.id === 'ruas-menores-contorno'));
+  assert.ok(!layers('cena').some((l) => l.id === 'ruas-menores-contorno'));
 });
 
 test('cena é escura e sem nomes de lugares (fica limpa pra ver os carros)', () => {

@@ -183,6 +183,7 @@ export default function Mapa() {
           onUserGesture={onUserGesture}
           fitCoords={route?.coords ?? null}
           fitKey={fitKey}
+          padTop={navigating ? 240 : 120}
         />
 
         {route && <RouteLine coords={route.coords} />}

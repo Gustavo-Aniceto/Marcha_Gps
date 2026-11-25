@@ -106,10 +106,12 @@ interface CameraProps {
   /** mostra estes pontos inteiros na tela (ex.: a rota toda); muda `fitKey` pra repetir */
   fitCoords?: { lat: number; lon: number }[] | null;
   fitKey?: number;
+  /** empurra o carro pra baixo da tela (px de folga em cima), pra ver mais caminho à frente */
+  padTop?: number;
 }
 
 export function Camera({ zoom, pitch, duration = 600, trackUserLocation, initialViewState, follow,
-  following = true, onUserGesture, fitCoords, fitKey }: CameraProps) {
+  following = true, onUserGesture, fitCoords, fitKey, padTop = 0 }: CameraProps) {
   const map = useContext(MapCtx);
   const started = useRef(false);
   const gesture = useRef(onUserGesture);
@@ -140,13 +142,15 @@ export function Camera({ zoom, pitch, duration = 600, trackUserLocation, initial
   useEffect(() => {
     if (!map || !following || !trackUserLocation || lat == null || lon == null) return;
     const bearing = trackUserLocation === 'course' && heading != null ? heading : map.getBearing();
-    map.easeTo({ center: [lon, lat], bearing, zoom: zoom ?? map.getZoom(), pitch: pitch ?? map.getPitch(), duration });
-  }, [map, trackUserLocation, lat, lon, heading, following]);
+    map.easeTo({ center: [lon, lat], bearing, zoom: zoom ?? map.getZoom(), pitch: pitch ?? map.getPitch(), duration,
+                 padding: { top: padTop, bottom: 0, left: 0, right: 0 } });
+  }, [map, trackUserLocation, lat, lon, heading, following, padTop]);
 
   useEffect(() => {
     if (!map || !fitCoords || fitCoords.length < 2) return;
     const b = new maplibregl.LngLatBounds();
     for (const c of fitCoords) b.extend([c.lon, c.lat]);
+    map.setPadding({ top: 0, bottom: 0, left: 0, right: 0 });
     map.fitBounds(b, { padding: { top: 150, bottom: 190, left: 50, right: 50 }, pitch: 0, bearing: 0, duration: 800, maxZoom: 17 });
   }, [map, fitKey]);
 
