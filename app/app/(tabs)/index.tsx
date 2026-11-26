@@ -26,6 +26,8 @@ import { isOverLimit, radarAhead, smoothKmh } from '../../src/lib/speed.ts';
 import { db, type VisibleCar } from '../../src/lib/db';
 import { useSession } from '../../src/lib/session';
 import { useMapSettings } from '../../src/lib/mapSettings';
+import { activeCount, filterCars, filterReports } from '../../src/lib/mapFilter.ts';
+import { MapFilterSheet } from '../../src/components/MapFilterSheet';
 import { useLocationSharing } from '../../src/lib/useLocationSharing';
 import { cameraFor, gpsQuality, navZoom, resolveTheme } from '../../src/lib/mapCamera.ts';
 import { useGlides } from '../../src/lib/useGlides';
@@ -56,7 +58,8 @@ interface MyCar { make?: string; model?: string; year?: number | null; fipe_vers
 export default function Mapa() {
   const router = useRouter();
   const { profile } = useSession();
-  const { camera } = useMapSettings();
+  const { camera, filter, setFilter } = useMapSettings();
+  const [filterOpen, setFilterOpen] = useState(false);
   const share = !!profile && profile.visibility !== 'ghost';
   const nav = useNavigation();
   const navigating = nav.status !== 'idle';
@@ -155,8 +158,8 @@ export default function Mapa() {
   }, [route]);
   // navegando, o mapa mostra só os avisos em cima da rota (menos poluição, como nos apps de GPS)
   const mapReports = useMemo(
-    () => (navigating && route && routeReports.length ? routeReports.map((o) => o.item) : reports),
-    [navigating, route, routeReports, reports]);
+    () => filterReports(navigating && route && routeReports.length ? routeReports.map((o) => o.item) : reports, filter),
+    [navigating, route, routeReports, reports, filter]);
 
   // ---- rota que desvia do que pega no carro: o app acha e PERGUNTA (nunca troca sozinho) ----
   const [offer, setOffer] = useState<{ route: Route; points: { lat: number; lon: number }[]; extra_s: number; avoided: number; total: number } | null>(null);
@@ -250,6 +253,9 @@ export default function Mapa() {
   // rua em que você está agora (a da manobra anterior à próxima)
   const street = route && next ? route.maneuvers[next.index - 1]?.street || route.maneuvers[0]?.street || '' : '';
   const others = useMemo(() => cars.filter((c) => c.user_id !== profile?.id), [cars, profile?.id]);
+  // o que o filtro deixa aparecer no mapa (o contador da Cena continua contando todo mundo)
+  const shownCars = useMemo(() => filterCars(others, filter), [others, filter]);
+  const nFilter = activeCount(filter);
   const glideOf = useGlides(others);
   const picked = others.find((c) => c.user_id === pickedId) ?? null;
 
@@ -277,7 +283,7 @@ export default function Mapa() {
         <ReportsLayer reports={mapReports} />
 
         {/* todo mundo que o banco libera (visible_cars cuida de fantasma, equipe, zona privada e atraso) */}
-        {others.map((c) => web ? (
+        {shownCars.map((c) => web ? (
           <React.Fragment key={c.user_id}>
             <Marker id={`carro-${c.user_id}`} lngLat={[c.lon, c.lat]} glide={glideOf(c)}>
               <Pressable onPress={() => setPickedId(c.user_id)} accessibilityRole="button" accessibilityLabel={`Ver perfil de @${c.username}`} hitSlop={8}>
@@ -339,6 +345,15 @@ export default function Mapa() {
                      accessibilityRole="button" accessibilityLabel="Menu do mapa" accessibilityState={{ expanded: menu }}>
             <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={ui.icon} strokeWidth={2.2} strokeLinecap="round">
               <Path d="M4 7h16M4 12h16M4 17h16" />
+            </Svg>
+          </Pressable>
+          <Pressable style={[s.round, s.menuBtn, { top: insets.top + 68, backgroundColor: nFilter ? colors.neon : ui.button,
+                                                   borderColor: nFilter ? colors.neon : ui.border }]}
+                     onPress={() => { setMenu(false); setFilterOpen(true); }}
+                     accessibilityRole="button" accessibilityLabel={nFilter ? `Filtrar o mapa, ${nFilter} filtros ligados` : 'Filtrar o mapa'}>
+            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={nFilter ? colors.ink : ui.icon} strokeWidth={2.2}
+                 strokeLinecap="round" strokeLinejoin="round">
+              <Path d="M4 6h16M7 12h10M10 18h4" />
             </Svg>
           </Pressable>
           <Pressable style={[s.cenaPill, { top: insets.top + 16, backgroundColor: ui.button, borderColor: ui.border }]} onPress={() => router.push('/cena')}
@@ -535,6 +550,7 @@ export default function Mapa() {
                       status={picked.same_crew ? 'SUA EQUIPE' : picked.approximate ? 'REGIÃO APROXIMADA' : undefined} />
       )}
       <CarChooser ownerId={profile?.id} onChosen={() => setCarRev((r) => r + 1)} />
+      <MapFilterSheet visible={filterOpen} filter={filter} onChange={setFilter} onClose={() => setFilterOpen(false)} />
     </View>
   );
 }
