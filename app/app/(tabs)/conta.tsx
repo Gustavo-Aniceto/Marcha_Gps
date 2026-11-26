@@ -249,6 +249,7 @@ export default function Conta() {
       <Text style={{ color: colors.textMuted, fontSize: 12, textAlign: 'center', fontFamily: fonts.mono }}>
         {profile.joined_at ? `Na cena desde ${new Date(profile.joined_at).toLocaleDateString('pt-BR')}` : ''}
       </Text>
+      <Text style={{ color: colors.textMuted, fontSize: 11, textAlign: 'center' }}>Carros 3D: Car Kit da Kenney (kenney.nl, CC0) · Mapa: © OpenStreetMap</Text>
     </Screen>
   );
 }

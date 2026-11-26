@@ -251,7 +251,7 @@ export default function Garagem() {
           // o desenho segue as proporções do modelo quando a gente conhece (Gol quadrado, Opala, Fusca...)
           const m = resolveModel({ body: car.body_type, make: car.make, model: car.model, version: car.fipe_version, year: car.year ? Number(car.year) : null });
           return <Text style={{ color: m.label ? colors.neon : colors.textMuted, fontSize: 12, fontWeight: '700' }}>
-            {m.label ? `Desenho no formato do ${m.label}` : 'Desenho no formato padrão do tipo escolhido'}</Text>;
+            {m.label ? `No tamanho do ${m.label}` : 'No tamanho padrão do tipo escolhido'}</Text>;
         })()}
         <Text style={{ color: colors.textMuted, fontSize: 12 }}>Arraste pra girar · é assim que ele anda no mapa</Text>
         <Mono color={colors.neon}>VÃO {car.ride_height_cm} CM · ARO {car.rim} · {tireFor(car.rim) ?? '—'}</Mono>

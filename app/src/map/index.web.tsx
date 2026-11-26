@@ -493,7 +493,7 @@ export function CarModel({ spec, glide, heading, size = 80, night, fallback }: {
       const h = p?.heading ?? live.current.heading ?? 0;
       const rel = h - map.getBearing();
       const pitch = map.getPitch();
-      const key = specKey(live.current.spec);
+      const key = `${specKey(live.current.spec)}#${studio.rev}`;
       const lights = !!live.current.night;
       let moving = false;
       if (p) {

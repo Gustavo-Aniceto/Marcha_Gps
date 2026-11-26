@@ -9,6 +9,7 @@ import {
   axles, clearance, halfWidthAt, partAt, section, stations, wheelRadius, wheelZ, type ModelDef, type Part,
 } from './car3dShape.ts';
 import { resolveModel } from './carModels.ts';
+import { buildKitCar, kitFor } from './carKit.ts';
 
 import type { CarSpec } from './car3dTypes.ts';
 export type { CarSpec } from './car3dTypes.ts';
@@ -28,7 +29,10 @@ const GLASS: Record<string, string> = { nenhuma: '#2a3646', fume: '#151b24', lim
 const PART_COLOR: Record<Exclude<Part, 'paint' | 'glass'>, string> = { dark: '#121418', bed: '#1c2027' };
 const HALF = 2.85;        // meia largura do quadro em metros (cabe a picape grande)
 
-interface Model { group: THREE.Group; wheels: THREE.Object3D[]; body: THREE.Object3D; lights: THREE.Mesh[]; def: ModelDef }
+interface Model {
+  group: THREE.Group; wheels: THREE.Object3D[]; body: THREE.Object3D; lights: THREE.Mesh[]; def: ModelDef;
+  kit?: { baseY: number; sy: number };   // carro pronto do kit (roda gira no eixo x; carroceria em unidades do kit)
+}
 
 function radial(color: string, inner: number): THREE.CanvasTexture {
   const c = document.createElement('canvas');
@@ -269,6 +273,13 @@ function buildCar(spec: CarSpec, env: THREE.Texture | null): Model {
     }
   }
 
+  addGround(group, def, spec);
+  group.add(body);
+  return { group, wheels, body, lights, def };
+}
+
+/** Sombra macia no chão, neon embaixo e (no seu carro) o anel azul. */
+function addGround(group: THREE.Group, def: ModelDef, spec: CarSpec) {
   // ---- sombra macia no chão, neon embaixo e (no seu carro) o anel azul ----
   const shadow = new THREE.Mesh(new THREE.PlaneGeometry(def.L * 1.16, def.W * 1.45),
     new THREE.MeshBasicMaterial({ map: radial('rgba(0,0,0,0.6)', 0.5), transparent: true, depthWrite: false }));
@@ -297,9 +308,18 @@ function buildCar(spec: CarSpec, env: THREE.Texture | null): Model {
     disc.rotation.x = -Math.PI / 2; disc.position.y = 0.005;
     group.add(disc);
   }
+}
 
-  group.add(body);
-  return { group, wheels, body, lights, def };
+/** Carro pronto do kit (se já baixou); senão null e o desenho feito à mão segura até chegar. */
+function buildFromKit(spec: CarSpec, env: THREE.Texture | null, onReady: () => void): Model | null {
+  const def = resolveModel({ body: spec.body, make: spec.make, model: spec.model, version: spec.version, year: spec.year }).def;
+  const kit = kitFor(def.body, onReady);
+  if (!kit) return null;
+  const k = buildKitCar(kit, def, { color: spec.color ?? '#B9C0CB', tint: spec.tint, rideHeightCm: spec.rideHeight, camber: spec.camber, env });
+  const group = new THREE.Group();
+  addGround(group, def, spec);
+  group.add(k.root);
+  return { group, wheels: k.wheels, body: k.body, lights: [], def, kit: { baseY: k.baseY, sy: k.sy } };
 }
 
 export function specKey(s: CarSpec): string {
@@ -315,6 +335,8 @@ class Studio {
   models = new Map<string, Model>();
   current: Model | null = null;
   size = 0;
+  /** muda quando um carro do kit termina de baixar (quem desenha compara pra redesenhar) */
+  rev = 0;
 
   constructor() {
     const canvas = document.createElement('canvas');
@@ -351,8 +373,20 @@ class Studio {
   private model(spec: CarSpec): Model {
     const key = specKey(spec);
     let m = this.models.get(key);
+    if (!m || !m.kit) {
+      const fromKit = buildFromKit(spec, this.env, () => { this.rev++; });
+      if (fromKit) {
+        if (m) { if (this.current === m) { this.scene.remove(m.group); this.current = null; } disposeModel(m); }
+        m = fromKit;
+        this.models.set(key, m);
+      }
+    }
     if (!m) {
-      if (this.models.size > 40) { for (const v of this.models.values()) dispose(v.group); this.models.clear(); }
+      if (this.models.size > 40) {
+        for (const v of this.models.values()) disposeModel(v);
+        this.models.clear();
+        if (this.current) { this.scene.remove(this.current.group); this.current = null; }
+      }
       m = buildCar(spec, this.env);
       this.models.set(key, m);
     }
@@ -370,8 +404,13 @@ class Studio {
     this.resize(Math.max(target.width, target.height));
     // frente do carro (x+) virada pra direção "rel" na tela
     m.group.rotation.y = ((90 - v.rel) * Math.PI) / 180;
-    for (const w of m.wheels) w.rotation.z = -(v.wheel ?? 0);
-    m.body.position.y = clearance(m.def, spec.rideHeight) + (v.bob ?? 0);
+    if (m.kit) {
+      for (const w of m.wheels) w.rotation.x = v.wheel ?? 0;
+      m.body.position.y = m.kit.baseY + (v.bob ?? 0) / m.kit.sy;
+    } else {
+      for (const w of m.wheels) w.rotation.z = -(v.wheel ?? 0);
+      m.body.position.y = clearance(m.def, spec.rideHeight) + (v.bob ?? 0);
+    }
     for (const l of m.lights) (l.material as THREE.MeshStandardMaterial).emissiveIntensity = v.lights ? 1.6 : 0.4;
 
     // sempre um pouco na diagonal (visão de cima inclinada, como nos apps de GPS), mesmo com o mapa reto;
@@ -396,6 +435,15 @@ class Studio {
     const sw = ar >= 1 ? S : S * ar, sh = ar >= 1 ? S / ar : S;
     ctx.drawImage(this.renderer.domElement, (S - sw) / 2, (S - sh) / 2, sw, sh, 0, 0, target.width, target.height);
   }
+}
+
+/** Libera da memória. Carro do kit divide a malha com o original baixado: só a textura pintada sai. */
+function disposeModel(m: Model) {
+  if (!m.kit) { dispose(m.group); return; }
+  m.group.traverse((x) => {
+    const mat = (x as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
+    if (mat) { mat.map?.dispose(); mat.dispose(); }
+  });
 }
 
 function dispose(o: THREE.Object3D) {
