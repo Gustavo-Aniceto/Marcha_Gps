@@ -54,7 +54,7 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 - **Rota que desvia** do que pega no seu carro (lombada alta, valeta, buraco… pela altura da garagem): o app procura sozinho um caminho alternativo, mas **nunca troca sem perguntar**. Aparece "Tem N obstáculos nesse caminho que pegam no seu carro · Achei outro caminho que desvia · +X min" com **Trocar rota** / **Manter caminho** (e a voz pergunta). Só oferece se desviar de algo e não for muito mais demorado (até 5 min a mais, ou até 50% do tempo que falta, nunca mais de 20 min). Uma pergunta por destino; sem resposta em 30 s, mantém. Se aceitou, os recálculos continuam desviando.
 
 ## Equipes
-- Fundador/admin cria **eventos** só com nome, **dia no calendário**, **horário** (hora e minutos), duração, **local por busca de endereço** (não precisa estar lá) e quem vê. Não escolhe tipo (fica como encontro).
+- Fundador/admin/staff cria **eventos** só com nome, **dia no calendário**, **horário** (hora e minutos), duração, **local por busca de endereço** (não precisa estar lá) e quem vê. Não escolhe tipo (fica como encontro).
 - **Página da equipe:** cada equipe tem a sua página (capa, foto, bio, cidade, Instagram, fundador, membros, próximos eventos, botão "Pedir pra entrar" e, pro fundador/admin, os pedidos esperando), separada do perfil pessoal de quem fundou. O fundador continua com o perfil dele normal; no perfil aparecem as equipes (★ nas que fundou).
 - Cada código de fundador vira **uma equipe só**; um pedido em aberto por vez. Quem quer entrar numa equipe que já existe pede pela página dela. O **Adm Master também pode ter a própria equipe** (pede e aprova) e usar o app como qualquer um.
 - **Tema da equipe**: cor e formato dos botões. Aparece na tela/feed/rank da equipe e nas etiquetas do mapa. Cor escura é clareada automaticamente para leitura. Avisos de segurança continuam laranja para todos.
@@ -81,7 +81,7 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 
 ## Conta, notificações e privacidade
 - Aba **Conta**: editar perfil (nome, bio, foto; o @ não muda), notificações, privacidade e dados, atalhos (Ranks, câmera do mapa, tutorial) e **Sair da conta**.
-- Notificações dentro do app (bolinha na aba Conta). O **Adm Master** recebe as equipes novas pedidas; o fundador/admin recebe pedidos pra entrar; a pessoa recebe aprovação/recusa, verificação, evento novo das equipes, comentário no post e convite usado. Dá pra desligar por assunto (Equipes, Eventos, Social). Notificação no celular com o app fechado fica pro próximo passo (precisa de push).
+- Notificações dentro do app (bolinha na aba Conta). O **Adm Master** recebe as equipes novas pedidas; o fundador/admin recebe pedidos pra entrar; a pessoa recebe aprovação/recusa, verificação, evento novo das equipes, comentário no post e convite usado. Dá pra desligar por assunto (Equipes, Eventos, Social). Também chegam no celular com o app fechado, se a pessoa ligar (ver Notificações no celular).
 - Privacidade: **baixar meus dados** (arquivo .json com perfil, carros, equipes, posts, comentários, avisos, presenças e zonas privadas) e **apagar a conta** (digitando o @; fundador de equipe com membros precisa passar a equipe antes). Velocidade nunca é guardada.
 
 ## Eventos e equipes
