@@ -8,7 +8,7 @@ import { colors } from '../theme/tokens.ts';
 export type IconName =
   | 'edit' | 'bell' | 'lock' | 'trophy' | 'map' | 'help' | 'camera' | 'chart' | 'logout' | 'user'
   | 'calendar' | 'pin' | 'clock' | 'flag' | 'users' | 'car' | 'filter' | 'search' | 'plus' | 'check' | 'chevron'
-  | 'chat' | 'ticket' | 'heart' | 'heartFill' | 'share';
+  | 'chat' | 'ticket' | 'heart' | 'heartFill' | 'share' | 'more' | 'shield' | 'block' | 'doc' | 'pulse' | 'alert';
 
 const P: Record<IconName, React.ReactNode> = {
   edit: <Path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" />,
@@ -37,6 +37,12 @@ const P: Record<IconName, React.ReactNode> = {
   heart: <Path d="M12 19.5S4.5 15 4.5 9.6A3.9 3.9 0 0 1 12 7.8a3.9 3.9 0 0 1 7.5 1.8C19.5 15 12 19.5 12 19.5z" />,
   heartFill: <Path d="M12 19.5S4.5 15 4.5 9.6A3.9 3.9 0 0 1 12 7.8a3.9 3.9 0 0 1 7.5 1.8C19.5 15 12 19.5 12 19.5z" fill="currentColor" />,
   share: <><Path d="M12 4v11M8 8l4-4 4 4" /><Path d="M5 13v6h14v-6" /></>,
+  more: <><Circle cx={6} cy={12} r={1.2} fill="currentColor" /><Circle cx={12} cy={12} r={1.2} fill="currentColor" /><Circle cx={18} cy={12} r={1.2} fill="currentColor" /></>,
+  shield: <><Path d="M12 3.5l7 2.5v5.5c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V6l7-2.5z" /><Path d="M9 12l2 2 4-4" /></>,
+  block: <><Circle cx={12} cy={12} r={8.5} /><Path d="M6 6l12 12" /></>,
+  doc: <><Path d="M6.5 3.5h7l4 4v13h-11v-17z" /><Path d="M13.5 3.5v4h4M9 12h6M9 15.5h6" /></>,
+  pulse: <Path d="M3.5 12h4l2-5 4 10 2-5h5" />,
+  alert: <><Path d="M12 4l9 16H3l9-16z" /><Path d="M12 10v4.5M12 17.3v.1" /></>,
 };
 
 export function Icon({ name, size = 20, color = colors.text, stroke = 1.8 }: { name: IconName; size?: number; color?: string; stroke?: number }) {

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { Stack, usePathname, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
@@ -17,6 +17,12 @@ import { db } from '../src/lib/db';
 import { MapSettingsProvider } from '../src/lib/mapSettings';
 import { colors } from '../src/theme/tokens.ts';
 import { pickClerkKey } from '../src/lib/clerkKey.ts';
+import { installErrorReporting, reportError, setErrorScreen } from '../src/lib/reportErrors';
+
+installErrorReporting();
+
+// Páginas abertas com ou sem login (o Facebook/Google e as lojas pedem o link da política de privacidade)
+const PUBLIC = ['privacidade', 'termos'];
 
 // Manda cada um pro lugar certo: sem login -> entrar; logado sem convite -> convite; senão -> abas.
 // As telas do app só existem (Stack.Protected) pra quem já entrou com convite: o mapa nem monta antes disso.
@@ -25,10 +31,13 @@ function Gate() {
   const segments = useSegments() as string[];
   const router = useRouter();
   const inside = signedIn && !!profile;
+  const pathname = usePathname();
+  useEffect(() => { setErrorScreen(pathname); }, [pathname]);
 
   // Ordem: convite (inicio) -> login com a conta que preferir (entrar) -> nome de usuário (convite) -> app
   useEffect(() => {
     if (loading || inside) return;
+    if (PUBLIC.includes(segments[0])) return;
     const here = segments[0] === '(auth)' ? segments[1] : null;
     if (signedIn) {
       if (here !== 'convite') router.replace('/(auth)/convite');
@@ -59,6 +68,8 @@ function Gate() {
       <Stack.Protected guard={!inside}>
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
+      <Stack.Screen name="privacidade" />
+      <Stack.Screen name="termos" />
       <Stack.Protected guard={inside}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="cena" />
@@ -75,6 +86,7 @@ function Gate() {
         <Stack.Screen name="perfil/[username]" />
         <Stack.Screen name="equipe/[id]" />
         <Stack.Screen name="tutorial" options={{ animation: 'fade' }} />
+        <Stack.Screen name="moderacao" />
       </Stack.Protected>
     </Stack>
   );
@@ -83,6 +95,28 @@ function Gate() {
 const clerkKey: string = pickClerkKey(typeof window !== 'undefined' && window.location ? window.location.hostname : null,
   process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY, process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY_PROD) ?? '';
 if (!clerkKey) throw new Error('Configure EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY no app/.env');
+
+// Se uma tela quebrar, mostra um aviso em vez de tela branca (e o erro vai pro Adm Master)
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(error: unknown) { reportError(error); }
+  render() {
+    if (!this.state.failed) return this.props.children;
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 14 }}>
+        <Text style={{ color: colors.text, fontSize: 20, fontWeight: '800', textAlign: 'center' }}>Algo deu errado nessa tela</Text>
+        <Text style={{ color: colors.textDim, textAlign: 'center', lineHeight: 20 }}>O erro já foi mandado pra gente consertar.</Text>
+        <Pressable accessibilityRole="button" onPress={() => {
+          this.setState({ failed: false });
+          if (typeof window !== 'undefined' && window.location) window.location.assign('/');
+        }} style={{ minHeight: 48, paddingHorizontal: 22, borderRadius: 14, backgroundColor: colors.neon, justifyContent: 'center' }}>
+          <Text style={{ color: colors.ink, fontWeight: '800' }}>Voltar pro início</Text>
+        </Pressable>
+      </View>
+    );
+  }
+}
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -98,7 +132,9 @@ export default function RootLayout() {
         <SessionProvider>
           <MapSettingsProvider>
             <NavigationProvider>
-              <Gate />
+              <ErrorBoundary>
+                <Gate />
+              </ErrorBoundary>
             </NavigationProvider>
           </MapSettingsProvider>
         </SessionProvider>

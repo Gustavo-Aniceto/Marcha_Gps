@@ -4,6 +4,7 @@ import { Image, Pressable, Text, View } from 'react-native';
 import { Icon, type IconName } from './Icon';
 import { useRouter } from 'expo-router';
 import { Avatar } from './Avatar';
+import { ReportSheet, type ReportWhat } from './ReportSheet';
 import { photoUrl } from '../lib/photos';
 import { ago, deletePost, toggleLike, votePoll, type Poll, type Post } from '../lib/social';
 import { pollPercents } from '../lib/poll.ts';
@@ -15,6 +16,7 @@ export function PostCard({ post, me, onChange, detail }: { post: Post; me: strin
   const router = useRouter();
   const [p, setP] = useState(post);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [report, setReport] = useState<ReportWhat | null>(null);
   React.useEffect(() => setP(post), [post]);
   const img = photoUrl(p.photo_key);
   const openProfile = () => router.push({ pathname: '/perfil/[username]', params: { username: p.username } });
@@ -74,7 +76,12 @@ export function PostCard({ post, me, onChange, detail }: { post: Post; me: strin
             <Action label="Não" onPress={() => setConfirmDelete(false)} a11y="Cancelar" />
           </>
         ) : <Action label="Apagar" onPress={() => setConfirmDelete(true)} a11y="Apagar post" />)}
+        {!p.mine && (
+          <Action icon="more" label="" onPress={() => setReport({ type: 'post', id: p.id, username: p.username })}
+                  a11y={`Denunciar ou bloquear @${p.username}`} />
+        )}
       </View>
+      <ReportSheet what={report} onClose={() => setReport(null)} onDone={(r) => { if (r.blocked) onChange(); }} />
     </View>
   );
 }

@@ -59,6 +59,13 @@ export default function Inicio() {
                  style={{ minHeight: 44, justifyContent: 'center', alignItems: 'center', marginTop: 8 }}>
         <Text style={{ color: colors.holo, fontSize: 15 }}>Já sou membro · Entrar</Text>
       </Pressable>
+      <Text style={{ color: colors.textMuted, fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
+        Ao continuar você concorda com os{' '}
+        <Text style={{ color: colors.holo }} accessibilityRole="link" onPress={() => router.push('/termos' as never)}>Termos de uso</Text>
+        {' '}e a{' '}
+        <Text style={{ color: colors.holo }} accessibilityRole="link" onPress={() => router.push('/privacidade' as never)}>Política de privacidade</Text>.
+        {' '}Pra maiores de 18 anos.
+      </Text>
     </Screen>
   );
 }

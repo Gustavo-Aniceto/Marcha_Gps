@@ -46,6 +46,13 @@ const MESSAGES: Record<string, string> = {
   message_too_long: 'A mensagem cabe até 300 letras.',
   crew_not_found: 'Equipe não encontrada.',
   contest_window_closed: 'Passou o prazo de 24 h pra contestar.',
+  user_not_found: 'Não achei essa pessoa.',
+  cannot_block_self: 'Você não pode bloquear você mesmo.',
+  own_content: 'Isso é seu: dá pra apagar em vez de denunciar.',
+  invalid_reason: 'Escolha o motivo da denúncia.',
+  invalid_action: 'Ação inválida.',
+  // genérico: fica por último (os "algo_not_found" acima ganham antes)
+  not_found: 'Não achei isso. Pode ter sido apagado.',
 };
 
 // regra do banco (check) que barrou o dado -> o que a pessoa precisa arrumar

@@ -5,6 +5,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Button, ErrorText, Screen, Title } from '../../src/components/ui';
 import { Avatar } from '../../src/components/Avatar';
 import { PostCard } from '../../src/components/PostCard';
+import { ReportSheet, type ReportWhat } from '../../src/components/ReportSheet';
 import { db } from '../../src/lib/db';
 import { useSession } from '../../src/lib/session';
 import { friendlyError } from '../../src/lib/errors.ts';
@@ -22,6 +23,7 @@ export default function PostScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [gone, setGone] = useState(false);
+  const [report, setReport] = useState<ReportWhat | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -69,11 +71,19 @@ export default function PostScreen() {
               <View style={{ flex: 1, backgroundColor: colors.panel, borderRadius: 14, padding: 10, gap: 2 }}>
                 <Text style={{ color: colors.text, fontWeight: '700' }}>@{c.username} <Text style={{ color: colors.textMuted, fontWeight: '400', fontSize: 12 }}>{ago(c.created_at)}</Text></Text>
                 <Text style={{ color: colors.text, fontSize: 15 }}>{c.body}</Text>
-                {(c.mine || post.mine) && (
-                  <Pressable onPress={() => remove(c)} accessibilityRole="button" style={{ alignSelf: 'flex-start', minHeight: 32, justifyContent: 'center' }}>
-                    <Text style={{ color: colors.textMuted, fontSize: 12 }}>Apagar</Text>
-                  </Pressable>
-                )}
+                <View style={{ flexDirection: 'row', gap: 16 }}>
+                  {(c.mine || post.mine) && (
+                    <Pressable onPress={() => remove(c)} accessibilityRole="button" style={{ minHeight: 32, justifyContent: 'center' }}>
+                      <Text style={{ color: colors.textMuted, fontSize: 12 }}>Apagar</Text>
+                    </Pressable>
+                  )}
+                  {!c.mine && (
+                    <Pressable onPress={() => setReport({ type: 'comment', id: c.id, username: c.username })} accessibilityRole="button"
+                               accessibilityLabel={`Denunciar comentário de @${c.username}`} style={{ minHeight: 32, justifyContent: 'center' }}>
+                      <Text style={{ color: colors.textMuted, fontSize: 12 }}>Denunciar</Text>
+                    </Pressable>
+                  )}
+                </View>
               </View>
             </View>
           ))}
@@ -87,6 +97,7 @@ export default function PostScreen() {
           <ErrorText>{error}</ErrorText>
         </View>
       )}
+      <ReportSheet what={report} onClose={() => setReport(null)} onDone={(r) => { if (r.blocked) load(); }} />
     </Screen>
   );
 }

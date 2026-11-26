@@ -4,8 +4,9 @@
 //   GET  /convite?codigo=XXXX-XXXX -> { status, kind, crew_name }   (sem login, limite por IP)
 //   POST /carro/analisar { fotos: [dataURI] } -> CarGuess  (IA com visão monta o carrinho; precisa de login)
 //   GET  /fipe/marcas | /fipe/modelos?marca= | /fipe/anos?marca=&modelo= | /fipe/valor?marca=&modelo=&ano=  (tabela FIPE, com cache; precisa de login)
+//   POST /erro { message, stack?, screen?, version? }  (erro do app; sem login obrigatório, limite por IP)
 // Agendado: importa lombadas e radares do OpenStreetMap, uma faixa por vez, e os radares oficiais
-// (CET, DER, ANTT; src/radares.ts) uma vez por semana.
+// (CET, DER, ANTT; src/radares.ts) uma vez por semana; checa a saúde dos serviços (src/saude.ts).
 import { AuthError, issuerList, verifyFromIssuers, type Jwk } from '../../fotos/src/jwt';
 import { preflight, withCors } from '../../fotos/src/cors';
 import { normalizeQuery, parsePhoton, photonUrl } from './geocode';
@@ -15,6 +16,7 @@ import { OVERPASS_URLS, TILES, neonSqlUrl, overpassQuery, type Tile } from './ob
 import { VISION_MODEL, parseGuess, validPhotos, visionRequest } from './carro';
 import { fipeTarget, parseFipe } from './fipe';
 import { OFFICIAL_SOURCES, OFFICIAL_URLS, anttLatestCsv, decodeText, type OfficialSource } from './radares';
+import { cleanError, healthChecks } from './saude';
 
 interface Env {
   CLERK_ISSUER: string;
@@ -30,6 +32,7 @@ const inviteLimit = new RateLimiter(10, 60_000); // por IP: conferir convite nã
 const carMinute = new RateLimiter(4, 60_000);
 const carDay = new RateLimiter(20, 24 * 60 * 60_000);
 const fipeLimit = new RateLimiter(60, 60_000);
+const errorLimit = new RateLimiter(20, 60_000); // erros do app, por IP (não precisa de login)
 
 // chaves públicas de cada emissor (modo teste e produção do Clerk), guardadas por 10 min
 const jwksCache = new Map<string, { keys: Jwk[]; at: number }>();
@@ -63,6 +66,7 @@ export default {
   async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
     ctx.waitUntil(importNextTile(env));
     ctx.waitUntil(importOfficialRadars(env));
+    ctx.waitUntil(checkHealth(env));
   },
 };
 
@@ -82,6 +86,24 @@ async function handle(req: Request, env: Env, ctx: ExecutionContext): Promise<Re
     } catch {
       return json({ error: 'convite_indisponivel' }, 502);
     }
+  }
+
+  // Erro que aconteceu no app (com ou sem login). Vai pro banco; o Adm Master vê em Moderação > Saúde.
+  if (req.method === 'POST' && url.pathname === '/erro') {
+    const ip = req.headers.get('cf-connecting-ip') ?? 'sem-ip';
+    if (!errorLimit.allow(ip)) return new Response(null, { status: 204 });
+    const raw = await req.text().catch(() => '');
+    if (raw.length > 12_000 || !env.IMPORT_DATABASE_URL) return new Response(null, { status: 204 });
+    let body: unknown = null;
+    try { body = JSON.parse(raw); } catch { /* ignora */ }
+    const e = cleanError(body);
+    if (!e) return new Response(null, { status: 204 });
+    let who: string | null = null;
+    if (env.CLERK_ISSUER && req.headers.get('authorization')) who = await userFrom(req, env).catch(() => null);
+    ctx.waitUntil(sql(env, 'select public.log_app_error($1, $2, $3, $4, $5, $6)',
+      [e.message, e.stack, e.screen, (req.headers.get('user-agent') ?? '').slice(0, 300), e.version, who])
+      .catch((err) => console.log('erro do app não gravou:', (err as Error).message)));
+    return new Response(null, { status: 204 });
   }
 
   if (!env.CLERK_ISSUER) return json({ error: 'servico_nao_configurado' }, 503);
@@ -246,4 +268,27 @@ async function importTile(tile: Tile, env: Env): Promise<void> {
   if (csv == null) return;
   const rows = await sql(env, 'select public.import_osm_obstacles($1, $2) as novos', [tile.id, csv]);
   console.log(`import ${tile.id}: ${csv.length} bytes, ${JSON.stringify(rows)}`);
+}
+
+// De hora em hora: cada serviço que o app usa respondeu? Grava no banco; o banco avisa o master quando muda.
+async function checkHealth(env: Env): Promise<void> {
+  if (!env.IMPORT_DATABASE_URL) return;
+  const checks = healthChecks(issuerList(env.CLERK_ISSUER ?? ''), photonUrl('Guarulhos', null, 1));
+  await Promise.all(checks.map(async (c) => {
+    const t0 = Date.now();
+    let ok = false, detail: string | null = null;
+    try {
+      const res = await fetch(c.url, { method: c.method ?? 'GET', headers: { 'user-agent': UA }, signal: AbortSignal.timeout(10_000) });
+      ok = c.ok(res.status);
+      if (!ok) detail = `HTTP ${res.status}`;
+      await res.body?.cancel();
+    } catch (e) {
+      detail = (e as Error).name === 'TimeoutError' ? 'não respondeu em 10 s' : (e as Error).message.slice(0, 200);
+    }
+    try {
+      await sql(env, 'select public.record_health($1, $2, $3, $4)', [c.service, ok, detail, Date.now() - t0]);
+    } catch (e) {
+      console.log(`saude ${c.service}: ${(e as Error).message}`.slice(0, 300));
+    }
+  }));
 }

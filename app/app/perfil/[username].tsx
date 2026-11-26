@@ -9,6 +9,7 @@ import { Composer } from '../../src/components/Composer';
 import { Avatar } from '../../src/components/Avatar';
 import { CarMarker } from '../../src/components/CarMarker';
 import { PostCard } from '../../src/components/PostCard';
+import { ReportSheet, type ReportWhat } from '../../src/components/ReportSheet';
 import { db } from '../../src/lib/db';
 import { useSession } from '../../src/lib/session';
 import { friendlyError } from '../../src/lib/errors.ts';
@@ -51,6 +52,9 @@ export default function Perfil() {
   const [tab, setTab] = useState<Tab>('tudo');
   const [crews, setCrews] = useState<ProfileCrew[]>([]);
   const [garage, setGarage] = useState<GarageCar[]>([]);
+  const [blk, setBlk] = useState<{ blocked_by_me: boolean; blocked_me: boolean }>({ blocked_by_me: false, blocked_me: false });
+  const [report, setReport] = useState<ReportWhat | null>(null);
+  const [confirmBlock, setConfirmBlock] = useState(false);
 
   const load = useCallback(async () => {
     if (!username) return;
@@ -58,6 +62,10 @@ export default function Perfil() {
     if (!data) { setMissing(true); return; }
     const pp = data as PublicProfile;
     setP(pp);
+    if (!pp.mine) {
+      const { data: b } = await db.rpc('block_status', { p_username: username }).maybeSingle();
+      setBlk((b as typeof blk | null) ?? { blocked_by_me: false, blocked_me: false });
+    }
     // equipes (cada uma tem a sua página) e os outros carros da garagem
     db.rpc('profile_crews', { p_username: username }).then(({ data: c }) => setCrews((c ?? []) as ProfileCrew[]));
     db.rpc('profile_garage', { p_username: username }).then(({ data: g }) => setGarage((g ?? []) as GarageCar[]));
@@ -65,6 +73,15 @@ export default function Perfil() {
   }, [username, tab]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  async function setBlocked(on: boolean) {
+    if (!p) return;
+    setBusy(true); setError(null);
+    const { error: e } = await db.rpc(on ? 'block_user' : 'unblock_user', { p_username: p.username });
+    setBusy(false); setConfirmBlock(false);
+    if (e) { setError(friendlyError(e)); return; }
+    load();
+  }
 
   async function changePhoto() {
     const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8, allowsEditing: true, aspect: [1, 1] });
@@ -124,7 +141,38 @@ export default function Perfil() {
               <View style={{ flex: 1 }}><Button title={p.car ? 'Editar carro' : 'Montar carro'} variant="secondary" onPress={() => router.push('/(tabs)/garagem')} /></View>
             </View>
           )}
+          {!p.mine && (
+            confirmBlock ? (
+              <View style={{ gap: 8, backgroundColor: colors.panel, borderRadius: 16, borderWidth: 1, borderColor: colors.line, padding: 14 }}>
+                <Text style={{ color: colors.text, fontWeight: '700' }}>Bloquear @{p.username}?</Text>
+                <Text style={{ color: colors.textDim, fontSize: 13 }}>
+                  Vocês param de ver os posts, comentários e o carro um do outro no mapa. A pessoa não é avisada. Dá pra desfazer depois.
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <View style={{ flex: 1 }}><Button title="Bloquear" variant="warn" onPress={() => setBlocked(true)} loading={busy} /></View>
+                  <View style={{ flex: 1 }}><Button title="Cancelar" variant="secondary" onPress={() => setConfirmBlock(false)} /></View>
+                </View>
+              </View>
+            ) : (
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <View style={{ flex: 1 }}>
+                  <Button title="Denunciar" variant="secondary" onPress={() => setReport({ type: 'profile', id: p.username, username: p.username })} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  {blk.blocked_by_me
+                    ? <Button title="Desbloquear" variant="secondary" onPress={() => setBlocked(false)} loading={busy} />
+                    : <Button title="Bloquear" variant="secondary" onPress={() => setConfirmBlock(true)} />}
+                </View>
+              </View>
+            )
+          )}
           <ErrorText>{error}</ErrorText>
+          {(blk.blocked_by_me || blk.blocked_me) && (
+            <Text style={{ color: colors.textMuted }}>
+              {blk.blocked_by_me ? `Você bloqueou @${p.username}. Os posts e o carro dessa pessoa não aparecem pra você.`
+                                 : 'Os posts desse perfil não estão disponíveis pra você.'}
+            </Text>
+          )}
           {crews.length > 0 && (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {crews.map((c) => (
@@ -196,6 +244,7 @@ export default function Perfil() {
           )}
         </>
       )}
+      <ReportSheet what={report} onClose={() => setReport(null)} onDone={() => load()} />
     </Screen>
   );
 }

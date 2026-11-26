@@ -19,7 +19,7 @@ type Section = null | 'perfil' | 'notificacoes' | 'privacidade';
 
 const KIND_ICON: Record<string, IconName> = {
   equipe_pedida: 'users', equipe_decidida: 'users', pedido_entrar: 'user', entrada_decidida: 'check', verificado: 'check',
-  evento: 'calendar', comentario: 'chat', convite_usado: 'ticket',
+  evento: 'calendar', comentario: 'chat', convite_usado: 'ticket', denuncia: 'shield', saude: 'pulse', moderacao: 'alert',
 };
 
 function ago(iso: string): string {
@@ -50,6 +50,8 @@ export default function Conta() {
   // apagar conta
   const [confirmText, setConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
+  // bloqueados
+  const [blocks, setBlocks] = useState<{ username: string; avatar_key: string | null }[] | null>(null);
 
   const loadNotifs = useCallback(async () => {
     const { data } = await db.rpc('my_notifications', { p_limit: 60 });
@@ -65,6 +67,9 @@ export default function Conta() {
 
   function toggle(s: Section) {
     setOpen((o) => (o === s ? null : s)); setError(null); setMsg(null);
+    if (s === 'privacidade' && open !== s) {
+      db.rpc('my_blocks').then(({ data }) => setBlocks((data ?? []) as { username: string; avatar_key: string | null }[]));
+    }
     if (s === 'notificacoes' && open !== s && unread > 0) {
       // abriu a lista: marca tudo como lido (a bolinha some)
       db.rpc('mark_notifications_read', { p_ids: null }).then(() => {
@@ -118,6 +123,12 @@ export default function Conta() {
       await Share.share({ title: file, message: json });
     }
     setMsg('Pronto: seus dados foram baixados (arquivo .json).');
+  }
+
+  async function unblock(username: string) {
+    const { error: e } = await db.rpc('unblock_user', { p_username: username });
+    if (e) { setError(friendlyError(e)); return; }
+    setBlocks((l) => (l ?? []).filter((b) => b.username !== username));
   }
 
   async function deleteAccount() {
@@ -218,6 +229,21 @@ export default function Conta() {
             <Button title="Quem vê meu carro e zonas privadas" variant="secondary" onPress={() => router.push('/visibilidade')} />
           </Card>
           <Card style={{ gap: 8 }}>
+            <Text style={{ color: colors.text, fontWeight: '700' }}>Pessoas bloqueadas</Text>
+            {blocks === null ? <ActivityIndicator color={colors.neon} /> : blocks.length === 0 ? (
+              <Body dim>Ninguém. Pra bloquear, abra o perfil da pessoa ou toque em ⋯ num post dela.</Body>
+            ) : blocks.map((b) => (
+              <View key={b.username} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48 }}>
+                <Avatar username={b.username} avatarKey={b.avatar_key} size={34} />
+                <Text style={{ color: colors.text, flex: 1, fontWeight: '600' }}>@{b.username}</Text>
+                <Pressable onPress={() => unblock(b.username)} accessibilityRole="button" accessibilityLabel={`Desbloquear @${b.username}`}
+                           style={{ minHeight: 44, paddingHorizontal: 12, justifyContent: 'center' }}>
+                  <Text style={{ color: colors.holo, fontWeight: '700' }}>Desbloquear</Text>
+                </Pressable>
+              </View>
+            ))}
+          </Card>
+          <Card style={{ gap: 8 }}>
             <Text style={{ color: colors.text, fontWeight: '700' }}>Seus dados</Text>
             <Body dim>Baixe tudo o que o app guarda sobre você: perfil, carros, equipes, posts, comentários, avisos, presenças e zonas privadas.</Body>
             <Button title="Baixar meus dados" variant="secondary" onPress={exportData} loading={busy} />
@@ -243,6 +269,11 @@ export default function Conta() {
       <Row icon="trophy" title="Ranks" sub="Radar e mídia de eventos" onPress={() => router.push('/ranks')} />
       <Row icon="map" title="Visual e câmera do mapa" onPress={() => router.push('/camera-mapa')} />
       <Row icon="help" title="Como usar o app" onPress={() => router.push('/tutorial')} />
+      {profile.is_master && (
+        <Row icon="shield" title="Moderação" sub="Denúncias e saúde do app" onPress={() => router.push('/moderacao' as never)} />
+      )}
+      <Row icon="doc" title="Termos de uso" sub="Regras da comunidade" onPress={() => router.push('/termos' as never)} />
+      <Row icon="lock" title="Política de privacidade" sub="O que guardamos e por quanto tempo" onPress={() => router.push('/privacidade' as never)} />
 
       <View style={{ height: 8 }} />
       <Button title="Sair da conta" variant="secondary" onPress={() => signOut()} />

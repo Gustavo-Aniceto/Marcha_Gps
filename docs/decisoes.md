@@ -106,3 +106,13 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 - Fotos: **Cloudflare R2** com um Worker que confere o login do Clerk (o armazenamento do Neon não existe na região de São Paulo).
 - Login: **Clerk** (`@clerk/expo`), código no e-mail. Escolhido porque o login do próprio Neon ainda não suporta app de celular (depende de cookie de navegador).
 - **Login pra muita gente, de graça:** modo produção do Clerk (grátis até 50 mil usuários que voltam no mês) no domínio grátis **marchagps.eu.org** (DNS na Cloudflare, grátis). Enquanto o eu.org não aprova o domínio, segue o modo de teste (até 100 contas). Entradas: **Google, Facebook e e-mail** ("Entrar com Apple" saiu: a Apple cobra US$ 99/ano). Plano B se o eu.org demorar demais: .com.br (~R$ 40/ano), só trocando o domínio no Clerk.
+
+## Segurança da comunidade
+- **Bloquear:** no perfil da pessoa ou no ⋯ de um post. Vale pros dois lados: vocês param de ver posts, comentários e o carro um do outro no mapa. A pessoa não é avisada. Os avisos do Radar continuam aparecendo (são segurança de todo mundo). Lista e desbloquear em Conta > Privacidade e dados.
+- **Denunciar** post, comentário, perfil ou aviso do Radar, com motivo (ofensivo, perigoso, golpe, expõe alguém, spam, não existe, outro). Quem denunciou nunca aparece. **3 pessoas diferentes** denunciando um post/comentário: ele some até o Adm Master decidir. O master recebe notificação na primeira denúncia e decide em Conta > Moderação: **manter** (volta a aparecer) ou **remover** (post/comentário apagado, aviso sai do Radar, perfil perde foto e bio); quem postou é avisado. Até 20 denúncias por dia por pessoa.
+- **Termos de uso** (regras da comunidade, trânsito em primeiro lugar, 18+) e **Política de privacidade** (o que guardamos, pra quê, com quem, por quanto tempo, direitos da LGPD) abrem sem login: /termos e /privacidade. Falta definir o e-mail de contato.
+
+## Saúde do app
+- Erro que acontece no app vai sozinho pro servidor (sem dado pessoal; token e e-mail são apagados da mensagem). Repetidos viram uma linha com contagem e quantas pessoas pegaram. Ficam 30 dias.
+- De hora em hora o servidor checa banco, busca, rotas, mapa, site e login. Caiu ou voltou: o Adm Master recebe notificação. Tudo em Conta > Moderação > Saúde do app.
+
