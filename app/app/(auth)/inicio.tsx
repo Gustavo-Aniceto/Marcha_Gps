@@ -1,8 +1,8 @@
 // Primeira tela: o convite vem antes de tudo. Confere o código (sem login) e só então
 // leva pra entrar com a conta que a pessoa preferir (Google, Facebook ou e-mail).
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Body, Button, ErrorText, Field, Screen } from '../../src/components/ui';
 import { checkInvite, RoutingError } from '../../src/lib/routing';
 import { formatInviteCode, inviteStatusText, loadPendingInvite, savePendingInvite } from '../../src/lib/pendingInvite';
@@ -14,8 +14,18 @@ export default function Inicio() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // veio do link do convite (marcha-gps.vercel.app/c/XXXX-XXXX): já preenche e confere
+  const { codigo } = useLocalSearchParams<{ codigo?: string }>();
+  const fromLink = useRef(false);
   // já tinha digitado antes (ex.: voltou do login): preenche
-  useEffect(() => { loadPendingInvite().then((p) => { if (p) setCode(p.code); }); }, []);
+  useEffect(() => {
+    if (codigo) {
+      const c = formatInviteCode(String(codigo));
+      if (c.length === 9) { setCode(c); fromLink.current = true; return; }
+    }
+    loadPendingInvite().then((p) => { if (p) setCode(p.code); });
+  }, [codigo]);
+  useEffect(() => { if (fromLink.current && code.length === 9) { fromLink.current = false; check(); } }, [code]);
 
   async function check() {
     setError(null); setBusy(true);

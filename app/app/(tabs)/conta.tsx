@@ -13,13 +13,14 @@ import { useSession } from '../../src/lib/session';
 import { friendlyError } from '../../src/lib/errors.ts';
 import { uploadPhoto } from '../../src/lib/photos';
 import { colors, fonts } from '../../src/theme/tokens.ts';
+import { disablePush, enablePush, pushState, type PushState } from '../../src/lib/pwa';
 
 interface Notif { id: string; kind: string; title: string; body: string | null; link: string | null; created_at: string; read: boolean }
 type Section = null | 'perfil' | 'notificacoes' | 'privacidade';
 
 const KIND_ICON: Record<string, IconName> = {
   equipe_pedida: 'users', equipe_decidida: 'users', pedido_entrar: 'user', entrada_decidida: 'check', verificado: 'check',
-  evento: 'calendar', comentario: 'chat', convite_usado: 'ticket', denuncia: 'shield', saude: 'pulse', moderacao: 'alert',
+  evento: 'calendar', comboio: 'flag', comentario: 'chat', convite_usado: 'ticket', denuncia: 'shield', saude: 'pulse', moderacao: 'alert',
 };
 
 function ago(iso: string): string {
@@ -53,6 +54,16 @@ export default function Conta() {
   // bloqueados
   const [blocks, setBlocks] = useState<{ username: string; avatar_key: string | null }[] | null>(null);
 
+  // notificação com o app fechado (neste aparelho)
+  const [push, setPush] = useState<PushState | null>(null);
+  const [pushBusy, setPushBusy] = useState(false);
+  async function togglePush(on: boolean) {
+    setPushBusy(true); setError(null);
+    try { setPush(on ? await enablePush() : await disablePush()); }
+    catch { setError('Não consegui ligar as notificações agora. Tenta de novo.'); }
+    finally { setPushBusy(false); }
+  }
+
   const loadNotifs = useCallback(async () => {
     const { data } = await db.rpc('my_notifications', { p_limit: 60 });
     setNotifs((data ?? []) as Notif[]);
@@ -61,6 +72,7 @@ export default function Conta() {
   useFocusEffect(useCallback(() => {
     setName(profile?.display_name ?? ''); setBio(profile?.bio ?? '');
     loadNotifs();
+    pushState().then(setPush).catch(() => setPush('unsupported'));
   }, [profile?.id, loadNotifs]));
 
   const unread = (notifs ?? []).filter((n) => !n.read).length;
@@ -188,6 +200,19 @@ export default function Conta() {
            open={open === 'notificacoes'} onPress={() => toggle('notificacoes')} />
       {open === 'notificacoes' && (
         <View style={{ gap: 10 }}>
+          <Card style={{ gap: 6 }}>
+            <Label>No celular, com o app fechado</Label>
+            {push === 'ios-install' ? (
+              <Body dim>No iPhone: toque em Compartilhar › "Adicionar à Tela de Início", abra o Marcha GPS por lá e volte aqui pra ligar.</Body>
+            ) : push === 'unsupported' ? (
+              <Body dim>Esse navegador não deixa mandar notificação com o app fechado. No Android, use o Chrome; no iPhone, instale o app na tela de início.</Body>
+            ) : push === 'denied' ? (
+              <Body dim>As notificações estão bloqueadas pra esse site. Libere nas configurações do navegador (cadeado na barra de endereço) e volte aqui.</Body>
+            ) : push === null ? <ActivityIndicator color={colors.neon} /> : (
+              <Toggle label="Avisar neste celular" sub="Os mesmos avisos daqui, mesmo com o app fechado"
+                      value={push === 'on'} onChange={(v) => { if (!pushBusy) togglePush(v); }} />
+            )}
+          </Card>
           <Card style={{ gap: 4 }}>
             <Label>O que você quer receber</Label>
             <Toggle label="Equipes" sub={profile.is_master ? 'Equipes novas pedidas, pedidos pra entrar, aprovações' : 'Pedidos pra entrar, aprovações, verificação'}
@@ -210,7 +235,7 @@ export default function Conta() {
               </View>
             </Pressable>
           ))}
-          <Body dim>Por enquanto os avisos ficam aqui no app (com a bolinha na aba Conta).</Body>
+          <Body dim>Os avisos ficam aqui (com a bolinha na aba Conta) e, se ligado, chegam também no celular.</Body>
         </View>
       )}
 
@@ -271,6 +296,9 @@ export default function Conta() {
       <Row icon="help" title="Como usar o app" onPress={() => router.push('/tutorial')} />
       {profile.is_master && (
         <Row icon="shield" title="Moderação" sub="Denúncias e saúde do app" onPress={() => router.push('/moderacao' as never)} />
+      )}
+      {profile.is_master && (
+        <Row icon="chart" title="Números do app" sub="Cadastros, quem usa, avisos e equipes mais ativas" onPress={() => router.push('/numeros' as never)} />
       )}
       <Row icon="doc" title="Termos de uso" sub="Regras da comunidade" onPress={() => router.push('/termos' as never)} />
       <Row icon="lock" title="Política de privacidade" sub="O que guardamos e por quanto tempo" onPress={() => router.push('/privacidade' as never)} />

@@ -18,6 +18,7 @@ import { MapSettingsProvider } from '../src/lib/mapSettings';
 import { colors } from '../src/theme/tokens.ts';
 import { pickClerkKey } from '../src/lib/clerkKey.ts';
 import { installErrorReporting, reportError, setErrorScreen } from '../src/lib/reportErrors';
+import { registerServiceWorker } from '../src/lib/pwa';
 
 installErrorReporting();
 
@@ -33,6 +34,10 @@ function Gate() {
   const inside = signedIn && !!profile;
   const pathname = usePathname();
   useEffect(() => { setErrorScreen(pathname); }, [pathname]);
+  // service worker (notificação com o app fechado, mapa e app sem internet); notificação tocada abre a tela
+  useEffect(() => { registerServiceWorker((link) => router.push(link as never)); }, [router]);
+  // "visto por último" (painel de números do Adm Master)
+  useEffect(() => { if (inside) db.rpc('mark_seen').then(() => {}); }, [inside]);
 
   // Ordem: convite (inicio) -> login com a conta que preferir (entrar) -> nome de usuário (convite) -> app
   useEffect(() => {
@@ -87,6 +92,9 @@ function Gate() {
         <Stack.Screen name="equipe/[id]" />
         <Stack.Screen name="tutorial" options={{ animation: 'fade' }} />
         <Stack.Screen name="moderacao" />
+        <Stack.Screen name="numeros" />
+        <Stack.Screen name="comboio/[id]" />
+        <Stack.Screen name="comboio-novo" options={{ presentation: 'modal' }} />
       </Stack.Protected>
     </Stack>
   );

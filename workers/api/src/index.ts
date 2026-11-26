@@ -5,6 +5,9 @@
 //   POST /carro/analisar { fotos: [dataURI] } -> CarGuess  (IA com visão monta o carrinho; precisa de login)
 //   GET  /fipe/marcas | /fipe/modelos?marca= | /fipe/anos?marca=&modelo= | /fipe/valor?marca=&modelo=&ano=  (tabela FIPE, com cache; precisa de login)
 //   POST /erro { message, stack?, screen?, version? }  (erro do app; sem login obrigatório, limite por IP)
+//   GET  /convite/pagina/XXXX-XXXX -> HTML com a prévia do convite (a Vercel repassa /c/XXXX-XXXX pra cá; sem login)
+//   GET  /push/chave -> { chave }  (chave pública VAPID pro app se inscrever nas notificações; sem login)
+// A cada minuto: manda pro celular (Web Push) as notificações novas (src/webpush.ts).
 // Agendado: importa lombadas e radares do OpenStreetMap, uma faixa por vez, e os radares oficiais
 // (CET, DER, ANTT; src/radares.ts) uma vez por semana; checa a saúde dos serviços (src/saude.ts).
 import { AuthError, issuerList, verifyFromIssuers, type Jwk } from '../../fotos/src/jwt';
@@ -17,11 +20,19 @@ import { VISION_MODEL, parseGuess, validPhotos, visionRequest } from './carro';
 import { fipeTarget, parseFipe } from './fipe';
 import { OFFICIAL_SOURCES, OFFICIAL_URLS, anttLatestCsv, decodeText, type OfficialSource } from './radares';
 import { cleanError, healthChecks } from './saude';
+import { allowedEndpoint, pushPayload, pushRequest, vapidPublicKey, type VapidJwk } from './webpush';
+import { invitePage, normalizeCode, type InvitePreview } from './convitepage';
 
 interface Env {
   CLERK_ISSUER: string;
   IMPORT_DATABASE_URL?: string; // usuário "importador" do Neon (só pode chamar import_osm_obstacles)
   AI?: { run(model: string, input: unknown): Promise<unknown> }; // Workers AI (montar carro pela foto)
+  VAPID_PRIVATE_JWK?: string; // segredo: JWK P-256 (x, y, d) das notificações push
+}
+
+const PUSH_SUBJECT = 'https://marcha-gps.vercel.app';
+function vapid(env: Env): VapidJwk | null {
+  try { return env.VAPID_PRIVATE_JWK ? (JSON.parse(env.VAPID_PRIVATE_JWK) as VapidJwk) : null; } catch { return null; }
 }
 
 const UA = 'MarchaGPS/0.1 (+https://marcha-gps.vercel.app)';
@@ -33,6 +44,7 @@ const carMinute = new RateLimiter(4, 60_000);
 const carDay = new RateLimiter(20, 24 * 60 * 60_000);
 const fipeLimit = new RateLimiter(60, 60_000);
 const errorLimit = new RateLimiter(20, 60_000); // erros do app, por IP (não precisa de login)
+const pageLimit = new RateLimiter(30, 60_000); // página do convite, por IP
 
 // chaves públicas de cada emissor (modo teste e produção do Clerk), guardadas por 10 min
 const jwksCache = new Map<string, { keys: Jwk[]; at: number }>();
@@ -63,7 +75,10 @@ export default {
 
   // De hora em hora: importa o primeiro quadrado que está vencida (6 dias). Se o Overpass falhar,
   // tenta de novo na hora seguinte. Quase sempre não há nada a fazer e só consulta o banco.
-  async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+  // A cada minuto só manda as notificações push; o resto roda uma vez por hora (minuto 7).
+  async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(sendPushes(env));
+    if (event.cron === '* * * * *') return;
     ctx.waitUntil(importNextTile(env));
     ctx.waitUntil(importOfficialRadars(env));
     ctx.waitUntil(checkHealth(env));
@@ -86,6 +101,29 @@ async function handle(req: Request, env: Env, ctx: ExecutionContext): Promise<Re
     } catch {
       return json({ error: 'convite_indisponivel' }, 502);
     }
+  }
+
+  // Página do link de convite (prévia pro WhatsApp e já abre o app com o código)
+  if (req.method === 'GET' && url.pathname.startsWith('/convite/pagina/')) {
+    const ip = req.headers.get('cf-connecting-ip') ?? 'sem-ip';
+    const code = normalizeCode(url.pathname.slice('/convite/pagina/'.length));
+    let preview: InvitePreview | null = null;
+    if (code && env.IMPORT_DATABASE_URL && pageLimit.allow(ip)) {
+      try {
+        const [row] = (await sql(env, 'select status, kind, inviter, inviter_name, crew_name from public.invite_preview($1)', [code])) as InvitePreview[];
+        preview = row ?? null;
+      } catch { /* mostra a página genérica */ }
+    }
+    return new Response(invitePage(code, preview), {
+      headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=60' },
+    });
+  }
+
+  // Chave pública das notificações (não é segredo)
+  if (req.method === 'GET' && url.pathname === '/push/chave') {
+    const jwk = vapid(env);
+    if (!jwk) return json({ error: 'push_nao_configurado' }, 503);
+    return json({ chave: vapidPublicKey(jwk) }, 200, { 'cache-control': 'public, max-age=3600' });
   }
 
   // Erro que aconteceu no app (com ou sem login). Vai pro banco; o Adm Master vê em Moderação > Saúde.
@@ -290,5 +328,30 @@ async function checkHealth(env: Env): Promise<void> {
     } catch (e) {
       console.log(`saude ${c.service}: ${(e as Error).message}`.slice(0, 300));
     }
+  }));
+}
+
+// Notificações novas -> celular (Web Push). O banco marca o que já foi; aparelho que saiu é apagado.
+async function sendPushes(env: Env): Promise<void> {
+  const jwk = vapid(env);
+  if (!env.IMPORT_DATABASE_URL || !jwk) return;
+  let rows: { sub_id: string; endpoint: string; p256dh: string; auth: string; title: string; body: string | null; link: string | null }[];
+  try {
+    rows = (await sql(env, 'select * from public.take_push_batch($1)', [40])) as typeof rows;
+  } catch (e) {
+    console.log('push: lote falhou', (e as Error).message);
+    return;
+  }
+  await Promise.all(rows.map(async (r) => {
+    if (!allowedEndpoint(r.endpoint)) { await sql(env, 'select public.push_result($1, false, true)', [r.sub_id]).catch(() => {}); return; }
+    let ok = false, gone = false;
+    try {
+      const res = await fetch(await pushRequest(r, pushPayload(r), jwk, PUSH_SUBJECT));
+      ok = res.ok; gone = res.status === 404 || res.status === 410;
+      if (!ok && !gone) console.log('push', res.status, (await res.text().catch(() => '')).slice(0, 200));
+    } catch (e) {
+      console.log('push: erro', (e as Error).message);
+    }
+    await sql(env, 'select public.push_result($1, $2, $3)', [r.sub_id, ok, gone]).catch(() => {});
   }));
 }

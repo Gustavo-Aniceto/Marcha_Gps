@@ -23,9 +23,16 @@ export async function shareText(text: string): Promise<'shared' | 'copied' | 'fa
   }
 }
 
+export const APP_URL = 'https://marcha-gps.vercel.app';
+
+/** Link do convite: abre com a prévia (WhatsApp mostra) e já entra com o código preenchido. */
+export function inviteLink(code: string): string {
+  return `${APP_URL}/c/${code}`;
+}
+
 export function inviteMessage(code: string, kind: 'founder' | 'app'): string {
   if (kind === 'founder') {
-    return `Bora pro Marcha GPS! Seu código de fundador pra registrar sua equipe: ${code}\nAbre https://marcha-gps.vercel.app e digita o código. Vale uma vez só.`;
+    return `Bora pro Marcha GPS! Seu código de fundador pra registrar sua equipe: ${code}\nToque pra entrar: ${inviteLink(code)}\nVale uma vez só.`;
   }
-  return `Bora pro Marcha GPS! Seu convite: ${code}\nAbre https://marcha-gps.vercel.app e digita o código. Vale 7 dias. Lá dentro você pede pra entrar na sua equipe.`;
+  return `Bora pro Marcha GPS! Seu convite: ${code}\nToque pra entrar: ${inviteLink(code)}\nVale 7 dias. Lá dentro você pede pra entrar na sua equipe.`;
 }

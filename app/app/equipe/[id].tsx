@@ -1,5 +1,5 @@
 // Página da equipe, no jeito das páginas do Facebook: capa, foto (logo), nome, bio, Instagram,
-// fundador, próximos eventos e membros. Fundador/admin edita a página e aprova quem pede pra entrar.
+// fundador, próximos eventos e membros. Fundador/admin/staff edita a página e aprova quem pede pra entrar.
 // Quem é de fora pede pra entrar daqui. Dados de crew_page() — o banco decide o que cada um vê.
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -21,11 +21,11 @@ interface CrewPage {
   id: string; name: string; city: string; instagram: string | null; color: string; button_shape: string;
   created_at: string; status: string; bio: string | null; avatar_key: string | null; cover_key: string | null;
   founder: Person | null; members: Person[]; member_count: number;
-  i_am_member: boolean; i_am_admin: boolean; my_request: string | null; join_requests: JoinReq[] | null;
+  i_am_member: boolean; i_am_admin: boolean; i_am_staff?: boolean; my_role?: string | null; my_request: string | null; join_requests: JoinReq[] | null;
   events: { id: string; title: string; starts_at: string; ends_at: string }[];
 }
 
-const ROLE: Record<string, string> = { founder: 'FUNDADOR', admin: 'ADMIN', member: 'MEMBRO' };
+const ROLE: Record<string, string> = { founder: 'FUNDADOR', admin: 'ADMIN', staff: 'STAFF', member: 'MEMBRO' };
 const COVER_H = 170;
 const LOGO = 96;
 
@@ -93,6 +93,9 @@ export default function EquipePagina() {
   const logo = photoUrl(logoKey);
   const pending = c.my_request === 'pending';
 
+  // fundador, admin e staff editam a página e aprovam pedidos
+  const canManage = !!(c.i_am_staff ?? c.i_am_admin);
+
   function startEdit() {
     setDraft({ bio: c!.bio ?? '', instagram: c!.instagram ?? '', avatar: c!.avatar_key, cover: c!.cover_key });
     setEditing(true);
@@ -115,7 +118,7 @@ export default function EquipePagina() {
                 <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: c.color, opacity: 0.16 }} />
                 <Text style={{ width: 1600, color: accent, opacity: 0.18, fontSize: 56, fontWeight: '900', marginLeft: 12,
                                                  letterSpacing: -1, transform: [{ rotate: '-6deg' }] }}>{c.name.toUpperCase()}</Text>
-                {c.i_am_admin && !editing && (
+                {canManage && !editing && (
                   <Text style={{ position: 'absolute', right: 12, top: 10, color: colors.textMuted, fontSize: 12 }}>Sem capa ainda</Text>
                 )}
               </View>
@@ -190,12 +193,12 @@ export default function EquipePagina() {
         </Card>
       ) : (
         <>
-          {c.bio ? <Body>{c.bio}</Body> : c.i_am_admin ? <Body dim>Sem bio ainda. Toque em “Editar página” pra contar a história da equipe.</Body> : null}
+          {c.bio ? <Body>{c.bio}</Body> : canManage ? <Body dim>Sem bio ainda. Toque em “Editar página” pra contar a história da equipe.</Body> : null}
           {insta ? (
             <Text style={{ color: colors.holo, fontWeight: '700', paddingVertical: 12 }} accessibilityRole="link"
                   onPress={() => Linking.openURL(`https://instagram.com/${encodeURIComponent(insta)}`)}>@{insta} no Instagram ›</Text>
           ) : null}
-          {c.i_am_admin && <Button title="Editar página" variant="secondary" color={c.color} onPress={startEdit} />}
+          {canManage && <Button title="Editar página" variant="secondary" color={c.color} onPress={startEdit} />}
         </>
       )}
 
@@ -233,7 +236,7 @@ export default function EquipePagina() {
       {!editing && <ErrorText>{error}</ErrorText>}
 
       {/* fundador/admin: pedidos esperando */}
-      {c.i_am_admin && c.join_requests && c.join_requests.length > 0 && (
+      {canManage && c.join_requests && c.join_requests.length > 0 && (
         <>
           <Label>Pedidos pra entrar ({c.join_requests.length})</Label>
           {c.join_requests.map((r) => (

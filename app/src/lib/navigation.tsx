@@ -5,6 +5,7 @@ import * as Speech from 'expo-speech';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { buildRoute, initialNavState, navStep, routeErrorText, type Fix, type NavState, type NavUpdate, type Route } from './nav.ts';
 import { fetchRoute, RoutingError, type Place } from './routing';
+import { isOnline, saveRouteForOffline } from './pwa';
 
 export type NavStatus = 'idle' | 'routing' | 'navigating' | 'rerouting' | 'arrived';
 
@@ -35,6 +36,18 @@ const Ctx = createContext<NavContext | null>(null);
 const RECENTS_KEY = 'marcha.destinos.recentes';
 const VOICE_KEY = 'marcha.navegacao.voz';
 const MIN_REROUTE_MS = 8000;
+// rota em andamento guardada no aparelho: se o app recarregar (ou abrir sem internet), continua guiando
+const ACTIVE_KEY = 'marcha.navegacao.ativa';
+const ACTIVE_MAX_MS = 3 * 3_600_000;
+const OFFLINE_TEXT = 'Sem internet: seguindo a rota guardada. Recalculo quando o sinal voltar.';
+
+interface SavedNav { dest: Place; route: Route; avoid: { lat: number; lon: number }[]; at: number }
+function keepRoute(dest: Place, route: Route, avoidPts: { lat: number; lon: number }[]) {
+  const v: SavedNav = { dest, route, avoid: avoidPts, at: Date.now() };
+  AsyncStorage.setItem(ACTIVE_KEY, JSON.stringify(v)).catch(() => {});
+  saveRouteForOffline(route.coords);
+}
+function forgetRoute() { AsyncStorage.removeItem(ACTIVE_KEY).catch(() => {}); }
 
 function say(text: string, voice: boolean) {
   if (!voice || !text) return;
@@ -65,6 +78,21 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     AsyncStorage.getItem(RECENTS_KEY).then((v) => { try { if (v) setRecents(JSON.parse(v)); } catch { /* ignora */ } });
     AsyncStorage.getItem(VOICE_KEY).then((v) => { if (v === '0') setVoiceState(false); });
+    // tinha uma rota em andamento (app recarregou / abriu sem sinal): continua nela
+    AsyncStorage.getItem(ACTIVE_KEY).then((v) => {
+      if (!v || live.current.destination) return;
+      try {
+        const saved = JSON.parse(v) as SavedNav;
+        if (!saved.route?.coords?.length || Date.now() - saved.at > ACTIVE_MAX_MS) { forgetRoute(); return; }
+        avoid.current = saved.avoid ?? []; setAvoiding((saved.avoid ?? []).length > 0);
+        navState.current = initialNavState();
+        lastReroute.current = Date.now();
+        setDestination(saved.dest);
+        setRoute(saved.route);
+        setStatus('navigating');
+        if (!isOnline()) setError(OFFLINE_TEXT);
+      } catch { forgetRoute(); }
+    });
   }, []);
 
   // tela não apaga enquanto navega
@@ -98,13 +126,16 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
       navState.current = initialNavState();
       setRoute(r);
       setStatus('navigating');
+      keepRoute(dest, r, avoid.current);
       const first = navStep(r, navState.current, from);
       navState.current = first.state;
       setUpdate(first);
       say(reroute ? 'Rota recalculada.' : `Rota calculada. ${r.maneuvers[0]?.speak ?? ''}`, live.current.voice);
     } catch (e) {
       const code = e instanceof RoutingError ? e.message : 'rota_indisponivel';
-      setError(code === 'sem_internet' ? 'Sem internet pra calcular a rota.' : routeErrorText(code));
+      setError(code === 'sem_internet'
+        ? (live.current.route ? OFFLINE_TEXT : 'Sem internet pra calcular a rota.')
+        : routeErrorText(code));
       // no recálculo, continua mostrando a rota antiga até conseguir
       setStatus(live.current.route ? 'navigating' : 'idle');
       if (!live.current.route) setDestination(null);
@@ -132,6 +163,7 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
 
   const stop = useCallback(() => {
     Speech.stop();
+    forgetRoute();
     avoid.current = []; setAvoiding(false);
     setStatus('idle');
     setDestination(null);
@@ -143,6 +175,7 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
 
   const onFix = useCallback((fix: Fix) => {
     lastFix.current = fix;
+    if (isOnline()) setError((e) => (e === OFFLINE_TEXT ? null : e)); // sinal voltou
     const { status: st, destination: dest, route: r, voice: v } = live.current;
     if (!dest) return;
     if (st === 'routing' && !r && !busy.current) { calc(dest, fix, false); return; } // GPS chegou depois do toque
@@ -151,8 +184,10 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
     navState.current = u.state;
     setUpdate(u);
     if (u.speak) say(u.speak, v);
-    if (u.arrived) { setStatus('arrived'); return; }
+    if (u.arrived) { setStatus('arrived'); forgetRoute(); return; }
     if (u.needsReroute && st === 'navigating' && Date.now() - lastReroute.current > MIN_REROUTE_MS) {
+      // sem internet não adianta pedir rota nova: segue a guardada e tenta de novo quando voltar
+      if (!isOnline()) { lastReroute.current = Date.now(); setError(OFFLINE_TEXT); return; }
       calc(dest, fix, true);
     }
   }, [calc]);
@@ -173,6 +208,7 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
     navState.current = initialNavState();
     setRoute(r);
     setStatus('navigating');
+    keepRoute(live.current.destination, r, points);
     const first = navStep(r, navState.current, fix);
     navState.current = first.state;
     setUpdate(first);

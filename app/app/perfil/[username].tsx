@@ -181,7 +181,7 @@ export default function Perfil() {
                            style={{ minHeight: 36, paddingHorizontal: 12, borderRadius: 18, borderWidth: 1, justifyContent: 'center',
                                     borderColor: readableAccent(c.color) }}>
                   <Text style={{ color: readableAccent(c.color), fontWeight: '700' }}>
-                    {c.role === 'founder' ? '★ ' : ''}{c.name}
+                    {c.role === 'founder' ? '★ ' : ''}{c.name}{c.role === 'staff' ? ' · Staff' : c.role === 'admin' ? ' · Admin' : ''}
                   </Text>
                 </Pressable>
               ))}

@@ -112,6 +112,32 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 - **Denunciar** post, comentário, perfil ou aviso do Radar, com motivo (ofensivo, perigoso, golpe, expõe alguém, spam, não existe, outro). Quem denunciou nunca aparece. **3 pessoas diferentes** denunciando um post/comentário: ele some até o Adm Master decidir. O master recebe notificação na primeira denúncia e decide em Conta > Moderação: **manter** (volta a aparecer) ou **remover** (post/comentário apagado, aviso sai do Radar, perfil perde foto e bio); quem postou é avisado. Até 20 denúncias por dia por pessoa.
 - **Termos de uso** (regras da comunidade, trânsito em primeiro lugar, 18+) e **Política de privacidade** (o que guardamos, pra quê, com quem, por quanto tempo, direitos da LGPD) abrem sem login: /termos e /privacidade. Falta definir o e-mail de contato.
 
+## Cargo Staff
+- Dentro de cada equipe, entre membro e admin. **Só o fundador nomeia** (Membro / Staff / Admin na lista de membros).
+- Staff pode: criar eventos e comboios (e editar o que criou), aprovar ou recusar quem pede pra entrar (e recebe o aviso), fazer o check-in de presença (QR) e editar a página da equipe.
+- Staff não pode: mudar cargos, tirar membros, passar a equipe, mexer no tema, contestar mídia nem apagar post dos outros.
+
+## Comboio
+- Fundador, admin ou staff começa o comboio com nome e destino; os membros verificados da equipe recebem o aviso e entram.
+- Entrar no comboio = sua posição aparece **só pra quem está no comboio** (mesmo no modo fantasma), enquanto ele durar ou até você sair. Zona privada e bloqueio continuam valendo.
+- Mostra quem está junto, quem chegou, quem está sem sinal e **quem ficou pra trás** (mais de 1,5 km atrás do primeiro, em linha reta até o destino) pra galera esperar. Nada de velocidade nem "quem chegou primeiro".
+- Botão **Ir pro destino** abre a navegação. Quem criou (ou admin) encerra; fecha sozinho em 12 h; no máximo 3 abertos por equipe.
+- XP de "rolê em comboio" ainda não conta (fica pra depois, com regra contra comboio de mentira).
+
+## Notificações no celular
+- Liga em Conta > Notificações > "Avisar neste celular". Vão os mesmos avisos do app (respeitando o que a pessoa escolheu receber), em até 1 minuto. Aviso com mais de 30 min sem ir não vai mais.
+- Android (Chrome) funciona direto; iPhone só com o app instalado na tela de início (iOS 16.4+).
+
+## Sem internet
+- O app abre sem internet (casca guardada) e o mapa mostra os pedaços já vistos.
+- Ao calcular a rota, o app baixa o mapa em volta dela; se o sinal cair, continua guiando pela rota guardada e só recalcula quando a internet voltar. Se o app fechar no meio, ao abrir de novo a rota continua (até 3 h).
+
+## Convite por link
+- O convite vai com link (`marcha-gps.vercel.app/c/CÓDIGO`): no WhatsApp aparece a prévia ("Fulano da Equipe X te convidou pro Marcha GPS") e o toque já abre o app com o código preenchido. Código de fundador não mostra quem mandou (o master fica discreto).
+
+## Números do app (Adm Master)
+- Conta > Números do app: pessoas (na conta, usaram na semana/hoje, no mapa agora, verificados, com carro, com notificação), cadastros dos últimos 14 dias, Radar, comunidade e as 10 equipes mais ativas em 30 dias (posts, eventos, check-ins, comboios, gente nova).
+
 ## Saúde do app
 - Erro que acontece no app vai sozinho pro servidor (sem dado pessoal; token e e-mail são apagados da mensagem). Repetidos viram uma linha com contagem e quantas pessoas pegaram. Ficam 30 dias.
 - De hora em hora o servidor checa banco, busca, rotas, mapa, site e login. Caiu ou voltou: o Adm Master recebe notificação. Tudo em Conta > Moderação > Saúde do app.

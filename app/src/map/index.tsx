@@ -16,13 +16,14 @@ interface ExtraCameraProps {
   onUserGesture?: () => void;
   fitCoords?: { lat: number; lon: number }[] | null;
   fitKey?: number;
+  fitPadding?: { top: number; bottom: number; left: number; right: number };
   padTop?: number;
   /** só a versão web usa (posição suave do carrinho) */
   glide?: Glide | null;
 }
 
 /** Mesma câmera do MapLibre, com as opções extras da versão web. */
-export function Camera({ follow: _follow, following = true, onUserGesture: _g, fitCoords, fitKey: _k, padTop = 0, glide: _gl, ...props }:
+export function Camera({ follow: _follow, following = true, onUserGesture: _g, fitCoords, fitKey: _k, fitPadding: _fp, padTop = 0, glide: _gl, ...props }:
   NativeCameraProps & ExtraCameraProps) {
   if (fitCoords && fitCoords.length >= 2 && !following) {
     const lons = fitCoords.map((c) => c.lon), lats = fitCoords.map((c) => c.lat);

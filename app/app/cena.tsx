@@ -12,6 +12,7 @@ import { useGlides } from '../src/lib/useGlides';
 import { db, type VisibleCar } from '../src/lib/db';
 import { useSession } from '../src/lib/session';
 import { useLocationSharing } from '../src/lib/useLocationSharing';
+import { useMyConvoy } from '../src/lib/useMyConvoy';
 import { buildMapStyle, REGION_VIEW } from '../src/lib/mapStyle.ts';
 import { colors, fonts } from '../src/theme/tokens.ts';
 import { goBack } from '../src/lib/goBack';
@@ -31,7 +32,8 @@ export default function Cena() {
     db.from('crew_members').select('crews(id, name)').eq('user_id', profile.id).eq('status', 'verified').then(({ data }) =>
       setMyCrews(((data ?? []) as unknown as { crews: { id: string; name: string } }[]).map((r) => r.crews)));
   }, [profile]);
-  const share = !!profile && profile.visibility !== 'ghost';
+  const { convoy } = useMyConvoy(!!profile);
+  const share = !!profile && (profile.visibility !== 'ghost' || !!convoy);
   const { position } = useLocationSharing(share, null);
   const glide = useMemo(() => new Glide(), []);
   useEffect(() => { if (position) glide.push(position, performance.now()); }, [position]);

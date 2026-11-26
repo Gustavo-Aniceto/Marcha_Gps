@@ -35,6 +35,7 @@ import { clearanceFor } from '../../src/lib/fitment.ts';
 import { kindInfo, type ReportKind } from '../../src/lib/reports.ts';
 import { haversineM } from '../../src/lib/geo.ts';
 import { buildMapStyle } from '../../src/lib/mapStyle.ts';
+import { useMyConvoy } from '../../src/lib/useMyConvoy';
 import { chrome, colors, fonts } from '../../src/theme/tokens.ts';
 
 interface Report { id: string; kind: ReportKind; lat: number; lon: number; base_risk: number; status: string; speed_limit: number | null }
@@ -60,7 +61,9 @@ export default function Mapa() {
   const { profile } = useSession();
   const { camera, filter, setFilter } = useMapSettings();
   const [filterOpen, setFilterOpen] = useState(false);
-  const share = !!profile && profile.visibility !== 'ghost';
+  // no comboio a posição vai pro banco mesmo no modo fantasma (só quem está no comboio vê)
+  const { convoy, alert: convoyAlertText } = useMyConvoy(!!profile);
+  const share = !!profile && (profile.visibility !== 'ghost' || !!convoy);
   const nav = useNavigation();
   const navigating = nav.status !== 'idle';
   // navegando a barra de abas some: o painel de baixo sobe acima da barrinha do iPhone
@@ -361,6 +364,17 @@ export default function Mapa() {
             <View style={[s.dot, { backgroundColor: share ? '#3DDC84' : ui.sub }]} />
             <Text style={[s.cenaText, { color: ui.text }]}>Cena ao vivo · {others.length + (position ? 1 : 0)}</Text>
           </Pressable>
+          {convoy && (
+            <Pressable style={[s.cenaPill, { top: insets.top + 62, backgroundColor: convoyAlertText ? 'rgba(28,18,6,0.95)' : ui.button,
+                                             borderColor: convoyAlertText ? colors.warn : ui.border, maxWidth: 260 }]}
+                       onPress={() => router.push({ pathname: '/comboio/[id]', params: { id: convoy.id } })}
+                       accessibilityRole="button" accessibilityLabel={`Abrir o comboio ${convoy.title}`}>
+              <View style={[s.dot, { backgroundColor: convoyAlertText ? colors.warn : colors.neon }]} />
+              <Text style={[s.cenaText, { color: convoyAlertText ? '#FFB070' : ui.text }]} numberOfLines={1}>
+                {convoyAlertText ?? `Comboio · ${convoy.members} ${convoy.members === 1 ? 'carro' : 'carros'}`}
+              </Text>
+            </Pressable>
+          )}
           {menu && (
             <View style={[s.menu, { top: insets.top + 64, backgroundColor: ui.panel, borderColor: ui.border }]}>
               <Text style={[s.menuHead, { color: ui.sub }]}>
@@ -439,8 +453,17 @@ export default function Mapa() {
         );
       })()}
 
+      {navigating && convoy && !!convoyAlertText && (
+        <Pressable style={[s.gpsPill, { top: 206, left: 12, right: undefined, backgroundColor: 'rgba(28,18,6,0.95)', borderColor: colors.warn }]}
+                   onPress={() => router.push({ pathname: '/comboio/[id]', params: { id: convoy.id } })} accessibilityRole="alert">
+          <Text style={[s.gpsText, { color: '#FFB070' }]} numberOfLines={1}>Comboio: {convoyAlertText}</Text>
+        </Pressable>
+      )}
+
       {!!nav.error && nav.status !== 'routing' && (
-        <Pressable style={[s.info, { top: navigating ? 150 : 108, backgroundColor: ui.panel, borderColor: ui.border }]} onPress={() => nav.stop()} accessibilityRole="alert">
+        <Pressable style={[s.info, { top: navigating ? 150 : 108, backgroundColor: ui.panel, borderColor: ui.border }]} accessibilityRole="alert"
+                   // navegando (ex.: sem internet, seguindo a rota guardada) o aviso não encerra a rota
+                   onPress={() => { if (!navigating) nav.stop(); }} disabled={navigating}>
           <Text style={[s.infoText, { color: ui.text }]}>{nav.error}</Text>
         </Pressable>
       )}

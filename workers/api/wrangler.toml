@@ -5,10 +5,11 @@ compatibility_date = "2026-11-01"
 [vars]
 CLERK_ISSUER = "https://great-aphid-3258.clerk.accounts.dev,https://clerk.marchagps.eu.org" # teste e produção (separados por vírgula)
 # IMPORT_DATABASE_URL é segredo: wrangler secret put IMPORT_DATABASE_URL (usuário "importador" do Neon)
+# VAPID_PRIVATE_JWK é segredo: JWK P-256 (x, y, d) das notificações push
 
 [triggers]
 # de hora em hora; cada faixa do mapa só é importada de novo depois de 6 dias (o banco controla)
-crons = ["7 * * * *"]
+crons = ["7 * * * *", "* * * * *"]  # de hora em hora (importação/saúde) e a cada minuto (notificações push)
 
 # IA com visão (montar o carrinho pela foto)
 [ai]

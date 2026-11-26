@@ -15,9 +15,10 @@ import { InviteCard } from '../../src/components/InviteCard';
 import { Avatar } from '../../src/components/Avatar';
 import { CrewDirectory, type DirCrew } from '../../src/components/CrewDirectory';
 import { EventsBoard } from '../../src/components/EventsBoard';
+import { IconBadge } from '../../src/components/Icon';
 
 interface Crew { id: string; name: string; color: string; button_shape: ButtonShape; city_id: string; avatar_key: string | null }
-interface MyMembership { role: 'founder' | 'admin' | 'member'; status: 'pending' | 'verified'; crews: Crew }
+interface MyMembership { role: 'founder' | 'admin' | 'staff' | 'member'; status: 'pending' | 'verified'; crews: Crew }
 interface Member { user_id: string; role: string; status: string; xp: number; profiles: { username: string } }
 interface OpenInvite { code: string; expires_at: string }
 interface JoinRequest {
@@ -31,7 +32,7 @@ interface FounderCode {
   request_status: string | null; request_name: string | null;
 }
 
-const ROLE: Record<string, string> = { founder: 'FUNDADOR', admin: 'ADMIN', member: 'MEMBRO' };
+const ROLE: Record<string, string> = { founder: 'FUNDADOR', admin: 'ADMIN', staff: 'STAFF', member: 'MEMBRO' };
 const SHAPES: { v: ButtonShape; l: string }[] = [{ v: 'redondo', l: 'Redondo' }, { v: 'reto', l: 'Reto' }, { v: 'quadrado', l: 'Quadrado' }];
 const THEME_COLORS = ['#C6FF3D', '#3FA0FF', '#FF4D6D', '#FF8A1F', '#FFD233', '#B36BFF', '#29E0C8', '#FF5FC8', '#EDEFF2'];
 
@@ -54,6 +55,8 @@ export default function Equipes() {
   const [directory, setDirectory] = useState<DirCrew[]>([]);
   const [canRegister, setCanRegister] = useState(false);
   const [tab, setTab] = useState<'minha' | 'descobrir' | 'eventos' | null>(null);
+  const [convoys, setConvoys] = useState<{ id: string; crew_id: string; title: string; dest_name: string | null; members: number;
+                                           joined: boolean; created_by: string }[]>([]);
 
   const load = useCallback(async () => {
     if (!profile) return;
@@ -78,9 +81,10 @@ export default function Equipes() {
       .order('created_at', { ascending: false }).limit(10);
     setOpenInvites((inv ?? []) as OpenInvite[]);
     // pedidos pra entrar nas equipes em que sou fundador/admin; lista de equipes; posso registrar equipe?
-    const [jr, dir, cr] = await Promise.all([
-      db.rpc('my_crews_join_requests'), db.rpc('crew_directory'), db.rpc('can_register_crew'),
+    const [jr, dir, cr, cv] = await Promise.all([
+      db.rpc('my_crews_join_requests'), db.rpc('crew_directory'), db.rpc('can_register_crew'), db.rpc('my_convoys'),
     ]);
+    setConvoys((cv.data ?? []) as typeof convoys);
     setJoinRequests((jr.data ?? []) as JoinRequest[]);
     setDirectory((dir.data ?? []) as DirCrew[]);
     setCanRegister(cr.data === true);
@@ -101,6 +105,9 @@ export default function Equipes() {
   // sem equipe: abre direto em Descobrir
   const view = tab ?? (mine.length || profile?.is_master || canRegister ? 'minha' : 'descobrir');
   const isAdmin = current?.status === 'verified' && (current.role === 'founder' || current.role === 'admin');
+  // staff: cria evento/rolê, faz check-in, aprova pedido e edita a página (tema e cargos continuam com fundador/admin)
+  const isStaff = isAdmin || (current?.status === 'verified' && current.role === 'staff');
+  const isFounder = current?.status === 'verified' && current.role === 'founder';
   const isVerified = current?.status === 'verified';
   const verifiedAnywhere = mine.some((m) => m.status === 'verified');
   const accent = current ? readableAccent(current.crews.color) : colors.neon;
@@ -218,6 +225,11 @@ export default function Equipes() {
             <Text style={{ color: colors.text, fontWeight: '600' }}>@{m.profiles.username}</Text>
             <Mono color={m.status === 'verified' ? accent : colors.warn}>{m.status === 'verified' ? ROLE[m.role] ?? m.role.toUpperCase() : 'PENDENTE'}</Mono>
           </View>
+          {isFounder && m.status === 'verified' && m.role !== 'founder' && (
+            <Pills options={[{ value: 'member', label: 'Membro' }, { value: 'staff', label: 'Staff' }, { value: 'admin', label: 'Admin' }]}
+                   value={m.role}
+                   onChange={(r) => call('set_member_role', { p_crew: selected, p_member: m.user_id, p_role: r })} />
+          )}
           {m.status === 'pending' && m.user_id !== profile?.id && isVerified && (
             <Button title="Confirmo que conheço" variant="secondary" color={current!.crews.color}
                     onPress={() => call('vouch_member', { p_crew: selected, p_member: m.user_id })} />
@@ -225,12 +237,32 @@ export default function Equipes() {
         </Card>
       ))}
 
-      {current && isAdmin && (
+      {current && isStaff && (
         <Button title="Escanear QR de check-in" variant="secondary" color={current.crews.color}
                 onPress={() => router.push({ pathname: '/escanear', params: { crew: current.crews.id } })} />
       )}
 
-      {current && isAdmin && (
+      {current && (isStaff || convoys.some((c) => c.crew_id === current.crews.id)) && <Label>Comboio</Label>}
+      {current && convoys.filter((c) => c.crew_id === current.crews.id).map((c) => (
+        <Pressable key={c.id} accessibilityRole="button" onPress={() => router.push({ pathname: '/comboio/[id]', params: { id: c.id } })}
+                   style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 20, borderWidth: 1,
+                                              borderColor: c.joined ? accent : colors.line, backgroundColor: pressed ? colors.panelAlt : colors.panel })}>
+          <IconBadge name="flag" size={40} color={accent} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: colors.text, fontWeight: '700' }}>{c.title}</Text>
+            <Text style={{ color: colors.textDim, fontSize: 13 }} numberOfLines={1}>
+              {c.dest_name ?? 'Destino no mapa'} · {c.members} {c.members === 1 ? 'carro' : 'carros'} · @{c.created_by}
+            </Text>
+          </View>
+          <Mono color={c.joined ? accent : colors.holo}>{c.joined ? 'VOCÊ ESTÁ' : 'ENTRAR'}</Mono>
+        </Pressable>
+      ))}
+      {current && isStaff && (
+        <Button title="Começar comboio" variant="secondary" color={current.crews.color}
+                onPress={() => router.push({ pathname: '/comboio-novo', params: { crew: current.crews.id } })} />
+      )}
+
+      {current && isStaff && (
         <Button title="Criar evento" color={current.crews.color} shape={current.crews.button_shape}
                 onPress={() => router.push({ pathname: '/evento-novo', params: { crew: current.crews.id } })} />
       )}
