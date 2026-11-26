@@ -21,7 +21,7 @@ export function normalizeCode(raw: string): string | null {
 export function inviteTexts(p: InvitePreview | null): { title: string; description: string; headline: string } {
   if (!p || p.status !== 'ok') {
     const why = p?.status === 'usado' ? 'Esse convite já foi usado.' : p?.status === 'vencido' ? 'Esse convite venceu.' : 'Convite não encontrado.';
-    return { title: 'Marcha GPS · convite', description: `${why} Peça um novo pra quem te chamou.`, headline: why };
+    return { title: 'Marcha GPS · convite', description: 'Peça um novo convite pra quem te chamou.', headline: why };
   }
   if (p.kind === 'fundador') {
     return {
