@@ -1,5 +1,6 @@
 // Equipes: minhas equipes, membros, verificação, pedidos pra entrar (o fundador aprova), lista de equipes,
 // convites pro app, pedido de equipe nova (só com código de fundador) e painel do Adm Master.
+// Três abas em cima: Minha equipe | Descobrir (lista das equipes) | Eventos (painel com presença).
 import React, { useCallback, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -12,6 +13,8 @@ import { LAUNCH_CITIES } from '../../src/lib/geo.ts';
 import { colors, type ButtonShape } from '../../src/theme/tokens.ts';
 import { InviteCard } from '../../src/components/InviteCard';
 import { Avatar } from '../../src/components/Avatar';
+import { CrewDirectory, type DirCrew } from '../../src/components/CrewDirectory';
+import { EventsBoard } from '../../src/components/EventsBoard';
 
 interface Crew { id: string; name: string; color: string; button_shape: ButtonShape; city_id: string; avatar_key: string | null }
 interface MyMembership { role: 'founder' | 'admin' | 'member'; status: 'pending' | 'verified'; crews: Crew }
@@ -20,10 +23,6 @@ interface OpenInvite { code: string; expires_at: string }
 interface JoinRequest {
   id: string; crew_id: string; crew_name: string; username: string; avatar_key: string | null;
   message: string | null; created_at: string; car: string | null; crews_in: number;
-}
-interface DirCrew {
-  id: string; name: string; city: string; color: string; avatar_key: string | null;
-  member_count: number; i_am_member: boolean; my_request: string | null;
 }
 interface Request { id: string; requester_id: string; name: string; city_id: string; instagram: string | null; member_count: number; status: string }
 interface FounderCode {
@@ -54,6 +53,7 @@ export default function Equipes() {
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
   const [directory, setDirectory] = useState<DirCrew[]>([]);
   const [canRegister, setCanRegister] = useState(false);
+  const [tab, setTab] = useState<'minha' | 'descobrir' | 'eventos' | null>(null);
 
   const load = useCallback(async () => {
     if (!profile) return;
@@ -98,6 +98,8 @@ export default function Equipes() {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const current = mine.find((m) => m.crews.id === selected);
+  // sem equipe: abre direto em Descobrir
+  const view = tab ?? (mine.length || profile?.is_master || canRegister ? 'minha' : 'descobrir');
   const isAdmin = current?.status === 'verified' && (current.role === 'founder' || current.role === 'admin');
   const isVerified = current?.status === 'verified';
   const verifiedAnywhere = mine.some((m) => m.status === 'verified');
@@ -131,6 +133,14 @@ export default function Equipes() {
   return (
     <Screen>
       <Title>Equipes</Title>
+      <Segments value={view} onChange={setTab} badge={joinRequests.length} />
+      {view === 'descobrir' && <CrewDirectory crews={directory} onChanged={load} />}
+      {view === 'eventos' && <EventsBoard />}
+      {view === 'minha' && <>
+      {!profile?.is_master && (
+        <Text style={{ color: colors.holo, fontWeight: '700', minHeight: 44, paddingVertical: 10 }} accessibilityRole="link"
+              onPress={() => router.push('/ranks')}>🏆 Ranks do Radar e da mídia ›</Text>
+      )}
 
       {mine.length > 1 && (
         <Pills options={mine.map((m) => ({ value: m.crews.id, label: m.crews.name }))}
@@ -262,25 +272,9 @@ export default function Equipes() {
         </>
       )}
 
-      {directory.length > 0 && <Label>Equipes da cena</Label>}
-      {directory.map((d) => {
-        const tag = d.i_am_member ? 'VOCÊ FAZ PARTE' : d.my_request === 'pending' ? 'PEDIDO ENVIADO' : null;
-        return (
-          <Pressable key={d.id} accessibilityRole="link"
-                     onPress={() => router.push({ pathname: '/equipe/[id]', params: { id: d.id } })}>
-            <Card>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <Avatar username={d.name} avatarKey={d.avatar_key} size={44} ring={readableAccent(d.color)} />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700' }}>{d.name}</Text>
-                  <Body dim>{d.city} · {d.member_count} {d.member_count === 1 ? 'membro' : 'membros'}</Body>
-                </View>
-                <Mono color={tag ? readableAccent(d.color) : colors.holo}>{tag ?? 'VER ›'}</Mono>
-              </View>
-            </Card>
-          </Pressable>
-        );
-      })}
+      {mine.length === 0 && (
+        <Button title="Ver as equipes da cena" variant="secondary" onPress={() => setTab('descobrir')} />
+      )}
 
       <ErrorText>{error}</ErrorText>
 
@@ -355,6 +349,33 @@ export default function Equipes() {
               </>}
         </Card>
       )}
+      </>}
     </Screen>
+  );
+}
+
+function Segments({ value, onChange, badge }: { value: string; onChange: (v: 'minha' | 'descobrir' | 'eventos') => void; badge: number }) {
+  const opts: { v: 'minha' | 'descobrir' | 'eventos'; l: string }[] = [
+    { v: 'minha', l: 'Minha equipe' }, { v: 'descobrir', l: 'Descobrir' }, { v: 'eventos', l: 'Eventos' },
+  ];
+  return (
+    <View style={{ flexDirection: 'row', backgroundColor: colors.panel, borderRadius: 12, borderWidth: 1, borderColor: colors.line, padding: 4 }}
+          accessibilityRole="tablist">
+      {opts.map((o) => {
+        const on = o.v === value;
+        return (
+          <Pressable key={o.v} onPress={() => onChange(o.v)} accessibilityRole="tab" accessibilityState={{ selected: on }}
+                     style={{ flex: 1, minHeight: 44, borderRadius: 9, alignItems: 'center', justifyContent: 'center',
+                              flexDirection: 'row', gap: 6, backgroundColor: on ? colors.neon : 'transparent' }}>
+            <Text style={{ color: on ? colors.ink : colors.textDim, fontWeight: '700', fontSize: 14 }} numberOfLines={1}>{o.l}</Text>
+            {o.v === 'minha' && badge > 0 && (
+              <View style={{ minWidth: 18, height: 18, borderRadius: 9, backgroundColor: colors.danger, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 }}>
+                <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>{badge}</Text>
+              </View>
+            )}
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }

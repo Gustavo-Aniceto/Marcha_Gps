@@ -9,6 +9,8 @@ import { colors } from '../theme/tokens.ts';
 import { lerpAngle, type Glide } from '../lib/glide.ts';
 import { snapToRoute, type Route } from '../lib/nav.ts';
 import { glyphFor, parseReportImageId, reportImageId } from '../lib/reportGlyphs.ts';
+import { getStudio, specKey, type CarSpec } from '../lib/car3d';
+import { wheelRadius } from '../lib/car3dShape.ts';
 
 const MapCtx = createContext<maplibregl.Map | null>(null);
 
@@ -462,4 +464,62 @@ export function ReportsLayer({ reports }: { reports: MapReport[] }) {
   }, [map, key]);
 
   return null;
+}
+
+/**
+ * Carro 3D no mapa: um <canvas> sempre de frente pra tela (não deita junto com o mapa) que recebe o carro
+ * desenhado do mesmo ângulo da câmera do mapa. Gira com a direção do carro, as rodas rodam conforme anda.
+ * Usar dentro de um <Marker> SEM `rotation`. Sem WebGL, cai no desenho 2D de cima.
+ */
+export function CarModel({ spec, glide, heading, size = 80, night, fallback }: {
+  spec: CarSpec; glide?: Glide | null; heading?: number | null; size?: number; night?: boolean; fallback: React.ReactNode;
+}) {
+  const map = useContext(MapCtx);
+  const canvas = useRef<HTMLCanvasElement | null>(null);
+  const [ok] = useState(() => !!getStudio());
+  const live = useRef({ spec, heading, night });
+  live.current = { spec, heading, night };
+
+  useEffect(() => {
+    const studio = getStudio();
+    if (!studio || !map) return;
+    let raf = 0;
+    let last = { rel: NaN, pitch: NaN, key: '', lights: false };
+    let wheel = 0, prev: { lat: number; lon: number } | null = null, movingUntil = 0;
+    const loop = (now: number) => {
+      raf = requestAnimationFrame(loop);
+      if (!canvas.current || document.hidden) return;
+      const p = glide ? glide.at(now) : null;
+      const h = p?.heading ?? live.current.heading ?? 0;
+      const rel = h - map.getBearing();
+      const pitch = map.getPitch();
+      const key = specKey(live.current.spec);
+      const lights = !!live.current.night;
+      let moving = false;
+      if (p) {
+        if (prev) {
+          const dy = (p.lat - prev.lat) * 111_320, dx = (p.lon - prev.lon) * 111_320 * Math.cos((p.lat * Math.PI) / 180);
+          const d = Math.hypot(dx, dy);
+          if (d > 0.002 && d < 30) { wheel += d / wheelRadius(live.current.spec.rim); movingUntil = now + 300; }
+        }
+        prev = { lat: p.lat, lon: p.lon };
+        moving = now < movingUntil;
+      }
+      if (!moving && key === last.key && lights === last.lights
+          && Math.abs(rel - last.rel) < 0.2 && Math.abs(pitch - last.pitch) < 0.2) return; // nada mudou: não redesenha
+      last = { rel, pitch, key, lights };
+      studio.draw(canvas.current, live.current.spec, {
+        rel, pitch, wheel, lights, bob: moving ? Math.sin(now / 95) * 0.006 : 0,
+      });
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [map, glide]);
+
+  if (!ok) return <>{fallback}</>;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  return (
+    <canvas ref={canvas} width={Math.round(size * dpr)} height={Math.round(size * dpr)}
+            style={{ width: size, height: size, display: 'block', pointerEvents: 'none' }} />
+  );
 }

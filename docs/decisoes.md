@@ -76,6 +76,19 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 ## Adm Master
 - Fica discreto: só **donos de equipe** (fundadores verificados) veem quem é o Adm Master, pela função `master_contact()`. Pros outros o perfil dele aparece como um membro comum; a tabela de perfis não mostra a marca de master nem os convites de ninguém (cada um vê os próprios dados por `my_profile()`).
 
+## Conta, notificações e privacidade
+- Aba **Conta**: editar perfil (nome, bio, foto; o @ não muda), notificações, privacidade e dados, atalhos (Ranks, câmera do mapa, tutorial) e **Sair da conta**.
+- Notificações dentro do app (bolinha na aba Conta). O **Adm Master** recebe as equipes novas pedidas; o fundador/admin recebe pedidos pra entrar; a pessoa recebe aprovação/recusa, verificação, evento novo das equipes, comentário no post e convite usado. Dá pra desligar por assunto (Equipes, Eventos, Social). Notificação no celular com o app fechado fica pro próximo passo (precisa de push).
+- Privacidade: **baixar meus dados** (arquivo .json com perfil, carros, equipes, posts, comentários, avisos, presenças e zonas privadas) e **apagar a conta** (digitando o @; fundador de equipe com membros precisa passar a equipe antes). Velocidade nunca é guardada.
+
+## Eventos e equipes
+- Painel de eventos com capa, data, equipe, cidade, local e descrição; **Confirmar presença** e, se a pessoa não é da equipe, **Pedir pra entrar** (o fundador aprova). Evento "aberto pra cena" aparece pra todo mundo; "só a equipe" só pros membros.
+- **Descobrir equipes**: capa, foto, bio, Instagram, fundador, cidade, membros e próximo evento, com botão de pedir pra entrar.
+
+## Garagem: ficha FIPE e carro 3D
+- Depois da foto, a IA diz marca/modelo e o app abre a **ficha da tabela FIPE** já no modelo certo: a pessoa escolhe versão e ano e confirma. A ficha (código FIPE, versão, ano, combustível, preço médio) fica no carro e aparece no perfil.
+- O carrinho do mapa virou **3D de verdade** (desenhado a partir da garagem: tipo, cor, vidro, aerofólio, aro, altura, cambagem, neon), visto de cima na diagonal e girando com a direção. Não usamos desenhos de jogos (direitos autorais e resolução baixa).
+
 ## Fora do escopo
 - Nada que premie racha/velocidade na rua (ranking por velocidade, "puxada" entre carros). Competição só no Modo Pista, em local autorizado.
 

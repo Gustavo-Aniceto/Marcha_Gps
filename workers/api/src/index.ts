@@ -3,6 +3,7 @@
 //   POST /rota { de: {lat, lon, heading?}, para: {lat, lon}, evitar?: [{lat, lon}] } -> Route   (precisa de login)
 //   GET  /convite?codigo=XXXX-XXXX -> { status, kind, crew_name }   (sem login, limite por IP)
 //   POST /carro/analisar { fotos: [dataURI] } -> CarGuess  (IA com visão monta o carrinho; precisa de login)
+//   GET  /fipe/marcas | /fipe/modelos?marca= | /fipe/anos?marca=&modelo= | /fipe/valor?marca=&modelo=&ano=  (tabela FIPE, com cache; precisa de login)
 // Agendado: importa lombadas e radares do OpenStreetMap, uma cidade por vez.
 import { AuthError, issuerList, verifyFromIssuers, type Jwk } from '../../fotos/src/jwt';
 import { preflight, withCors } from '../../fotos/src/cors';
@@ -11,6 +12,7 @@ import { RouteError, cleanAvoid, parseValhalla, validPoint, valhallaBody, VALHAL
 import { RateLimiter } from './limits';
 import { OVERPASS_URLS, TILES, neonSqlUrl, overpassQuery, type Tile } from './obstacles';
 import { VISION_MODEL, parseGuess, validPhotos, visionRequest } from './carro';
+import { fipeTarget, parseFipe } from './fipe';
 
 interface Env {
   CLERK_ISSUER: string;
@@ -25,6 +27,7 @@ const inviteLimit = new RateLimiter(10, 60_000); // por IP: conferir convite nã
 // IA de visão: poucas por pessoa (cota grátis de 10 mil "neurônios" por dia na conta)
 const carMinute = new RateLimiter(4, 60_000);
 const carDay = new RateLimiter(20, 24 * 60 * 60_000);
+const fipeLimit = new RateLimiter(60, 60_000);
 
 // chaves públicas de cada emissor (modo teste e produção do Clerk), guardadas por 10 min
 const jwksCache = new Map<string, { keys: Jwk[]; at: number }>();
@@ -146,6 +149,27 @@ async function handle(req: Request, env: Env, ctx: ExecutionContext): Promise<Re
       console.log('ia carro', String(e).slice(0, 300));
       return json({ error: 'ia_indisponivel' }, 502);
     }
+  }
+
+  if (req.method === 'GET' && url.pathname.startsWith('/fipe/')) {
+    const target = fipeTarget(url.pathname, url.searchParams);
+    if (!target) return json({ error: 'pedido_invalido' }, 400);
+    if (!fipeLimit.allow(user)) return json({ error: 'muitas_buscas' }, 429);
+    // a API pública aceita poucos pedidos por dia: quase tudo sai do cache
+    const cache = caches.default;
+    const key = new Request(target.url, { method: 'GET' });
+    const hit = await cache.match(key);
+    if (hit) return json(parseFipe(url.pathname, await hit.json()));
+    const res = await fetch(target.url, { headers: { 'user-agent': UA, accept: 'application/json' } });
+    if (res.status === 429) return json({ error: 'fipe_ocupada' }, 503);
+    if (!res.ok) return json({ error: 'fipe_indisponivel' }, 502);
+    const body = await res.json();
+    const parsed = parseFipe(url.pathname, body);
+    if (!parsed) return json({ error: 'fipe_indisponivel' }, 502);
+    ctx.waitUntil(cache.put(key, new Response(JSON.stringify(body), {
+      headers: { 'content-type': 'application/json', 'cache-control': `public, max-age=${target.ttl}` },
+    })));
+    return json(parsed);
   }
 
   return json({ error: 'nao_encontrado' }, 404);

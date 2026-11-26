@@ -81,4 +81,8 @@ export interface Profile {
   precise_for_scene: boolean;
   delay_minutes: 0 | 2 | 5;
   avatar_key: string | null;
+  display_name?: string | null;
+  bio?: string | null;
+  notify_prefs?: { equipes: boolean; eventos: boolean; social: boolean } | null;
+  joined_at?: string | null;
 }

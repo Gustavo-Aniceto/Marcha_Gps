@@ -1,12 +1,17 @@
 // Garagem: até 5 carros por pessoa; um deles é o que aparece no mapa ("Usar este no mapa").
 // Monta o carro que aparece no mapa. A pessoa manda fotos do carro e a IA monta o carrinho
 // (tipo, cor, vidro, aerofólio, marca e modelo); dá pra ajustar tudo à mão antes de salvar.
+// Depois da foto abre a ficha da tabela FIPE (marca, modelo, versão, ano, código, preço) pra confirmar.
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from 'expo-router';
 import { Body, Button, Card, ErrorText, Field, Label, Mono, Pills, Screen, Title, Warning } from '../../src/components/ui';
 import { CarMarker } from '../../src/components/CarMarker';
+import { Car3DView } from '../../src/components/Car3D';
+import { FipeSheet } from '../../src/components/FipeSheet';
+import { fipeToCar, type FipeValor } from '../../src/lib/fipe.ts';
+import { specFromCar } from '../../src/lib/car3dTypes';
 import { db } from '../../src/lib/db';
 import { useSession } from '../../src/lib/session';
 import { checkFitment, tireFor, type Suspension, type WheelPosition } from '../../src/lib/fitment.ts';
@@ -25,7 +30,12 @@ interface CarForm {
   tint: 'nenhuma' | 'fume' | 'limo'; spoiler: boolean; neon: 'verde' | 'azul' | 'roxo' | null;
   photo_paths?: string[];
   is_active?: boolean;
+  fipe_code?: string | null; fipe_brand?: string | null; fipe_model?: string | null; fipe_version?: string | null;
+  fipe_year?: number | null; fipe_fuel?: string | null; fipe_price?: string | null; fipe_ref?: string | null;
 }
+
+const FIPE_KEYS = ['fipe_code', 'fipe_brand', 'fipe_model', 'fipe_version', 'fipe_year', 'fipe_fuel', 'fipe_price', 'fipe_ref'] as const;
+const NO_FIPE = Object.fromEntries(FIPE_KEYS.map((k) => [k, null])) as Pick<CarForm, typeof FIPE_KEYS[number]>;
 
 const EMPTY: CarForm = {
   make: '', model: '', year: '', color: '#B9C0CB', body_type: 'hatch', ride_height_cm: 11, suspension: 'fixa', rim: 17,
@@ -46,6 +56,19 @@ export default function Garagem() {
   const [analyzing, setAnalyzing] = useState(false);
   const [guessText, setGuessText] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [fipeOpen, setFipeOpen] = useState(false);
+  const [fipeHint, setFipeHint] = useState<{ make?: string; model?: string; year?: number | null }>({});
+
+  function openFipe(h?: { make?: string; model?: string; year?: number | null }) {
+    setFipeHint(h ?? { make: car.make, model: car.model, year: car.year ? Number(car.year) : null });
+    setFipeOpen(true);
+  }
+
+  function pickFipe(v: FipeValor, family: string) {
+    const f = fipeToCar(v, family);
+    setCar((c) => ({ ...c, ...f, year: f.year ? String(f.year) : c.year }));
+    setFipeOpen(false); setMsg(null);
+  }
 
   async function pickAndBuild() {
     setAiError(null); setGuessText(null);
@@ -60,9 +83,11 @@ export default function Garagem() {
       const data = await Promise.all(uris.map((u) => photoDataUri(u)));
       const g = await analyzeCar(data);
       const filled = guessToCar(g, car);
-      setCar((c) => ({ ...c, ...filled }));
+      setCar((c) => ({ ...c, ...filled, ...NO_FIPE }));
       setGuessText(guessSummary(g, BODIES.find((b) => b.id === g.body_type)?.label ?? g.body_type));
       setMsg(null);
+      // reconheceu a marca: abre a ficha FIPE já no modelo certo pra pessoa só confirmar
+      if (filled.make) openFipe({ make: filled.make, model: filled.model, year: car.year ? Number(car.year) : null });
     } catch (e) {
       setAiError(carErrorText(e instanceof RoutingError ? e.message : e instanceof Error ? e.message : ''));
     } finally {
@@ -139,6 +164,7 @@ export default function Garagem() {
       year, color: car.color, body_type: car.body_type, ride_height_cm: car.ride_height_cm,
       suspension: car.suspension, rim: car.rim, wheel_position: car.wheel_position, camber_deg: car.camber_deg,
       tint: car.tint, spoiler: car.spoiler, neon: car.neon, updated_at: new Date().toISOString(),
+      ...Object.fromEntries(FIPE_KEYS.map((k) => [k, car[k] ?? null])),
     };
     const q = car.id
       ? db.from('cars').update(row).eq('id', car.id).select('id').single()
@@ -219,11 +245,41 @@ export default function Garagem() {
       </Card>
 
       <Card style={{ alignItems: 'center' }}>
-        <CarMarker color={car.color} neon={car.neon} heading={0} body={car.body_type} tint={car.tint} spoiler={car.spoiler} size={150} />
+        <Car3DView spec={specFromCar(car, true)} width={300} height={210} />
+        <Text style={{ color: colors.textMuted, fontSize: 12 }}>Arraste pra girar · é assim que ele anda no mapa</Text>
         <Mono color={colors.neon}>VÃO {car.ride_height_cm} CM · ARO {car.rim} · {tireFor(car.rim) ?? '—'}</Mono>
       </Card>
 
       {fit.ok ? <Body dim>Fitment ok: nada encosta.</Body> : fit.warnings.map((w) => <Warning key={w}>{w}</Warning>)}
+
+      <Card style={{ gap: 8 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700' }}>Ficha do carro</Text>
+          {car.fipe_code ? <Mono color={colors.textMuted}>FIPE {car.fipe_code}</Mono> : null}
+        </View>
+        {car.fipe_code ? (
+          <>
+            {([
+              ['Marca', car.make], ['Modelo', car.model], ['Versão', car.fipe_version], ['Ano', car.fipe_year ? String(car.fipe_year) : 'Zero km'],
+              ['Combustível', car.fipe_fuel], ['Preço FIPE', car.fipe_price],
+            ] as [string, string | null | undefined][]).map(([k, v]) => (
+              <View key={k} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
+                <Text style={{ color: colors.textMuted }}>{k}</Text>
+                <Text style={{ color: k === 'Preço FIPE' ? colors.neon : colors.text, fontWeight: k === 'Preço FIPE' ? '800' : '400',
+                               flexShrink: 1, textAlign: 'right' }} numberOfLines={2}>{v || '—'}</Text>
+              </View>
+            ))}
+            <Text style={{ color: colors.textMuted, fontSize: 11, fontFamily: fonts.mono }}>Ref.: {car.fipe_ref}</Text>
+            <Button title="Trocar a ficha" variant="secondary" onPress={() => openFipe()} />
+          </>
+        ) : (
+          <>
+            <Body dim>Puxa marca, modelo, versão, ano, combustível e preço da tabela FIPE. Fica no seu perfil.</Body>
+            <Button title="Montar a ficha pela tabela FIPE" variant="secondary" onPress={() => openFipe()} />
+          </>
+        )}
+      </Card>
+      <FipeSheet visible={fipeOpen} hint={fipeHint} onClose={() => setFipeOpen(false)} onPick={pickFipe} />
 
       <Field label="Marca" value={car.make} onChangeText={(v) => set('make', v)} placeholder="Ex.: Volkswagen" />
       <Field label="Modelo" value={car.model} onChangeText={(v) => set('model', v)} placeholder="Ex.: Gol G5" />

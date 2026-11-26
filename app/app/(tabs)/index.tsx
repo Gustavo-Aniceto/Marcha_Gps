@@ -9,7 +9,8 @@ import { avoidPoints, blockingAhead, offerText, shouldOffer } from '../../src/li
 import type { Route } from '../../src/lib/nav.ts';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Camera, Map as MapView, Marker, ReportsLayer, RouteLine } from '../../src/map';
+import { Camera, CarModel, Map as MapView, Marker, ReportsLayer, RouteLine } from '../../src/map';
+import { specFromCar } from '../../src/lib/car3dTypes';
 import { ManeuverIcon } from '../../src/components/ManeuverIcon';
 import { useNavigation } from '../../src/lib/navigation';
 import { rememberPosition } from '../../src/lib/lastPosition';
@@ -48,7 +49,8 @@ async function loadOnRoute(route: Route): Promise<{ item: Report; along: number 
   return obstaclesOnRoute(route, (data ?? []) as Report[]);
 }
 
-interface MyCar { color: string; neon: string | null; ride_height_cm: number; suspension: string; body_type: string; tint: string; spoiler: boolean }
+interface MyCar { color: string; neon: string | null; ride_height_cm: number; suspension: string; body_type: string; tint: string; spoiler: boolean;
+                 rim: number; camber_deg: number; wheel_position: string }
 
 export default function Mapa() {
   const router = useRouter();
@@ -75,6 +77,7 @@ export default function Mapa() {
   const [pickedId, setPickedId] = useState<string | null>(null); // carro tocado no mapa → cartão do perfil
   const [reports, setReports] = useState<Report[]>([]);
   const [myCar, setMyCar] = useState<MyCar | null>(null);
+  const myCarSpec = useMemo(() => specFromCar(myCar, true), [myCar]);
   const cam = cameraFor(camera);
   // tema "auto": dia claro do nascer ao pôr do sol (confere a cada minuto)
   const [clock, setClock] = useState(() => new Date());
@@ -87,7 +90,7 @@ export default function Mapa() {
   const [carRev, setCarRev] = useState(0); // muda quando a pessoa escolhe com qual carro vai sair
   useFocusEffect(useCallback(() => {
     if (!profile) return;
-    db.from('cars').select('color, neon, ride_height_cm, suspension, body_type, tint, spoiler')
+    db.from('cars').select('color, neon, ride_height_cm, suspension, body_type, tint, spoiler, rim, camber_deg, wheel_position')
       .eq('owner_id', profile.id).eq('is_active', true).maybeSingle()
       .then(({ data }) => setMyCar(data as MyCar | null));
   }, [profile, carRev]));
@@ -272,10 +275,11 @@ export default function Mapa() {
         {/* todo mundo que o banco libera (visible_cars cuida de fantasma, equipe, zona privada e atraso) */}
         {others.map((c) => web ? (
           <React.Fragment key={c.user_id}>
-            <Marker id={`carro-${c.user_id}`} lngLat={[c.lon, c.lat]} rotation={c.heading ?? 0} glide={glideOf(c)}>
+            <Marker id={`carro-${c.user_id}`} lngLat={[c.lon, c.lat]} glide={glideOf(c)}>
               <Pressable onPress={() => setPickedId(c.user_id)} accessibilityRole="button" accessibilityLabel={`Ver perfil de @${c.username}`} hitSlop={8}>
-                <CarMarker color={c.car?.color} neon={c.car?.neon} heading={0} approximate={c.approximate}
-                           body={c.car?.body_type} tint={c.car?.tint} spoiler={c.car?.spoiler} />
+                <CarModel spec={specFromCar(c.car)} glide={glideOf(c)} heading={c.heading} size={66} night={theme !== 'dia'}
+                          fallback={<CarMarker color={c.car?.color} neon={c.car?.neon} heading={c.heading} approximate={c.approximate}
+                                               body={c.car?.body_type} tint={c.car?.tint} spoiler={c.car?.spoiler} />} />
               </Pressable>
             </Marker>
             <Marker id={`nome-${c.user_id}`} lngLat={[c.lon, c.lat]} glide={glideOf(c)}>
@@ -295,10 +299,11 @@ export default function Mapa() {
         ))}
 
         {position && (
-          <Marker id="meu-carro" lngLat={[position.lon, position.lat]} rotation={web ? position.heading ?? 0 : undefined}
-                  glide={web ? glide : null}>
-            <CarMarker me color={myCar?.color} neon={myCar?.neon} heading={web ? 0 : position.heading}
-                       body={myCar?.body_type} tint={myCar?.tint} spoiler={myCar?.spoiler} />
+          // carro em 3D, visto do mesmo ângulo do mapa (não achata quando o mapa inclina)
+          <Marker id="meu-carro" lngLat={[position.lon, position.lat]} glide={web ? glide : null}>
+            <CarModel spec={myCarSpec} glide={web ? glide : null} heading={position.heading} size={92} night={theme !== 'dia'}
+                      fallback={<CarMarker me color={myCar?.color} neon={myCar?.neon} heading={position.heading}
+                                           body={myCar?.body_type} tint={myCar?.tint} spoiler={myCar?.spoiler} />} />
           </Marker>
         )}
       </MapView>

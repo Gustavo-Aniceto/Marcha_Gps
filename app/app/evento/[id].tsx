@@ -1,4 +1,5 @@
-// Página do evento: detalhes, quem vai e a galeria de mídias. Admin pode contestar mídia em até 24 h.
+// Página do evento: capa, data, local, descrição, confirmar presença, pedir pra entrar na equipe e a galeria
+// de mídias. Admin pode contestar mídia em até 24 h.
 import React, { useCallback, useState } from 'react';
 import { Image, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -10,6 +11,7 @@ import { eventWindow, kindLabel, whenText } from '../../src/lib/events.ts';
 import { readableAccent } from '../../src/lib/contrast.ts';
 import { colors } from '../../src/theme/tokens.ts';
 import { goBack } from '../../src/lib/goBack';
+import { EventCard, useEventActions, type BoardEvent } from '../../src/components/EventsBoard';
 
 interface Ev { id: string; crew_id: string; kind: string; title: string; starts_at: string; ends_at: string; crews: { name: string; color: string } }
 interface Media { id: string; user_id: string; photo_path: string; status: string; created_at: string; profiles: { username: string } }
@@ -18,6 +20,7 @@ export default function Evento() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [ev, setEv] = useState<Ev | null>(null);
+  const [board, setBoard] = useState<BoardEvent | null>(null);
   const [going, setGoing] = useState(0);
   const [media, setMedia] = useState<Media[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -25,6 +28,8 @@ export default function Evento() {
 
   const load = useCallback(async () => {
     if (!id) return;
+    const { data: d } = await db.rpc('event_detail', { p_event: id });
+    setBoard((d as BoardEvent | null) ?? null);
     const { data: e } = await db.from('events').select('id, crew_id, kind, title, starts_at, ends_at, crews(name, color)').eq('id', id).maybeSingle();
     const event = e as unknown as Ev | null;
     setEv(event);
@@ -47,6 +52,7 @@ export default function Evento() {
     if (e) setError(friendlyError(e)); else load();
   }
 
+  const actions = useEventActions(load);
   if (!ev) return <Screen><Body dim>Evento não encontrado ou você não tem acesso.</Body><Button title="Voltar" onPress={() => goBack(router)} /></Screen>;
   const accent = readableAccent(ev.crews.color);
   const win = eventWindow(new Date(ev.starts_at), new Date(ev.ends_at));
@@ -55,7 +61,10 @@ export default function Evento() {
     <Screen>
       <Mono color={accent}>{ev.crews.name.toUpperCase()} · {kindLabel(ev.kind).toUpperCase()}</Mono>
       <Title back>{ev.title}</Title>
-      <Body dim>{whenText(new Date(ev.starts_at))} · {going} {going === 1 ? 'vai' : 'vão'} · {media.filter((m) => m.status === 'accepted').length} mídias</Body>
+      {board ? <EventCard ev={board} actions={actions} /> : null}
+      <ErrorText>{actions.error}</ErrorText>
+      <Body dim>{whenText(new Date(ev.starts_at))} · {board?.going ?? going} {(board?.going ?? going) === 1 ? 'vai' : 'vão'} · {media.filter((m) => m.status === 'accepted').length} mídias</Body>
+
       {win === 'aberto' && (
         <Button title="Fazer a mídia" color={ev.crews.color}
                 onPress={() => router.push({ pathname: '/midia/[id]', params: { id: ev.id, titulo: ev.title } })} />

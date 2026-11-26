@@ -75,3 +75,11 @@ export function ReportsLayer({ reports }: { reports: MapReport[] }) {
     ))}
   </>);
 }
+
+/** No app nativo o carro do mapa ainda é o desenho de cima (o 3D é do navegador). */
+export function CarModel({ fallback }: {
+  spec: import('../lib/car3dTypes').CarSpec; glide?: Glide | null; heading?: number | null; size?: number; night?: boolean;
+  fallback: React.ReactNode;
+}) {
+  return <>{fallback}</>;
+}

@@ -20,9 +20,10 @@ import { goBack } from '../../src/lib/goBack';
 
 interface PublicProfile {
   id: string; username: string; avatar_key: string | null; joined_at: string; posts: number; mine: boolean;
+  display_name?: string | null; bio?: string | null;
   car: { make: string; model: string; year: number | null; color: string; ride_height_cm: number; suspension: string;
          body_type?: string; tint?: string;
-         rim: number; neon: string | null; spoiler: boolean } | null;
+         rim: number; neon: string | null; spoiler: boolean; version?: string | null; fuel?: string | null } | null;
 }
 
 interface ProfileCrew { crew_id: string; name: string; color: string; role: string }
@@ -111,6 +112,8 @@ export default function Perfil() {
             </View>
           </View>
           <View style={{ gap: 2 }}>
+            {p.display_name ? <Text style={{ color: colors.text, fontSize: 16, fontWeight: '800' }}>{p.display_name}</Text> : null}
+            {p.bio ? <Text style={{ color: colors.textDim }}>{p.bio}</Text> : null}
             <Text style={{ color: colors.textMuted, fontSize: 13 }}>
               Na cena desde {new Date(p.joined_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
             </Text>
@@ -144,6 +147,8 @@ export default function Perfil() {
                 <CarMarker color={p.car.color} neon={p.car.neon} heading={0} body={p.car.body_type} tint={p.car.tint} spoiler={p.car.spoiler} size={96} />
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700' }}>{p.car.make} {p.car.model}{p.car.year ? ` ${p.car.year}` : ''}</Text>
+                  {p.car.version ? <Text style={{ color: colors.textDim, fontSize: 13 }} numberOfLines={2}>
+                    {p.car.version}{p.car.fuel ? ` · ${p.car.fuel}` : ''}</Text> : null}
                   <Text style={{ color: colors.neon, fontFamily: fonts.mono, fontSize: 12 }}>
                     VÃO {p.car.ride_height_cm} CM · ARO {p.car.rim} · {SUSP[p.car.suspension] ?? p.car.suspension}{p.car.neon ? ` · NEON ${p.car.neon.toUpperCase()}` : ''}
                   </Text>

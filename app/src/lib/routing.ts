@@ -79,3 +79,31 @@ export function carErrorText(code: string): string {
     default: return 'A montagem automática está fora agora. Monta manualmente aqui embaixo ou tenta mais tarde.';
   }
 }
+
+// Tabela FIPE: primeiro pelo serviço (com cache); se a API pública barrar o servidor, o app pede direto.
+import { fipeDirectUrl, parseFipeRaw, type FipeItem, type FipeKind, type FipeValor } from './fipe.ts';
+
+async function fipe<T>(kind: FipeKind, path: string, marca = '', modelo = '', ano = ''): Promise<T> {
+  try {
+    return await call<T>(path);
+  } catch (e) {
+    const code = e instanceof RoutingError ? e.message : '';
+    if (code !== 'fipe_ocupada' && code !== 'fipe_indisponivel') throw e;
+    const url = fipeDirectUrl(kind, marca, modelo, ano);
+    if (!url) throw e;
+    let res: Response;
+    try { res = await fetch(url, { headers: { accept: 'application/json' } }); } catch { throw new RoutingError('sem_internet'); }
+    if (res.status === 429) throw new RoutingError('fipe_ocupada');
+    const parsed = res.ok ? parseFipeRaw(kind, await res.json().catch(() => null)) : null;
+    if (!parsed) throw new RoutingError('fipe_indisponivel');
+    return parsed as T;
+  }
+}
+
+const q = encodeURIComponent;
+export const fipeMarcas = () => fipe<FipeItem[]>('marcas', '/fipe/marcas');
+export const fipeModelos = (marca: string) => fipe<FipeItem[]>('modelos', `/fipe/modelos?marca=${q(marca)}`, marca);
+export const fipeAnos = (marca: string, modelo: string) =>
+  fipe<FipeItem[]>('anos', `/fipe/anos?marca=${q(marca)}&modelo=${q(modelo)}`, marca, modelo);
+export const fipeValor = (marca: string, modelo: string, ano: string) =>
+  fipe<FipeValor>('valor', `/fipe/valor?marca=${q(marca)}&modelo=${q(modelo)}&ano=${q(ano)}`, marca, modelo, ano);

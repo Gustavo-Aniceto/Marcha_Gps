@@ -1,7 +1,9 @@
 // Criar evento (fundador e admins). O banco recusa se a pessoa não for admin da equipe.
-// Sem escolher tipo: nome, dia no calendário, horário, local (busca de endereço; não precisa estar lá) e quem vê.
+// Sem escolher tipo: capa, nome, descrição, dia no calendário, horário, local (busca de endereço) e quem vê.
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, Text, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { uploadPhoto } from '../src/lib/photos';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { Body, Button, Card, ErrorText, Field, Label, Mono, Pills, Screen, Title } from '../src/components/ui';
@@ -23,6 +25,8 @@ export default function EventoNovo() {
   const { profile } = useSession();
   const now = new Date();
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [cover, setCover] = useState<string | null>(null); // foto escolhida (sobe ao publicar)
   const [view, setView] = useState({ year: now.getFullYear(), month: now.getMonth() });
   const [day, setDay] = useState<Date | null>(null);
   const [hour, setHour] = useState(21);
@@ -60,14 +64,25 @@ export default function EventoNovo() {
     }
   }
 
+  async function pickCover() {
+    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8, allowsEditing: true, aspect: [16, 9] });
+    if (!r.canceled && r.assets[0]) setCover(r.assets[0].uri);
+  }
+
   async function save() {
     if (!profile || !crew || !place || !starts) return;
     if (startsPast) { setError('Esse horário já passou. Escolha outro.'); return; }
     setBusy(true); setError(null);
+    let cover_key: string | null = null;
+    if (cover) {
+      try { cover_key = await uploadPhoto(cover, 'post'); }
+      catch (x) { setBusy(false); setError(friendlyError(x)); return; }
+    }
     const ends = new Date(starts.getTime() + hours * 3_600_000);
     const { error: e } = await db.from('events').insert({
       crew_id: crew, title: title.trim(), starts_at: starts.toISOString(), ends_at: ends.toISOString(),
       lat: place.lat, lon: place.lon, radius_m: 200, visibility: vis, verified_only: true, created_by: profile.id,
+      cover_key, description: description.trim() || null, place_name: place.name.slice(0, 160),
     });
     setBusy(false);
     if (e) setError(friendlyError(e)); else goBack(router);
@@ -76,7 +91,15 @@ export default function EventoNovo() {
   return (
     <Screen>
       <Title back="/equipes">Novo evento</Title>
+      <Pressable onPress={pickCover} accessibilityRole="button" accessibilityLabel={cover ? 'Trocar capa do evento' : 'Colocar capa do evento'}
+                 style={{ height: 150, borderRadius: 12, borderWidth: 1, borderStyle: cover ? 'solid' : 'dashed', borderColor: colors.lineStrong,
+                          backgroundColor: colors.panel, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
+        {cover ? <Image source={{ uri: cover }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+          : <Text style={{ color: colors.textDim, fontWeight: '700' }}>📷 Colocar capa (opcional)</Text>}
+      </Pressable>
       <Field label="Nome do evento" value={title} onChangeText={setTitle} maxLength={60} placeholder="Ex.: Encontro de sábado" />
+      <Field label={`Descrição (${description.length}/1000)`} value={description} onChangeText={setDescription} maxLength={1000} multiline
+             placeholder="O que vai rolar, regras, ponto de encontro…" style={{ minHeight: 90, textAlignVertical: 'top' }} />
 
       <Label>Dia</Label>
       <Card style={{ gap: 6 }}>
