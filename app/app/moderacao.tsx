@@ -124,14 +124,14 @@ function HealthView({ h }: { h: Health | null }) {
   const down = h.services.filter((x) => !x.ok);
   return (
     <View style={{ gap: 12 }}>
-      <Card accent={down.length ? colors.danger : colors.ok} style={{ gap: 4 }}>
-        <Text style={{ color: down.length ? colors.danger : colors.ok, fontSize: 18, fontWeight: '800' }}>
+      <Card accent={down.length ? colors.danger : h.services.length ? colors.ok : undefined} style={{ gap: 4 }}>
+        <Text style={{ color: down.length ? colors.danger : h.services.length ? colors.ok : colors.text, fontSize: 18, fontWeight: '800' }}>
           {h.services.length === 0 ? 'Ainda sem checagem' : down.length ? `${down.length} serviço(s) fora do ar` : 'Tudo no ar'}
         </Text>
         <Body dim>{h.errors_24h} {h.errors_24h === 1 ? 'erro' : 'erros'} no app nas últimas 24 h. A checagem roda de hora em hora; quando algo cai ou volta, você recebe uma notificação.</Body>
       </Card>
 
-      <Card style={{ gap: 0, paddingVertical: 6 }}>
+      {h.services.length > 0 && <Card style={{ gap: 0, paddingVertical: 6 }}>
         {h.services.map((x, i) => (
           <View key={x.service} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 52,
                                          borderTopWidth: i ? 1 : 0, borderTopColor: colors.line }}>
@@ -144,7 +144,7 @@ function HealthView({ h }: { h: Health | null }) {
             </View>
           </View>
         ))}
-      </Card>
+      </Card>}
 
       <Text style={{ color: colors.textDim, fontWeight: '700' }}>Erros no app (7 dias)</Text>
       {h.errors.length === 0 ? <Body dim>Nenhum erro registrado.</Body> : h.errors.map((e, i) => (
