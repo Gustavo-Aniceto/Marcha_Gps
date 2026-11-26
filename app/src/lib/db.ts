@@ -66,7 +66,7 @@ export interface VisibleCar {
   car: {
     make: string; model: string; color: string; ride_height_cm: number; suspension: string;
     rim: number; wheel_position: string; camber_deg: number; tint: string; spoiler: boolean; neon: string | null;
-    body_type?: string;
+    body_type?: string; year?: number | null; version?: string | null;
   } | null;
   /** equipes que vocês dois fazem parte (verificados) */
   crews?: string[] | null;

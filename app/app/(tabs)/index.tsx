@@ -19,6 +19,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { CarMarker } from '../../src/components/CarMarker';
 import { ProfileSheet } from '../../src/components/ProfileSheet';
 import { CarChooser } from '../../src/components/CarChooser';
+import { useTabBarSpace } from '../../src/components/GlassTabBar';
 import { ReportIcon } from '../../src/components/ReportIcon';
 import { Speedometer } from '../../src/components/Speedometer';
 import { isOverLimit, radarAhead, smoothKmh } from '../../src/lib/speed.ts';
@@ -49,7 +50,7 @@ async function loadOnRoute(route: Route): Promise<{ item: Report; along: number 
   return obstaclesOnRoute(route, (data ?? []) as Report[]);
 }
 
-interface MyCar { color: string; neon: string | null; ride_height_cm: number; suspension: string; body_type: string; tint: string; spoiler: boolean;
+interface MyCar { make?: string; model?: string; year?: number | null; fipe_version?: string | null; color: string; neon: string | null; ride_height_cm: number; suspension: string; body_type: string; tint: string; spoiler: boolean;
                  rim: number; camber_deg: number; wheel_position: string }
 
 export default function Mapa() {
@@ -62,6 +63,9 @@ export default function Mapa() {
   // navegando a barra de abas some: o painel de baixo sobe acima da barrinha do iPhone
   const insets = useSafeAreaInsets();
   const NAV_H = BOTTOM_NAV + insets.bottom;
+  // parado: a barra de abas flutua por cima do mapa, então o que fica embaixo sobe esse tanto
+  const tabSpace = useTabBarSpace();
+  const IDLE_H = BOTTOM_IDLE + tabSpace;
   const { position, permission, retry } = useLocationSharing(share, null, navigating);
   const [recenter, setRecenter] = useState(0);
   // câmera presa no carro (true) ou solta porque a pessoa está olhando o mapa (false)
@@ -90,7 +94,7 @@ export default function Mapa() {
   const [carRev, setCarRev] = useState(0); // muda quando a pessoa escolhe com qual carro vai sair
   useFocusEffect(useCallback(() => {
     if (!profile) return;
-    db.from('cars').select('color, neon, ride_height_cm, suspension, body_type, tint, spoiler, rim, camber_deg, wheel_position')
+    db.from('cars').select('color, neon, ride_height_cm, suspension, body_type, tint, spoiler, rim, camber_deg, wheel_position, make, model, year, fipe_version')
       .eq('owner_id', profile.id).eq('is_active', true).maybeSingle()
       .then(({ data }) => setMyCar(data as MyCar | null));
   }, [profile, carRev]));
@@ -438,13 +442,13 @@ export default function Mapa() {
       )}
 
       {position && (
-        <View style={[s.speedo, { bottom: (navigating ? NAV_H : BOTTOM_IDLE) + 12 }]} pointerEvents="none">
+        <View style={[s.speedo, { bottom: (navigating ? NAV_H : IDLE_H) + 12 }]} pointerEvents="none">
           <Speedometer kmh={kmh} limit={speedRadar?.limit} over={over} radarDist={speedRadar?.dist} theme={ui} />
         </View>
       )}
 
       {/* avisar (amarelo, embaixo à direita) */}
-      <Pressable style={[s.reportBtn, { bottom: (navigating ? NAV_H : BOTTOM_IDLE) + 12 }]} onPress={() => router.push('/radar')}
+      <Pressable style={[s.reportBtn, { bottom: (navigating ? NAV_H : IDLE_H) + 12 }]} onPress={() => router.push('/radar')}
                  accessibilityRole="button" accessibilityLabel="Avisar buraco, lombada, radar, blitz">
         <Svg width={34} height={34} viewBox="0 0 24 24">
           <Path d="M12 3.2 22 20.5H2Z" fill="#14171C" stroke="#14171C" strokeWidth={1.4} strokeLinejoin="round" />
@@ -454,7 +458,7 @@ export default function Mapa() {
 
       {/* minha localização / voltar pro carro, e ver a rota inteira */}
       {following ? (
-        <Pressable style={[s.round, s.sideBtn, { bottom: (navigating ? NAV_H : BOTTOM_IDLE) + 86, backgroundColor: ui.button, borderColor: ui.border }]}
+        <Pressable style={[s.round, s.sideBtn, { bottom: (navigating ? NAV_H : IDLE_H) + 86, backgroundColor: ui.button, borderColor: ui.border }]}
                    accessibilityRole="button" accessibilityLabel="Ir pra minha localização"
                    onPress={() => { if (!position) retry(); backToCar(); }}>
           <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={position ? chrome.locate : ui.sub} strokeWidth={2.2}>
@@ -462,7 +466,7 @@ export default function Mapa() {
           </Svg>
         </Pressable>
       ) : (
-        <Pressable style={[s.backBtn, { bottom: (navigating ? NAV_H : BOTTOM_IDLE) + 86 }]} accessibilityRole="button"
+        <Pressable style={[s.backBtn, { bottom: (navigating ? NAV_H : IDLE_H) + 86 }]} accessibilityRole="button"
                    accessibilityLabel="Voltar pro carro" onPress={() => { if (!position) retry(); backToCar(); }}>
           <Svg width={16} height={16} viewBox="0 0 24 24" fill="#FFFFFF"><Path d="M12 2 20 21 12 17 4 21Z" /></Svg>
           <Text style={s.backText}>Voltar pro carro</Text>
@@ -516,7 +520,7 @@ export default function Mapa() {
           </Pressable>
         </View>
       ) : (
-        <Pressable style={[s.searchBar, { backgroundColor: ui.panel, borderColor: ui.border }]} onPress={() => router.push('/destino')}
+        <Pressable style={[s.searchBar, { bottom: tabSpace + 10, backgroundColor: ui.panel, borderColor: ui.border }]} onPress={() => router.push('/destino')}
                    accessibilityRole="search" accessibilityLabel="Para onde? Buscar destino">
           <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={ui.icon} strokeWidth={2.2} strokeLinecap="round">
             <Circle cx={11} cy={11} r={7} /><Path d="m20 20-3.5-3.5" />
@@ -527,7 +531,7 @@ export default function Mapa() {
       {picked && (
         <ProfileSheet key={picked.user_id} username={picked.username} car={picked.car} updatedAt={picked.updated_at}
                       statusHighlight={picked.same_crew} onClose={() => setPickedId(null)}
-                      bottom={(navigating ? NAV_H : BOTTOM_IDLE) + 10}
+                      bottom={(navigating ? NAV_H : IDLE_H) + 10}
                       status={picked.same_crew ? 'SUA EQUIPE' : picked.approximate ? 'REGIÃO APROXIMADA' : undefined} />
       )}
       <CarChooser ownerId={profile?.id} onChosen={() => setCarRev((r) => r + 1)} />

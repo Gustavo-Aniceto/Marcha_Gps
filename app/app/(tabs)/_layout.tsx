@@ -7,6 +7,7 @@ import { colors } from '../../src/theme/tokens.ts';
 import { useNavigation } from '../../src/lib/navigation';
 import { db } from '../../src/lib/db';
 import { useSession } from '../../src/lib/session';
+import { GlassTabBar } from '../../src/components/GlassTabBar';
 
 const icons: Record<string, string> = {
   index: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z M9 4v14 M15 6v14',
@@ -50,13 +51,11 @@ export default function TabsLayout() {
   }, []);
   return (
     <Tabs
+      // barra flutuante com fundo de vidro (src/components/GlassTabBar.tsx); as telas passam por baixo dela
+      tabBar={(props) => <GlassTabBar {...props} hidden={navigating && props.state.routes[props.state.index]?.name === 'index'} />}
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: colors.neon,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: navigating && route.name === 'index' ? { display: 'none' }
-          : { backgroundColor: colors.tabBar, borderTopColor: colors.tabBarLine, minHeight: 60, paddingTop: 6 },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarStyle: { position: 'absolute' },
         tabBarIcon: ({ color }) => <Icon name={route.name} color={color} />,
       })}
     >
@@ -64,8 +63,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="feed" options={{ title: 'Feed' }} />
       <Tabs.Screen name="equipes" options={{ title: 'Equipes' }} />
       <Tabs.Screen name="garagem" options={{ title: 'Garagem' }} />
-      <Tabs.Screen name="conta" options={{ title: 'Conta', tabBarBadge: unread > 0 ? (unread > 9 ? '9+' : unread) : undefined,
-                                           tabBarBadgeStyle: { backgroundColor: colors.danger, fontSize: 10 } }} />
+      <Tabs.Screen name="conta" options={{ title: 'Conta', tabBarBadge: unread > 0 ? (unread > 9 ? '9+' : unread) : undefined }} />
       {/* Ranks sai da barra (fica em Conta e em Equipes) */}
       <Tabs.Screen name="ranks" options={{ title: 'Ranks', href: null }} />
     </Tabs>

@@ -71,6 +71,7 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 
 ## Dados de obstáculos
 - Importação **automática toda semana** (o serviço de rotas tenta de hora em hora; cada pedaço do mapa (12 quadrados) só é baixado de novo depois de 6 dias; se o Overpass estiver fora, tenta outro servidor e de novo depois) + script manual. OpenStreetMap (traffic_calming, highway=speed_camera) + radares da ANTT (rodovias concedidas, ex.: Dutra, Ayrton Senna). Duplicados a menos de 15 m são juntados; cada ponto leva a cidade; tudo entra como "não confirmado". Script: `scripts/import_obstacles.py`.
+- **Radares oficiais** (com a velocidade da placa), atualizados sozinhos a cada 6 dias: CET-SP (todos os radares da cidade de São Paulo), DER-SP (rodovias estaduais em SP, Guarulhos e Itaquá) e ANTT (rodovias federais concedidas). Entram já confirmados. Guarulhos não publica a lista dos radares municipais em dados abertos: lá valem os do DER/ANTT, os do OpenStreetMap e os avisos da galera.
 - Não usar dados do Waze/Google (termos de uso).
 
 ## Adm Master
@@ -87,6 +88,8 @@ GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: 
 
 ## Garagem: ficha FIPE e carro 3D
 - Depois da foto, a IA diz marca/modelo e o app abre a **ficha da tabela FIPE** já no modelo certo: a pessoa escolhe versão e ano e confirma. A ficha (código FIPE, versão, ano, combustível, preço médio) fica no carro e aparece no perfil.
+- O carro 3D segue o **formato do modelo e da geração** (Gol quadrado, bolinha, G5; Opala, Fusca, Kombi, Celta, Onix, HB20, Saveiro, S10, Civic etc., ~80 modelos), pela marca/modelo/versão da ficha FIPE e pelo ano. Desenho nosso, feito das medidas. Carro 3D realista igual aos apps grandes só com modelos 3D comprados/licenciados um por um.
+- Barra de baixo **flutuante com fundo de vidro** (pílula, item ativo destacado).
 - O carrinho do mapa virou **3D de verdade** (desenhado a partir da garagem: tipo, cor, vidro, aerofólio, aro, altura, cambagem, neon), visto de cima na diagonal e girando com a direção. Não usamos desenhos de jogos (direitos autorais e resolução baixa).
 
 ## Fora do escopo

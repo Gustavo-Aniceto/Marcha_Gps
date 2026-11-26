@@ -12,6 +12,7 @@ import { Car3DView } from '../../src/components/Car3D';
 import { FipeSheet } from '../../src/components/FipeSheet';
 import { fipeToCar, type FipeValor } from '../../src/lib/fipe.ts';
 import { specFromCar } from '../../src/lib/car3dTypes';
+import { resolveModel } from '../../src/lib/carModels.ts';
 import { db } from '../../src/lib/db';
 import { useSession } from '../../src/lib/session';
 import { checkFitment, tireFor, type Suspension, type WheelPosition } from '../../src/lib/fitment.ts';
@@ -246,6 +247,12 @@ export default function Garagem() {
 
       <Card style={{ alignItems: 'center' }}>
         <Car3DView spec={specFromCar(car, true)} width={300} height={210} />
+        {(() => {
+          // o desenho segue as proporções do modelo quando a gente conhece (Gol quadrado, Opala, Fusca...)
+          const m = resolveModel({ body: car.body_type, make: car.make, model: car.model, version: car.fipe_version, year: car.year ? Number(car.year) : null });
+          return <Text style={{ color: m.label ? colors.neon : colors.textMuted, fontSize: 12, fontWeight: '700' }}>
+            {m.label ? `Desenho no formato do ${m.label}` : 'Desenho no formato padrão do tipo escolhido'}</Text>;
+        })()}
         <Text style={{ color: colors.textMuted, fontSize: 12 }}>Arraste pra girar · é assim que ele anda no mapa</Text>
         <Mono color={colors.neon}>VÃO {car.ride_height_cm} CM · ARO {car.rim} · {tireFor(car.rim) ?? '—'}</Mono>
       </Card>

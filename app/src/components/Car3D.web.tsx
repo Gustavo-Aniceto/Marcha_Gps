@@ -24,7 +24,7 @@ export function Car3DView({ spec, width = 300, height = 220, pitch = 58, autoRot
       const st = state.current;
       if (autoRotate && !st.dragging) st.rel = (st.rel + dt * 0.012) % 360;
       st.spin += autoRotate ? dt * 0.002 : 0;
-      studio.draw(canvas.current, specRef.current, { rel: st.rel, pitch, wheel: st.spin });
+      studio.draw(canvas.current, specRef.current, { rel: st.rel, pitch, wheel: st.spin, zoom: 1.35, elev: 24 });
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);

@@ -4,7 +4,8 @@
 //   GET  /convite?codigo=XXXX-XXXX -> { status, kind, crew_name }   (sem login, limite por IP)
 //   POST /carro/analisar { fotos: [dataURI] } -> CarGuess  (IA com visão monta o carrinho; precisa de login)
 //   GET  /fipe/marcas | /fipe/modelos?marca= | /fipe/anos?marca=&modelo= | /fipe/valor?marca=&modelo=&ano=  (tabela FIPE, com cache; precisa de login)
-// Agendado: importa lombadas e radares do OpenStreetMap, uma cidade por vez.
+// Agendado: importa lombadas e radares do OpenStreetMap, uma faixa por vez, e os radares oficiais
+// (CET, DER, ANTT; src/radares.ts) uma vez por semana.
 import { AuthError, issuerList, verifyFromIssuers, type Jwk } from '../../fotos/src/jwt';
 import { preflight, withCors } from '../../fotos/src/cors';
 import { normalizeQuery, parsePhoton, photonUrl } from './geocode';
@@ -13,6 +14,7 @@ import { RateLimiter } from './limits';
 import { OVERPASS_URLS, TILES, neonSqlUrl, overpassQuery, type Tile } from './obstacles';
 import { VISION_MODEL, parseGuess, validPhotos, visionRequest } from './carro';
 import { fipeTarget, parseFipe } from './fipe';
+import { OFFICIAL_SOURCES, OFFICIAL_URLS, anttLatestCsv, decodeText, type OfficialSource } from './radares';
 
 interface Env {
   CLERK_ISSUER: string;
@@ -60,6 +62,7 @@ export default {
   // tenta de novo na hora seguinte. Quase sempre não há nada a fazer e só consulta o banco.
   async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
     ctx.waitUntil(importNextTile(env));
+    ctx.waitUntil(importOfficialRadars(env));
   },
 };
 
@@ -192,6 +195,35 @@ async function importNextTile(env: Env): Promise<void> {
     const [row] = (await sql(env, 'select public.osm_import_due($1) as due', [tile.id])) as { due: boolean }[];
     if (row?.due) { await importTile(tile, env); return; }
   }
+}
+
+// Radares oficiais (CET, DER, ANTT): cada fonte de 6 em 6 dias (mesmo controle das faixas). O banco faz a leitura.
+async function importOfficialRadars(env: Env): Promise<void> {
+  if (!env.IMPORT_DATABASE_URL) return;
+  for (const src of OFFICIAL_SOURCES) {
+    const [row] = (await sql(env, 'select public.osm_import_due($1) as due', [`oficial_${src}`])) as { due: boolean }[];
+    if (!row?.due) continue;
+    try {
+      const text = await downloadOfficial(src);
+      const [res] = await sql(env, 'select public.import_official_radars($1, $2) as r', [src, text]);
+      console.log(`radares ${src}: ${JSON.stringify(res)}`);
+    } catch (e) {
+      console.log(`radares ${src}: ${(e as Error).message}`.slice(0, 300));
+    }
+  }
+}
+
+async function downloadOfficial(src: OfficialSource): Promise<string> {
+  let url = OFFICIAL_URLS[src];
+  if (src === 'antt') {
+    const pkg = await fetch(url, { headers: { 'user-agent': UA, accept: 'application/json' } });
+    const latest = anttLatestCsv(await pkg.json().catch(() => null));
+    if (!latest) throw new Error('antt sem csv');
+    url = latest;
+  }
+  const res = await fetch(url, { headers: { 'user-agent': UA } });
+  if (!res.ok) throw new Error(`download ${res.status}`);
+  return decodeText(await res.arrayBuffer());
 }
 
 async function importTile(tile: Tile, env: Env): Promise<void> {
