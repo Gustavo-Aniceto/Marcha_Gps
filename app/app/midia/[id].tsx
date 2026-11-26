@@ -50,7 +50,7 @@ export default function Midia() {
     return (
       <Screen>
         <Title>Presença confirmada</Title>
-        {shot && <Image source={{ uri: shot }} style={{ height: 260, borderRadius: 8 }} accessibilityLabel="Sua mídia" />}
+        {shot && <Image source={{ uri: shot }} style={{ height: 260, borderRadius: 14 }} accessibilityLabel="Sua mídia" />}
         <Card accent={colors.neon}>
           <Mono color={colors.neon}>+50 XP NA EQUIPE</Mono>
           <Body dim>A mídia vai pra galeria do evento. O admin pode contestar em até 24 h.</Body>
@@ -76,7 +76,7 @@ export default function Midia() {
     <Screen scroll={false}>
       <Title>Fazer a mídia</Title>
       <Mono>{(titulo ?? 'EVENTO').toUpperCase()}</Mono>
-      <View style={{ flex: 1, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderColor: colors.lineStrong }}>
+      <View style={{ flex: 1, borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: colors.lineStrong }}>
         {shot
           ? <Image source={{ uri: shot }} style={{ flex: 1 }} accessibilityLabel="Foto tirada" />
           : <CameraView ref={camera} style={{ flex: 1 }} facing="back" />}

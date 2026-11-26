@@ -10,7 +10,7 @@ export default function Entrar() {
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }}
                 contentContainerStyle={{ padding: 20, paddingTop: 48, gap: 20, alignItems: 'center' }}>
       <View style={{ gap: 6, width: '100%', maxWidth: 420 }}>
-        <Text style={{ fontFamily: fonts.display, fontSize: 36, color: colors.neon, letterSpacing: 1.5 }}>
+        <Text style={{ fontFamily: fonts.brand, fontSize: 36, color: colors.neon, letterSpacing: 1.5 }}>
           MARCHA <Text style={{ color: colors.text }}>GPS</Text>
         </Text>
         <Text style={{ color: colors.textMuted, fontSize: 14 }}>O GPS da cena rebaixada. Aqui só entra quem é convidado.</Text>

@@ -37,13 +37,13 @@ export default function Inicio() {
   return (
     <Screen>
       <View style={{ gap: 6, marginTop: 24, marginBottom: 8 }}>
-        <Text style={{ fontFamily: fonts.display, fontSize: 40, color: colors.neon, letterSpacing: 1.5 }}>
+        <Text style={{ fontFamily: fonts.brand, fontSize: 40, color: colors.neon, letterSpacing: 1.5 }}>
           MARCHA <Text style={{ color: colors.text }}>GPS</Text>
         </Text>
         <Text style={{ color: colors.textMuted, fontSize: 14 }}>O GPS da cena rebaixada.</Text>
       </View>
 
-      <Text style={{ color: colors.text, fontFamily: fonts.display, fontSize: 22 }}>Tem convite?</Text>
+      <Text style={{ color: colors.text, fontFamily: fonts.display, fontWeight: '800', letterSpacing: -0.3, fontSize: 22 }}>Tem convite?</Text>
       <Body dim>
         Aqui só entra quem é convidado por alguém da cena. Digite o código que você recebeu; depois você entra
         com a conta que preferir.

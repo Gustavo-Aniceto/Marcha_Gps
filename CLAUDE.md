@@ -57,5 +57,6 @@ Leia `docs/decisoes.md` antes de mudar regra de produto.
 - Login do Clerk: importar só `@clerk/localizations/pt-BR` (o pacote inteiro põe ~4 MB no app). `app/vercel.json` guarda `/_expo/static` e `/assets` em cache longo (nomes com hash).
 - Tutorial do primeiro acesso: `app/tutorial.tsx` + passos em `src/lib/tutorial.ts` (abre sozinho uma vez, chave `TUTORIAL_KEY`; menu ☰ → "Como usar o app"). Voltar: sempre `goBack(router, destino)` (`src/lib/goBack.ts`) ou `<Title back>`; nunca `router.back()` direto.
 - Expo + expo-router + TypeScript. Lógica pura fica em `app/src/lib/` com testes em `app/src/lib/__tests__/` (`npm test`).
-- Cores e fontes em `app/src/theme/`. Não espalhar cor solta pelas telas.
+- Cores e fontes em `app/src/theme/`. Não espalhar cor solta pelas telas. Visual "grafite" (fundo quase preto, cartões `corner.card` 20, chips redondos, verde-limão suave só no destaque). Títulos na fonte do sistema (`fonts.display`); Chakra Petch só na marca (`fonts.brand`). `tokens.ts` não importa react-native (os testes leem no Node).
+- Ícones: `src/components/Icon.tsx` (linha fina; `IconBadge` = ícone num círculo). Não usar emoji como ícone.
 - Textos para o usuário em português do Brasil.

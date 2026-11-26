@@ -104,7 +104,7 @@ export default function EquipePagina() {
 
       {/* capa + foto da equipe por cima, como no Facebook */}
       <View style={{ marginBottom: LOGO / 2 }}>
-        <View style={{ height: COVER_H, borderRadius: 8, overflow: 'hidden', backgroundColor: colors.panelAlt,
+        <View style={{ height: COVER_H, borderRadius: 14, overflow: 'hidden', backgroundColor: colors.panelAlt,
                        borderWidth: 1, borderColor: accent }}>
           {cover
             ? <Image source={{ uri: cover }} style={{ width: '100%', height: '100%' }} resizeMode="cover"
@@ -139,7 +139,7 @@ export default function EquipePagina() {
                 <Text style={{ color: accent, fontSize: 40, fontWeight: '800' }}>{(c.name[0] ?? '?').toUpperCase()}</Text>
               </View>}
           {editing && (
-            <View style={{ position: 'absolute', right: -4, bottom: -4, backgroundColor: colors.bg, borderRadius: 14,
+            <View style={{ position: 'absolute', right: -4, bottom: -4, backgroundColor: colors.bg, borderRadius: 18,
                            borderWidth: 1, borderColor: accent, paddingHorizontal: 8, paddingVertical: 2 }}>
               <Text style={{ color: accent, fontSize: 12, fontWeight: '700' }}>{busy === 'avatar' ? '…' : 'trocar'}</Text>
             </View>

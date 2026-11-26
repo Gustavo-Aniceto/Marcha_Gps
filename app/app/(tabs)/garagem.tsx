@@ -196,7 +196,7 @@ export default function Garagem() {
             return (
               <Pressable key={c.id} onPress={() => openCar(c)} accessibilityRole="button" accessibilityState={{ selected: on }}
                          accessibilityLabel={`${c.make} ${c.model}${c.is_active ? ', no mapa' : ''}`}
-                         style={{ width: '31%', minWidth: 96, alignItems: 'center', padding: 6, borderRadius: 8, borderWidth: 1.5,
+                         style={{ width: '31%', minWidth: 96, alignItems: 'center', padding: 6, borderRadius: 14, borderWidth: 1.5,
                                   borderColor: on ? colors.neon : colors.line, backgroundColor: on ? 'rgba(198,255,61,0.08)' : colors.panel }}>
                 <CarMarker color={c.color} neon={c.neon} heading={0} body={c.body_type} tint={c.tint} spoiler={c.spoiler} size={52} />
                 <Text style={{ color: on ? colors.neon : colors.text, fontSize: 12, fontWeight: '700', textAlign: 'center' }} numberOfLines={1}>
@@ -208,7 +208,7 @@ export default function Garagem() {
           })}
           {cars.length < 5 && (
             <Pressable onPress={() => openCar(null)} accessibilityRole="button" accessibilityLabel="Adicionar outro carro"
-                       style={{ width: '31%', minWidth: 96, minHeight: 92, alignItems: 'center', justifyContent: 'center', borderRadius: 8,
+                       style={{ width: '31%', minWidth: 96, minHeight: 92, alignItems: 'center', justifyContent: 'center', borderRadius: 14,
                                 borderWidth: 1.5, borderStyle: 'dashed', borderColor: !car.id ? colors.neon : colors.line }}>
               <Text style={{ color: !car.id ? colors.neon : colors.textDim, fontSize: 26 }}>+</Text>
               <Text style={{ color: !car.id ? colors.neon : colors.textDim, fontSize: 12, fontWeight: '700' }}>Outro carro</Text>
@@ -236,7 +236,7 @@ export default function Garagem() {
             <Text style={{ color: colors.textDim }}>Montando seu carrinho…</Text>
           </View>
         ) : (
-          <Button title={photos.length || car.photo_paths?.length ? '📷 Mandar outras fotos' : '📷 Mandar fotos do carro'}
+          <Button title={photos.length || car.photo_paths?.length ? 'Mandar outras fotos' : 'Mandar fotos do carro'}
                   variant="secondary" onPress={pickAndBuild} />
         )}
         {guessText && (
@@ -299,7 +299,7 @@ export default function Garagem() {
           return (
             <Pressable key={b.id} onPress={() => set('body_type', b.id)} accessibilityRole="button"
                        accessibilityState={{ selected: on }} accessibilityLabel={`${b.label}, ex.: ${b.example}`}
-                       style={{ width: '23%', minWidth: 76, alignItems: 'center', paddingVertical: 6, borderRadius: 8, borderWidth: 1.5,
+                       style={{ width: '23%', minWidth: 76, alignItems: 'center', paddingVertical: 6, borderRadius: 14, borderWidth: 1.5,
                                 borderColor: on ? colors.neon : colors.line, backgroundColor: on ? 'rgba(198,255,61,0.08)' : colors.panel }}>
               <CarMarker color={car.color} heading={0} body={b.id} tint={car.tint} size={56} />
               <Text style={{ color: on ? colors.neon : colors.textDim, fontSize: 12, fontWeight: on ? '700' : '500' }}>{b.label}</Text>

@@ -73,7 +73,7 @@ const s = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 48 },
   title: { color: colors.text, fontSize: 20, fontWeight: '800' },
   label: { color: colors.textMuted, fontSize: 12, fontWeight: '800', letterSpacing: 1 },
-  card: { backgroundColor: colors.panel, borderRadius: 14, borderWidth: 1, borderColor: colors.line, paddingHorizontal: 14 },
+  card: { backgroundColor: colors.panel, borderRadius: 18, borderWidth: 1, borderColor: colors.line, paddingHorizontal: 14 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60, paddingVertical: 8 },
   rowLine: { borderTopWidth: 1, borderTopColor: colors.line },
   rowTitle: { color: colors.text, fontSize: 15, fontWeight: '700' },

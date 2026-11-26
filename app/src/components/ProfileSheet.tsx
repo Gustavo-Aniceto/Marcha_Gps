@@ -91,7 +91,7 @@ export function ProfileSheet({ username, car: fallbackCar, status, statusHighlig
 }
 
 const s = StyleSheet.create({
-  sheet: { position: 'absolute', left: 12, right: 12, padding: 14, gap: 12, borderRadius: 12, zIndex: 50,
+  sheet: { position: 'absolute', left: 12, right: 12, padding: 14, gap: 12, borderRadius: 16, zIndex: 50,
            backgroundColor: 'rgba(6,12,22,0.97)', borderWidth: 1, borderColor: colors.lineStrong, maxWidth: 520, alignSelf: 'center' },
   head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   user: { color: colors.text, fontSize: 17, fontWeight: '700' },
@@ -99,9 +99,9 @@ const s = StyleSheet.create({
   dim: { color: colors.textDim, fontSize: 13 },
   close: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, borderWidth: 1, borderColor: colors.lineStrong },
   carRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  carBox: { width: 104, height: 120, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: colors.panelAlt },
+  carBox: { width: 104, height: 120, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.panelAlt },
   carName: { color: colors.text, fontSize: 15, fontWeight: '700' },
-  photo: { width: 120, height: 84, borderRadius: 8, backgroundColor: colors.panelAlt },
-  button: { minHeight: 46, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.neon },
+  photo: { width: 120, height: 84, borderRadius: 14, backgroundColor: colors.panelAlt },
+  button: { minHeight: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.neon },
   buttonText: { color: colors.ink, fontWeight: '800', fontSize: 15 },
 });

@@ -100,7 +100,7 @@ const s = StyleSheet.create({
   art: { width: 132, height: 132, borderRadius: 66, borderWidth: 2, alignItems: 'center', justifyContent: 'center',
          backgroundColor: colors.panel, marginBottom: 12 },
   where: { fontFamily: fonts.mono, fontSize: 12, letterSpacing: 1 },
-  title: { color: colors.text, fontFamily: fonts.display, fontSize: 28, lineHeight: 34 },
+  title: { color: colors.text, fontFamily: fonts.display, fontWeight: '800', letterSpacing: -0.3, fontSize: 28, lineHeight: 34 },
   text: { color: colors.textDim, fontSize: 17, lineHeight: 25 },
   bottom: { paddingHorizontal: 20, paddingBottom: 12, gap: 18 },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, minHeight: 24, alignItems: 'center' },

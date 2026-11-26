@@ -68,11 +68,11 @@ export function CarChooser({ ownerId, onChosen }: { ownerId: string | null | und
 
 const s = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 16 },
-  sheet: { backgroundColor: colors.panel, borderRadius: 14, borderWidth: 1, borderColor: colors.lineStrong, padding: 16, gap: 10,
+  sheet: { backgroundColor: colors.panel, borderRadius: 18, borderWidth: 1, borderColor: colors.lineStrong, padding: 16, gap: 10,
            maxWidth: 480, width: '100%', alignSelf: 'center' },
   title: { color: colors.text, fontSize: 20, fontWeight: '800' },
   sub: { color: colors.textDim, fontSize: 14 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 8, minHeight: 64, borderRadius: 10, borderWidth: 1.5,
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 8, minHeight: 64, borderRadius: 14, borderWidth: 1.5,
          borderColor: colors.line, backgroundColor: colors.panelAlt },
   car: { color: colors.text, fontSize: 16, fontWeight: '700' },
   mono: { color: colors.neon, fontFamily: fonts.mono, fontSize: 11 },

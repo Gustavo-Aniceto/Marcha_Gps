@@ -19,9 +19,9 @@ export function useTabBarSpace(): number {
 
 // vidro de verdade no navegador; no app nativo, fundo escuro quase opaco
 const glass = Platform.OS === 'web'
-  ? ({ backgroundColor: 'rgba(16,20,27,0.62)', backdropFilter: 'blur(22px) saturate(170%)',
+  ? ({ backgroundColor: 'rgba(20,22,26,0.68)', backdropFilter: 'blur(22px) saturate(170%)',
        WebkitBackdropFilter: 'blur(22px) saturate(170%)' } as object)
-  : { backgroundColor: 'rgba(16,20,27,0.94)' };
+  : { backgroundColor: 'rgba(20,22,26,0.96)' };
 
 export function GlassTabBar({ state, descriptors, navigation, hidden }: BottomTabBarProps & { hidden?: boolean }) {
   const insets = useSafeAreaInsets();
@@ -38,7 +38,7 @@ export function GlassTabBar({ state, descriptors, navigation, hidden }: BottomTa
           const { options } = descriptors[route.key];
           const focused = state.routes[state.index]?.key === route.key;
           const label = typeof options.title === 'string' ? options.title : route.name;
-          const color = focused ? colors.neon : 'rgba(237,239,242,0.72)';
+          const color = focused ? colors.neon : 'rgba(238,239,241,0.62)';
           const badge = options.tabBarBadge;
           const onPress = () => {
             const ev = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
@@ -67,11 +67,11 @@ const s = StyleSheet.create({
   wrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center', paddingHorizontal: 12 },
   bar: {
     width: '100%', maxWidth: 520, height: TAB_BAR_H, borderRadius: TAB_BAR_H / 2, flexDirection: 'row',
-    alignItems: 'center', paddingHorizontal: 6, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)',
+    alignItems: 'center', paddingHorizontal: 6, borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)',
     shadowColor: '#000', shadowOpacity: 0.45, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 12,
   },
   item: { flex: 1, height: TAB_BAR_H - 12, borderRadius: (TAB_BAR_H - 12) / 2, alignItems: 'center', justifyContent: 'center', gap: 2 },
-  itemOn: { backgroundColor: 'rgba(198,255,61,0.14)' },
+  itemOn: { backgroundColor: 'rgba(255,255,255,0.08)' },
   label: { fontSize: 11, fontWeight: '600' },
   badge: { position: 'absolute', top: -4, right: -10, minWidth: 18, height: 18, borderRadius: 9, backgroundColor: colors.danger,
            alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 1.5, borderColor: colors.bg },

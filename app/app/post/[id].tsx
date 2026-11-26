@@ -66,7 +66,7 @@ export default function PostScreen() {
               <Pressable onPress={() => router.push({ pathname: '/perfil/[username]', params: { username: c.username } })}>
                 <Avatar username={c.username} avatarKey={c.avatar_key} size={32} />
               </Pressable>
-              <View style={{ flex: 1, backgroundColor: colors.panel, borderRadius: 10, padding: 10, gap: 2 }}>
+              <View style={{ flex: 1, backgroundColor: colors.panel, borderRadius: 14, padding: 10, gap: 2 }}>
                 <Text style={{ color: colors.text, fontWeight: '700' }}>@{c.username} <Text style={{ color: colors.textMuted, fontWeight: '400', fontSize: 12 }}>{ago(c.created_at)}</Text></Text>
                 <Text style={{ color: colors.text, fontSize: 15 }}>{c.body}</Text>
                 {(c.mine || post.mine) && (
@@ -81,7 +81,7 @@ export default function PostScreen() {
             <TextInput value={text} onChangeText={setText} placeholder="Comentar…" placeholderTextColor={colors.textMuted}
                        multiline maxLength={500} accessibilityLabel="Escrever comentário"
                        style={{ flex: 1, minHeight: 44, color: colors.text, fontSize: 15, borderWidth: 1, borderColor: colors.lineStrong,
-                                borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: colors.panel }} />
+                                borderRadius: 14, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: colors.panel }} />
             <View style={{ width: 96 }}><Button title="Enviar" onPress={send} loading={busy} disabled={!text.trim()} /></View>
           </View>
           <ErrorText>{error}</ErrorText>

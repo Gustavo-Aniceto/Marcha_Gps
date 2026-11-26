@@ -5,7 +5,7 @@ import {
   type StyleProp, type TextInputProps, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, fonts, radius, touch, type ButtonShape } from '../theme/tokens.ts';
+import { colors, corner, fonts, radius, touch, type ButtonShape } from '../theme/tokens.ts';
 import { inkOn, readableAccent } from '../lib/contrast.ts';
 import { useRouter } from 'expo-router';
 import { goBack } from '../lib/goBack';
@@ -21,16 +21,20 @@ export function Screen({ children, scroll = true }: { children: React.ReactNode;
 }
 
 /** Título da tela. Com `back`, ganha a setinha de voltar do lado (string = pra onde ir se não tiver tela anterior). */
-export function Title({ children, back }: { children: React.ReactNode; back?: boolean | string }) {
+export function Title({ children, back, sub }: { children: React.ReactNode; back?: boolean | string; sub?: string }) {
   const router = useRouter();
-  if (!back) return <Text style={s.title} accessibilityRole="header">{children}</Text>;
+  const subLine = sub ? <Text style={s.sub}>{sub}</Text> : null;
+  if (!back) return <View style={{ gap: 2 }}><Text style={s.title} accessibilityRole="header">{children}</Text>{subLine}</View>;
   return (
+    <View style={{ gap: 2 }}>
     <View style={s.titleRow}>
       <Pressable onPress={() => goBack(router, typeof back === 'string' ? back : '/')} accessibilityRole="button"
                  accessibilityLabel="Voltar" hitSlop={10} style={({ pressed }) => [s.backBtn, pressed && { opacity: 0.7 }]}>
         <Text style={s.backChevron}>‹</Text>
       </Pressable>
       <Text style={[s.title, { flex: 1 }]} accessibilityRole="header" numberOfLines={2}>{children}</Text>
+    </View>
+    {subLine}
     </View>
   );
 }
@@ -68,7 +72,7 @@ export function Button({
       style={({ pressed }) => [
         s.button,
         { borderRadius: radius[shape], opacity: disabled ? 0.45 : pressed ? 0.8 : 1 },
-        filled ? { backgroundColor: fill } : { borderWidth: 1, borderColor: readableAccent(color) },
+        filled ? { backgroundColor: fill } : { borderWidth: 1, borderColor: colors.lineStrong, backgroundColor: colors.panelAlt },
       ]}
     >
       {loading ? <ActivityIndicator color={textColor} /> : <Text style={[s.buttonText, { color: textColor }]}>{title}</Text>}
@@ -89,9 +93,9 @@ export function Pills<T extends string | number>({
             accessibilityRole="button"
             accessibilityState={{ selected: on }}
             onPress={() => onChange(o.value)}
-            style={[s.pill, on ? { backgroundColor: colors.neon, borderColor: colors.neon } : null]}
+            style={({ pressed }) => [s.pill, on ? s.pillOn : null, pressed && { opacity: 0.8 }]}
           >
-            <Text style={[s.pillText, { color: on ? colors.ink : colors.text }]}>{o.label}</Text>
+            <Text style={[s.pillText, { color: on ? colors.neon : colors.textDim }]}>{o.label}</Text>
           </Pressable>
         );
       })}
@@ -126,27 +130,30 @@ const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   // em tablet o conteúdo não estica: fica numa coluna centralizada, como nos apps de celular
   // embaixo sobra espaço pra barra flutuante de vidro (GlassTabBar) não cobrir o fim da tela
-  content: { padding: 20, paddingBottom: 112, gap: 14, width: '100%', maxWidth: 640, alignSelf: 'center' },
-  title: { color: colors.text, fontFamily: fonts.display, fontSize: 26 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  backBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.lineStrong,
-             alignItems: 'center', justifyContent: 'center', backgroundColor: colors.panel },
-  backChevron: { color: colors.holo, fontSize: 24, lineHeight: 26, marginTop: -2 },
-  label: { color: colors.textDim, fontSize: 13, fontWeight: '600' },
-  body: { color: colors.text, fontSize: 14, lineHeight: 20 },
-  mono: { fontFamily: fonts.mono, fontSize: 12, letterSpacing: 0.6 },
-  card: { backgroundColor: colors.panel, borderColor: colors.line, borderWidth: 1, borderRadius: 8, padding: 14, gap: 8 },
-  button: { minHeight: 52, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
-  buttonText: { fontSize: 15, fontWeight: '700' },
-  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  content: { padding: 20, paddingTop: 16, paddingBottom: 112, gap: 14, width: '100%', maxWidth: 640, alignSelf: 'center' },
+  title: { color: colors.text, fontFamily: fonts.display, fontWeight: '800', fontSize: 28, letterSpacing: -0.7 },
+  sub: { color: colors.textMuted, fontSize: 13 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  backBtn: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: colors.line,
+             alignItems: 'center', justifyContent: 'center', backgroundColor: colors.panelAlt },
+  backChevron: { color: colors.text, fontSize: 24, lineHeight: 26, marginTop: -2 },
+  label: { color: colors.textMuted, fontSize: 12, fontWeight: '600', letterSpacing: 0.2 },
+  body: { color: colors.text, fontSize: 14, lineHeight: 21 },
+  mono: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.4 },
+  card: { backgroundColor: colors.panel, borderColor: colors.line, borderTopColor: colors.lineStrong, borderWidth: 1,
+          borderRadius: corner.card, padding: 16, gap: 10 },
+  button: { minHeight: 52, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center' },
+  buttonText: { fontSize: 15, fontWeight: '700', letterSpacing: -0.1 },
+  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pill: {
-    minHeight: touch, minWidth: touch, paddingHorizontal: 12, borderRadius: 6, borderWidth: 1,
+    minHeight: touch, minWidth: touch, paddingHorizontal: 16, borderRadius: corner.chip, borderWidth: 1,
     borderColor: colors.line, backgroundColor: colors.panelAlt, alignItems: 'center', justifyContent: 'center',
   },
+  pillOn: { backgroundColor: 'rgba(201,238,98,0.12)', borderColor: 'rgba(201,238,98,0.55)' },
   pillText: { fontSize: 13, fontWeight: '600' },
   input: {
-    minHeight: 50, borderRadius: 8, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.panelAlt,
+    minHeight: 50, borderRadius: corner.field, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.panelAlt,
     color: colors.text, paddingHorizontal: 14, fontSize: 16,
   },
-  warning: { backgroundColor: colors.warnBg, borderColor: colors.warn, borderWidth: 1, borderRadius: 8, padding: 12 },
+  warning: { backgroundColor: colors.warnBg, borderColor: 'rgba(255,138,31,0.45)', borderWidth: 1, borderRadius: corner.field, padding: 12 },
 });

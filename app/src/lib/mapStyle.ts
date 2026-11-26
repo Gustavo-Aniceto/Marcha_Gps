@@ -1,6 +1,6 @@
 // Estilos do mapa (formato MapLibre), com os mapas gratuitos do OpenFreeMap (dados do OpenStreetMap).
 //   (prédios planos; a câmera inclinada do modo GPS continua)
-//   noite: escuro azulado, ruas cinza e rodovias azuis (visual de app de trânsito que o público já conhece)
+//   noite: grafite (quase neutro), ruas cinza e rodovias azul-acinzentadas, no visual sóbrio dos painéis de frota
 //   dia:   claro, ruas brancas com contorno
 //   cena:  2D cinza-escuro, pra ver os carros da galera na Cena ao vivo
 // Pra trocar de servidor de mapas (ex.: nossos próprios tiles), mude só TILES_URL/GLYPHS_URL.
@@ -33,11 +33,11 @@ interface Palette {
 }
 
 export const PALETTES: Record<MapTheme, Palette> = {
-  // GPS à noite no visual que o público já conhece: fundo grafite azulado, ruas cinza, rodovias azuladas
+  // GPS à noite: fundo grafite, ruas cinza, rodovias azul-acinzentadas (sóbrio, sem brilho)
   noite: {
-    background: '#232833', water: '#1F3854', park: '#244330', roadMinor: '#3E4553', roadMajor: '#5C6473',
-    roadCasing: '#1A1E26', building: '#2A303B', buildingTop: '#363D4B', glow: null, motorway: '#7389AB',
-    label: '#D5DAE3', labelHalo: '#232833', poi: '#9AA4B5', threeD: false,
+    background: '#1B1D21', water: '#17283A', park: '#1E2A22', roadMinor: '#33363C', roadMajor: '#4C5058',
+    roadCasing: '#131417', building: '#24272C', buildingTop: '#2E3137', glow: null, motorway: '#6A7486',
+    label: '#C9CDD4', labelHalo: '#1B1D21', poi: '#8E949E', threeD: false,
   },
   dia: {
     background: '#EEEEEA', water: '#A9D3F2', park: '#C9E6BC', roadMinor: '#FFFFFF', roadMajor: '#FFFFFF',

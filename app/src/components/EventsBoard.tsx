@@ -5,6 +5,7 @@ import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'rea
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Body, Button, ErrorText, Pills } from './ui';
 import { Avatar } from './Avatar';
+import { Icon } from './Icon';
 import { db } from '../lib/db';
 import { friendlyError } from '../lib/errors.ts';
 import { photoUrl } from '../lib/photos';
@@ -72,8 +73,9 @@ export function EventCard({ ev, actions, onOpen }: { ev: BoardEvent; actions: Re
             <Avatar username={ev.crew_name} avatarKey={ev.crew_avatar} size={22} ring={accent} />
             <Text style={{ color: accent, fontWeight: '700', flexShrink: 1 }} numberOfLines={1}>{ev.crew_name}</Text>
           </View>
-          <Text style={s.meta}>🕒 {whenText(d)}{ev.city ? `  ·  📍 ${ev.city}` : ''}</Text>
-          {ev.place_name ? <Text style={s.meta} numberOfLines={2}>🏁 {ev.place_name}</Text> : null}
+          <View style={s.metaRow}><Icon name="clock" size={14} color={colors.textMuted} /><Text style={s.meta}>{whenText(d)}</Text>
+            {ev.city ? <><Icon name="pin" size={14} color={colors.textMuted} /><Text style={s.meta}>{ev.city}</Text></> : null}</View>
+          {ev.place_name ? <View style={s.metaRow}><Icon name="flag" size={14} color={colors.textMuted} /><Text style={[s.meta, { flexShrink: 1 }]} numberOfLines={2}>{ev.place_name}</Text></View> : null}
           {ev.description ? <Text style={{ color: colors.textDim }} numberOfLines={3}>{ev.description}</Text> : null}
           <Text style={[s.meta, { fontFamily: fonts.mono }]}>{ev.going} {ev.going === 1 ? 'CONFIRMADO' : 'CONFIRMADOS'}</Text>
         </View>
@@ -123,9 +125,9 @@ export function EventsBoard() {
 }
 
 const s = StyleSheet.create({
-  card: { borderRadius: 14, borderWidth: 1, backgroundColor: colors.panel, overflow: 'hidden' },
+  card: { borderRadius: 18, borderWidth: 1, backgroundColor: colors.panel, overflow: 'hidden' },
   cover: { height: 150, backgroundColor: colors.panelAlt },
-  date: { position: 'absolute', left: 10, bottom: 10, width: 54, borderRadius: 10, backgroundColor: 'rgba(10,12,16,0.88)',
+  date: { position: 'absolute', left: 10, bottom: 10, width: 54, borderRadius: 14, backgroundColor: 'rgba(10,12,16,0.88)',
           alignItems: 'center', paddingVertical: 4, borderWidth: 1, borderColor: colors.lineStrong },
   dateWeek: { color: colors.textMuted, fontSize: 10, fontWeight: '700' },
   dateDay: { color: colors.text, fontSize: 22, fontWeight: '900', lineHeight: 24 },
@@ -134,4 +136,5 @@ const s = StyleSheet.create({
            fontWeight: '800', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, overflow: 'hidden' },
   title: { color: colors.text, fontSize: 19, fontWeight: '800' },
   meta: { color: colors.textMuted, fontSize: 13 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
 });

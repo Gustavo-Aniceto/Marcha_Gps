@@ -11,7 +11,7 @@ export function InviteCard({ code, kind, accent = colors.neon, expiresAt }:
   return (
     <Card accent={accent}>
       <Mono color={accent}>{kind === 'founder' ? 'CÓDIGO DE FUNDADOR' : 'CONVITE PRO APP'}</Mono>
-      <Text selectable style={{ color: colors.text, fontFamily: fonts.display, fontSize: 34, letterSpacing: 3, textAlign: 'center', marginVertical: 6 }}>
+      <Text selectable style={{ color: colors.text, fontFamily: fonts.display, fontWeight: '800', fontSize: 34, letterSpacing: 3, textAlign: 'center', marginVertical: 6 }}>
         {code}
       </Text>
       <Text style={{ color: colors.textMuted, fontSize: 13, textAlign: 'center' }}>

@@ -139,7 +139,7 @@ export default function Equipes() {
       {view === 'minha' && <>
       {!profile?.is_master && (
         <Text style={{ color: colors.holo, fontWeight: '700', minHeight: 44, paddingVertical: 10 }} accessibilityRole="link"
-              onPress={() => router.push('/ranks')}>🏆 Ranks do Radar e da mídia ›</Text>
+              onPress={() => router.push('/ranks')}>Ranks do Radar e da mídia ›</Text>
       )}
 
       {mine.length > 1 && (
@@ -359,13 +359,13 @@ function Segments({ value, onChange, badge }: { value: string; onChange: (v: 'mi
     { v: 'minha', l: 'Minha equipe' }, { v: 'descobrir', l: 'Descobrir' }, { v: 'eventos', l: 'Eventos' },
   ];
   return (
-    <View style={{ flexDirection: 'row', backgroundColor: colors.panel, borderRadius: 12, borderWidth: 1, borderColor: colors.line, padding: 4 }}
+    <View style={{ flexDirection: 'row', backgroundColor: colors.panel, borderRadius: 999, borderWidth: 1, borderColor: colors.line, padding: 4 }}
           accessibilityRole="tablist">
       {opts.map((o) => {
         const on = o.v === value;
         return (
           <Pressable key={o.v} onPress={() => onChange(o.v)} accessibilityRole="tab" accessibilityState={{ selected: on }}
-                     style={{ flex: 1, minHeight: 44, borderRadius: 9, alignItems: 'center', justifyContent: 'center',
+                     style={{ flex: 1, minHeight: 44, borderRadius: 999, alignItems: 'center', justifyContent: 'center',
                               flexDirection: 'row', gap: 6, backgroundColor: on ? colors.neon : 'transparent' }}>
             <Text style={{ color: on ? colors.ink : colors.textDim, fontWeight: '700', fontSize: 14 }} numberOfLines={1}>{o.l}</Text>
             {o.v === 'minha' && badge > 0 && (

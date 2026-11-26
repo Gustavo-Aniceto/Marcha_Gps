@@ -10,7 +10,7 @@ export function Avatar({ username, avatarKey, size = 40, ring }: { username: str
   if (url) return <Image source={{ uri: url }} style={style} accessibilityLabel={`Foto de @${username}`} />;
   return (
     <View style={[style, { backgroundColor: colors.panelAlt, alignItems: 'center', justifyContent: 'center' }]}>
-      <Text style={{ color: colors.holo, fontFamily: fonts.display, fontSize: size * 0.42 }}>{(username[0] ?? '?').toUpperCase()}</Text>
+      <Text style={{ color: colors.holo, fontFamily: fonts.display, fontWeight: '800', letterSpacing: -0.3, fontSize: size * 0.42 }}>{(username[0] ?? '?').toUpperCase()}</Text>
     </View>
   );
 }

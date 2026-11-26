@@ -1,6 +1,7 @@
 // Caixa de postar (feed e perfil): post com foto, foto do carro ou enquete.
 import React, { useState } from 'react';
 import { Image, Pressable, Text, TextInput, View } from 'react-native';
+import { Icon } from './Icon';
 import * as ImagePicker from 'expo-image-picker';
 import { Button, ErrorText, Pills } from './ui';
 import { Avatar } from './Avatar';
@@ -14,8 +15,8 @@ import { colors } from '../theme/tokens.ts';
 
 const MODES: { value: PostKind; label: string }[] = [
   { value: 'post', label: 'Post' },
-  { value: 'carro', label: '📷 Foto do carro' },
-  { value: 'enquete', label: '📊 Enquete' },
+  { value: 'carro', label: 'Foto do carro' },
+  { value: 'enquete', label: 'Enquete' },
 ];
 
 export function Composer({ crewId = null, scopeName = 'todo mundo', onPosted, initialMode = 'post' }: {
@@ -77,7 +78,7 @@ export function Composer({ crewId = null, scopeName = 'todo mundo', onPosted, in
   if (!open && !text && !photo) {
     const quick = (m: PostKind) => { setMode(m); setError(null); setOpen(true); };
     return (
-      <View style={{ backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.line, borderRadius: 10, padding: 10,
+      <View style={{ backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.line, borderRadius: 14, padding: 10,
                      flexDirection: 'row', alignItems: 'center', gap: 10 }}>
         {profile && <Avatar username={profile.username} avatarKey={profile.avatar_key} size={36} />}
         <Pressable onPress={() => quick('post')} accessibilityRole="button" accessibilityLabel="Escrever post"
@@ -87,18 +88,18 @@ export function Composer({ crewId = null, scopeName = 'todo mundo', onPosted, in
         </Pressable>
         <Pressable onPress={() => quick('carro')} accessibilityRole="button" accessibilityLabel="Postar foto do carro" hitSlop={4}
                    style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontSize: 20 }}>📷</Text>
+          <Icon name="camera" size={22} color={colors.textDim} />
         </Pressable>
         <Pressable onPress={() => quick('enquete')} accessibilityRole="button" accessibilityLabel="Criar enquete" hitSlop={4}
                    style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontSize: 20 }}>📊</Text>
+          <Icon name="chart" size={22} color={colors.textDim} />
         </Pressable>
       </View>
     );
   }
 
   return (
-    <View style={{ backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.line, borderRadius: 10, padding: 12, gap: 10 }}>
+    <View style={{ backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.line, borderRadius: 14, padding: 12, gap: 10 }}>
       <Pills options={MODES} value={mode} onChange={(m) => { setMode(m); setError(null); }} />
       <View style={{ flexDirection: 'row', gap: 10 }}>
         {profile && <Avatar username={profile.username} avatarKey={profile.avatar_key} />}
@@ -116,7 +117,7 @@ export function Composer({ crewId = null, scopeName = 'todo mundo', onPosted, in
                          onChangeText={(v) => setOptions((list) => list.map((x, j) => (j === i ? v : x)))}
                          accessibilityLabel={`Opção ${i + 1}`}
                          style={{ flex: 1, minHeight: 44, color: colors.text, fontSize: 15, paddingHorizontal: 12,
-                                  borderWidth: 1, borderColor: colors.line, borderRadius: 8, backgroundColor: colors.bg }} />
+                                  borderWidth: 1, borderColor: colors.line, borderRadius: 14, backgroundColor: colors.bg }} />
               {options.length > 2 && (
                 <Pressable onPress={() => setOptions((list) => list.filter((_, j) => j !== i))} accessibilityRole="button"
                            accessibilityLabel={`Tirar opção ${i + 1}`} style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
@@ -135,9 +136,9 @@ export function Composer({ crewId = null, scopeName = 'todo mundo', onPosted, in
 
       {mode !== 'enquete' && photo && (
         <View>
-          <Image source={{ uri: photo }} style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: 8 }} accessibilityLabel="Foto escolhida" />
+          <Image source={{ uri: photo }} style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: 14 }} accessibilityLabel="Foto escolhida" />
           <Pressable onPress={() => setPhoto(null)} accessibilityRole="button"
-                     style={{ position: 'absolute', top: 6, right: 6, backgroundColor: 'rgba(0,0,0,0.7)', borderRadius: 14, paddingHorizontal: 10, paddingVertical: 4 }}>
+                     style={{ position: 'absolute', top: 6, right: 6, backgroundColor: 'rgba(0,0,0,0.7)', borderRadius: 18, paddingHorizontal: 10, paddingVertical: 4 }}>
             <Text style={{ color: colors.text }}>Tirar</Text>
           </Pressable>
         </View>
@@ -146,7 +147,7 @@ export function Composer({ crewId = null, scopeName = 'todo mundo', onPosted, in
       <View style={{ flexDirection: 'row', gap: 8 }}>
         {mode !== 'enquete' && (
           <View style={{ flex: 1 }}>
-            <Button title={photo ? 'Trocar foto' : mode === 'carro' ? '📷 Escolher foto' : '📷 Foto'} variant="secondary" onPress={pickPhoto} />
+            <Button title={photo ? 'Trocar foto' : mode === 'carro' ? 'Escolher foto' : 'Colocar foto'} variant="secondary" onPress={pickPhoto} />
           </View>
         )}
         <View style={{ flex: 1 }}><Button title={mode === 'enquete' ? 'Criar enquete' : 'Postar'} onPress={publish} loading={busy} /></View>

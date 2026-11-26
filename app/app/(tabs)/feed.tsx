@@ -68,7 +68,7 @@ export default function Feed() {
   return (
     <Screen>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text style={{ color: colors.text, fontFamily: fonts.display, fontSize: 28 }}>Feed</Text>
+        <Text style={{ color: colors.text, fontFamily: fonts.display, fontWeight: '800', letterSpacing: -0.3, fontSize: 28 }}>Feed</Text>
         {profile && (
           <Pressable onPress={() => router.push({ pathname: '/perfil/[username]', params: { username: profile.username } })}
                      accessibilityRole="link" accessibilityLabel="Meu perfil">
@@ -83,7 +83,7 @@ export default function Feed() {
             const accent = readableAccent(ev.crew_color);
             return (
               <Pressable key={ev.id} onPress={() => router.push({ pathname: '/evento/[id]', params: { id: ev.id } })}
-                         style={{ width: 220, padding: 12, borderRadius: 10, borderWidth: 1, borderColor: accent, backgroundColor: colors.panel, gap: 4 }}>
+                         style={{ width: 220, padding: 12, borderRadius: 14, borderWidth: 1, borderColor: accent, backgroundColor: colors.panel, gap: 4 }}>
                 <Text style={{ color: accent, fontFamily: fonts.mono, fontSize: 10 }}>{ev.crew_name.toUpperCase()} · {kindLabel(ev.kind).toUpperCase()}</Text>
                 <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700' }} numberOfLines={1}>{ev.title}</Text>
                 <Text style={{ color: colors.textMuted, fontSize: 12 }}>{whenText(new Date(ev.starts_at))} · {ev.going} {ev.going === 1 ? 'vai' : 'vão'}</Text>

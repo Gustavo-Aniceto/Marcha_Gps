@@ -1,6 +1,7 @@
 // Post do feed: autor (foto, @, carro), texto, foto, curtir, comentar, compartilhar, apagar.
 import React, { useState } from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
+import { Icon, type IconName } from './Icon';
 import { useRouter } from 'expo-router';
 import { Avatar } from './Avatar';
 import { photoUrl } from '../lib/photos';
@@ -26,7 +27,7 @@ export function PostCard({ post, me, onChange, detail }: { post: Post; me: strin
   }
 
   return (
-    <View style={{ backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.line, borderRadius: 10, overflow: 'hidden' }}>
+    <View style={{ backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.line, borderRadius: 14, overflow: 'hidden' }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12 }}>
         <Pressable onPress={openProfile} accessibilityRole="link" accessibilityLabel={`Perfil de @${p.username}`}>
           <Avatar username={p.username} avatarKey={p.avatar_key} />
@@ -62,10 +63,10 @@ export function PostCard({ post, me, onChange, detail }: { post: Post; me: strin
       )}
 
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4 }}>
-        <Action label={`${p.liked_by_me ? '♥' : '♡'} ${p.likes || ''}`} active={p.liked_by_me} onPress={like}
+        <Action icon={p.liked_by_me ? 'heartFill' : 'heart'} label={`${p.likes || ''}`} active={p.liked_by_me} onPress={like}
                 a11y={p.liked_by_me ? 'Descurtir' : 'Curtir'} />
-        <Action label={`💬 ${p.comments || ''}`} onPress={openPost} a11y="Comentários" />
-        <Action label="↗" onPress={() => shareText(`@${p.username} no Marcha GPS: ${p.body}`)} a11y="Compartilhar" />
+        <Action icon="chat" label={`${p.comments || ''}`} onPress={openPost} a11y="Comentários" />
+        <Action icon="share" label="" onPress={() => shareText(`@${p.username} no Marcha GPS: ${p.body}`)} a11y="Compartilhar" />
         <View style={{ flex: 1 }} />
         {p.mine && (confirmDelete ? (
           <>
@@ -89,7 +90,7 @@ function PollBox({ poll, mine, onVote }: { poll: Poll; mine: boolean; onVote: (i
           <Pressable key={o.idx} onPress={() => onVote(o.idx)} accessibilityRole="button"
                      accessibilityState={{ selected: chosen }}
                      accessibilityLabel={`${o.label}${show ? `, ${pct[i]} por cento` : ''}${chosen ? ', seu voto' : ''}`}
-                     style={{ minHeight: 44, borderRadius: 8, borderWidth: 1, borderColor: chosen ? colors.neon : colors.lineStrong,
+                     style={{ minHeight: 44, borderRadius: 14, borderWidth: 1, borderColor: chosen ? colors.neon : colors.lineStrong,
                               overflow: 'hidden', justifyContent: 'center' }}>
             {show && <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${pct[i]}%`,
                                     backgroundColor: chosen ? 'rgba(198,255,61,0.22)' : 'rgba(156,200,255,0.14)' }} />}
@@ -107,11 +108,13 @@ function PollBox({ poll, mine, onVote }: { poll: Poll; mine: boolean; onVote: (i
   );
 }
 
-function Action({ label, onPress, active, danger, a11y }: { label: string; onPress: () => void; active?: boolean; danger?: boolean; a11y: string }) {
+function Action({ label, onPress, active, danger, a11y, icon }: { label: string; onPress: () => void; active?: boolean; danger?: boolean; a11y: string; icon?: IconName }) {
+  const c = danger ? colors.danger : active ? colors.neon : colors.textDim;
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={a11y}
-               style={{ minHeight: 44, minWidth: 52, paddingHorizontal: 10, justifyContent: 'center' }}>
-      <Text style={{ color: danger ? colors.danger : active ? colors.neon : colors.textDim, fontSize: 15, fontWeight: '600' }}>{label}</Text>
+               style={{ minHeight: 44, minWidth: 48, paddingHorizontal: 10, justifyContent: 'center', alignItems: 'center', flexDirection: 'row', gap: 6 }}>
+      {icon ? <Icon name={icon} size={20} color={c} /> : null}
+      {label ? <Text style={{ color: c, fontSize: 14, fontWeight: '600' }}>{label}</Text> : null}
     </Pressable>
   );
 }

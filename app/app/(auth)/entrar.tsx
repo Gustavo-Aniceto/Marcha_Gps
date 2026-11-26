@@ -13,7 +13,7 @@ export default function Entrar() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <View style={{ paddingHorizontal: 20, paddingTop: 24, paddingBottom: 12, gap: 6 }}>
-        <Text style={{ fontFamily: fonts.display, fontSize: 36, color: colors.neon, letterSpacing: 1.5 }}>
+        <Text style={{ fontFamily: fonts.brand, fontSize: 36, color: colors.neon, letterSpacing: 1.5 }}>
           MARCHA <Text style={{ color: colors.text }}>GPS</Text>
         </Text>
         <Text style={{ color: colors.textMuted, fontSize: 14 }}>O GPS da cena rebaixada. Aqui só entra quem é convidado.</Text>

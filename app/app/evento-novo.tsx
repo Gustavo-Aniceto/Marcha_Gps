@@ -92,10 +92,10 @@ export default function EventoNovo() {
     <Screen>
       <Title back="/equipes">Novo evento</Title>
       <Pressable onPress={pickCover} accessibilityRole="button" accessibilityLabel={cover ? 'Trocar capa do evento' : 'Colocar capa do evento'}
-                 style={{ height: 150, borderRadius: 12, borderWidth: 1, borderStyle: cover ? 'solid' : 'dashed', borderColor: colors.lineStrong,
+                 style={{ height: 150, borderRadius: 16, borderWidth: 1, borderStyle: cover ? 'solid' : 'dashed', borderColor: colors.lineStrong,
                           backgroundColor: colors.panel, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
         {cover ? <Image source={{ uri: cover }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-          : <Text style={{ color: colors.textDim, fontWeight: '700' }}>📷 Colocar capa (opcional)</Text>}
+          : <Text style={{ color: colors.textDim, fontWeight: '700' }}>Colocar capa (opcional)</Text>}
       </Pressable>
       <Field label="Nome do evento" value={title} onChangeText={setTitle} maxLength={60} placeholder="Ex.: Encontro de sábado" />
       <Field label={`Descrição (${description.length}/1000)`} value={description} onChangeText={setDescription} maxLength={1000} multiline
@@ -150,7 +150,7 @@ export default function EventoNovo() {
           return (
             <Pressable key={h} onPress={() => setHour(h)} accessibilityRole="button" accessibilityState={{ selected: on }}
                        accessibilityLabel={`${h} horas`}
-                       style={{ width: '14.6%', minHeight: 40, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center',
+                       style={{ width: '14.6%', minHeight: 40, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center',
                                 borderColor: on ? colors.neon : colors.line, backgroundColor: on ? colors.neon : colors.panel }}>
               <Text style={{ color: on ? colors.ink : colors.text, fontWeight: on ? '800' : '500' }}>{String(h).padStart(2, '0')}h</Text>
             </Pressable>
@@ -166,7 +166,7 @@ export default function EventoNovo() {
       <Card style={{ gap: 8 }}>
         {place ? (
           <>
-            <Text style={{ color: colors.neon, fontWeight: '700' }}>📍 {place.name}</Text>
+            <Text style={{ color: colors.neon, fontWeight: '700' }}>{place.name}</Text>
             <Button title="Trocar o local" variant="secondary" onPress={() => setPlace(null)} />
           </>
         ) : (

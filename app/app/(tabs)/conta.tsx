@@ -7,6 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useUser } from '@clerk/expo';
 import { Body, Button, Card, ErrorText, Field, Label, Screen, Title } from '../../src/components/ui';
 import { Avatar } from '../../src/components/Avatar';
+import { Icon, IconBadge, type IconName } from '../../src/components/Icon';
 import { db } from '../../src/lib/db';
 import { useSession } from '../../src/lib/session';
 import { friendlyError } from '../../src/lib/errors.ts';
@@ -16,9 +17,9 @@ import { colors, fonts } from '../../src/theme/tokens.ts';
 interface Notif { id: string; kind: string; title: string; body: string | null; link: string | null; created_at: string; read: boolean }
 type Section = null | 'perfil' | 'notificacoes' | 'privacidade';
 
-const KIND_ICON: Record<string, string> = {
-  equipe_pedida: '🛡️', equipe_decidida: '🛡️', pedido_entrar: '🙋', entrada_decidida: '✅', verificado: '✅',
-  evento: '📅', comentario: '💬', convite_usado: '🎟️',
+const KIND_ICON: Record<string, IconName> = {
+  equipe_pedida: 'users', equipe_decidida: 'users', pedido_entrar: 'user', entrada_decidida: 'check', verificado: 'check',
+  evento: 'calendar', comentario: 'chat', convite_usado: 'ticket',
 };
 
 function ago(iso: string): string {
@@ -155,7 +156,7 @@ export default function Conta() {
       {msg && <Card accent={colors.neon}><Text style={{ color: colors.neon, fontWeight: '700' }}>{msg}</Text></Card>}
 
       {/* ---------- Editar perfil ---------- */}
-      <Row icon="✏️" title="Editar perfil" sub="Nome, bio e foto" open={open === 'perfil'} onPress={() => toggle('perfil')} />
+      <Row icon="edit" title="Editar perfil" sub="Nome, bio e foto" open={open === 'perfil'} onPress={() => toggle('perfil')} />
       {open === 'perfil' && (
         <Card style={{ gap: 12 }}>
           <View style={{ alignItems: 'center', gap: 8 }}>
@@ -171,7 +172,7 @@ export default function Conta() {
       )}
 
       {/* ---------- Notificações ---------- */}
-      <Row icon="🔔" title="Notificações" badge={unread}
+      <Row icon="bell" title="Notificações" badge={unread}
            sub={profile.is_master ? 'Equipes pedidas, aprovações, eventos e comentários' : 'Aprovações, eventos e comentários'}
            open={open === 'notificacoes'} onPress={() => toggle('notificacoes')} />
       {open === 'notificacoes' && (
@@ -187,10 +188,10 @@ export default function Conta() {
             <Body dim>Nada por aqui ainda. Quando tiver aprovação, evento ou comentário, aparece aqui.</Body>
           ) : notifs.map((n) => (
             <Pressable key={n.id} disabled={!n.link} onPress={() => n.link && router.push(n.link as never)} accessibilityRole="button"
-                       style={({ pressed }) => ({ flexDirection: 'row', gap: 12, padding: 12, borderRadius: 12, borderWidth: 1,
+                       style={({ pressed }) => ({ flexDirection: 'row', gap: 12, padding: 12, borderRadius: 16, borderWidth: 1,
                                                   borderColor: n.read ? colors.line : colors.neon,
                                                   backgroundColor: pressed ? colors.panelAlt : colors.panel })}>
-              <Text style={{ fontSize: 20 }}>{KIND_ICON[n.kind] ?? '🔔'}</Text>
+              <IconBadge name={KIND_ICON[n.kind] ?? 'bell'} size={36} color={n.read ? colors.textDim : colors.neon} />
               <View style={{ flex: 1, gap: 2 }}>
                 <Text style={{ color: colors.text, fontWeight: '700' }}>{n.title}</Text>
                 {n.body ? <Text style={{ color: colors.textDim }}>{n.body}</Text> : null}
@@ -203,7 +204,7 @@ export default function Conta() {
       )}
 
       {/* ---------- Privacidade e dados ---------- */}
-      <Row icon="🔒" title="Privacidade e dados" sub="Quem vê seu carro, zonas privadas, seus dados"
+      <Row icon="lock" title="Privacidade e dados" sub="Quem vê seu carro, zonas privadas, seus dados"
            open={open === 'privacidade'} onPress={() => toggle('privacidade')} />
       {open === 'privacidade' && (
         <View style={{ gap: 10 }}>
@@ -230,7 +231,7 @@ export default function Conta() {
             <Text style={{ color: colors.textDim }}>Pra confirmar, digite seu @: <Text style={{ fontFamily: fonts.mono, color: colors.text }}>{profile.username}</Text></Text>
             <TextInput value={confirmText} onChangeText={setConfirmText} autoCapitalize="none" autoCorrect={false}
                        placeholder={profile.username} placeholderTextColor={colors.textMuted} accessibilityLabel="Digite seu nome de usuário"
-                       style={{ minHeight: 48, borderRadius: 10, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.bg,
+                       style={{ minHeight: 48, borderRadius: 14, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.bg,
                                 color: colors.text, paddingHorizontal: 12, fontSize: 16 }} />
             <Button title="Apagar minha conta pra sempre" color={colors.danger} variant="secondary" loading={deleting}
                     disabled={confirmText.trim().toLowerCase() !== profile.username} onPress={deleteAccount} />
@@ -239,9 +240,9 @@ export default function Conta() {
       )}
 
       {/* ---------- atalhos ---------- */}
-      <Row icon="🏆" title="Ranks" sub="Radar e mídia de eventos" onPress={() => router.push('/ranks')} />
-      <Row icon="🗺️" title="Visual e câmera do mapa" onPress={() => router.push('/camera-mapa')} />
-      <Row icon="❓" title="Como usar o app" onPress={() => router.push('/tutorial')} />
+      <Row icon="trophy" title="Ranks" sub="Radar e mídia de eventos" onPress={() => router.push('/ranks')} />
+      <Row icon="map" title="Visual e câmera do mapa" onPress={() => router.push('/camera-mapa')} />
+      <Row icon="help" title="Como usar o app" onPress={() => router.push('/tutorial')} />
 
       <View style={{ height: 8 }} />
       <Button title="Sair da conta" variant="secondary" onPress={() => signOut()} />
@@ -253,15 +254,15 @@ export default function Conta() {
 }
 
 function Row({ icon, title, sub, open, badge, onPress }: {
-  icon: string; title: string; sub?: string; open?: boolean; badge?: number; onPress: () => void;
+  icon: IconName; title: string; sub?: string; open?: boolean; badge?: number; onPress: () => void;
 }) {
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityState={open != null ? { expanded: open } : undefined}
                accessibilityLabel={`${title}${badge ? `, ${badge} novas` : ''}`}
                style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 60, paddingHorizontal: 14,
-                                          borderRadius: 12, borderWidth: 1, borderColor: open ? colors.neon : colors.line,
+                                          borderRadius: 16, borderWidth: 1, borderColor: open ? colors.neon : colors.line,
                                           backgroundColor: pressed ? colors.panelAlt : colors.panel })}>
-      <Text style={{ fontSize: 22, width: 28, textAlign: 'center' }}>{icon}</Text>
+      <IconBadge name={icon} />
       <View style={{ flex: 1, paddingVertical: 10 }}>
         <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700' }}>{title}</Text>
         {sub ? <Text style={{ color: colors.textMuted, fontSize: 13 }}>{sub}</Text> : null}

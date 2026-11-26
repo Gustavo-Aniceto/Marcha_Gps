@@ -59,7 +59,7 @@ export default function Escanear() {
           <Button title="Escanear outro" onPress={() => setResult(null)} />
         </Card>
       ) : (
-        <View style={{ flex: 1, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderColor: colors.lineStrong }}>
+        <View style={{ flex: 1, borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: colors.lineStrong }}>
           <CameraView style={{ flex: 1 }} facing="back" barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
                       onBarcodeScanned={({ data }) => onScan(data)} />
         </View>

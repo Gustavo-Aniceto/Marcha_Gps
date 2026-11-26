@@ -92,7 +92,7 @@ export default function Perfil() {
                        accessibilityLabel={p.mine ? 'Trocar foto de perfil' : undefined}>
               <Avatar username={p.username} avatarKey={p.avatar_key} size={86} ring={colors.neon} />
               {p.mine && (
-                <View style={{ position: 'absolute', right: -2, bottom: -2, width: 28, height: 28, borderRadius: 14, backgroundColor: colors.neon,
+                <View style={{ position: 'absolute', right: -2, bottom: -2, width: 28, height: 28, borderRadius: 18, backgroundColor: colors.neon,
                                borderWidth: 2, borderColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
                   <Text style={{ color: colors.ink, fontSize: 16, fontWeight: '800', lineHeight: 18 }}>{busy ? '…' : '+'}</Text>
                 </View>
@@ -140,7 +140,7 @@ export default function Perfil() {
             </View>
           )}
 
-          <View style={{ backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.line, borderRadius: 12, padding: 14,
+          <View style={{ backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.line, borderRadius: 16, padding: 14,
                          flexDirection: 'row', alignItems: 'center', gap: 14 }}>
             {p.car ? (
               <>
@@ -163,7 +163,7 @@ export default function Perfil() {
               <Text style={{ color: colors.textDim, fontWeight: '700' }}>Garagem ({garage.length} carros)</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {garage.filter((g) => !g.is_active).map((g) => (
-                  <View key={g.id} style={{ width: '31%', alignItems: 'center', padding: 6, borderRadius: 8, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.panel }}>
+                  <View key={g.id} style={{ width: '31%', alignItems: 'center', padding: 6, borderRadius: 14, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.panel }}>
                     <CarMarker color={g.color} neon={g.neon} heading={0} body={g.body_type} tint={g.tint} spoiler={g.spoiler} size={56} />
                     <Text style={{ color: colors.textDim, fontSize: 12, textAlign: 'center' }} numberOfLines={2}>{g.make} {g.model}</Text>
                   </View>

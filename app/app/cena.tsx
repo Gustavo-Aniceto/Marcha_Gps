@@ -129,7 +129,7 @@ const s = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: 6,
             backgroundColor: 'rgba(6,12,22,0.92)', borderWidth: 1, borderColor: colors.lineStrong },
   back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 4, borderWidth: 1, borderColor: colors.lineStrong },
-  title: { color: colors.text, fontFamily: fonts.display, fontSize: 18 },
+  title: { color: colors.text, fontFamily: fonts.display, fontWeight: '800', letterSpacing: -0.3, fontSize: 18 },
   mono: { fontFamily: fonts.mono, fontSize: 11, color: colors.holo, letterSpacing: 0.6 },
   row: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
   chip: { minHeight: 36, paddingHorizontal: 12, justifyContent: 'center', borderRadius: 4, borderWidth: 1,

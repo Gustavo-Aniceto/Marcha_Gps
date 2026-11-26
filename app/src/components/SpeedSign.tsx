@@ -9,7 +9,7 @@ export function SpeedSign({ limit, size = 40 }: { limit: number; size?: number }
           style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.signFace,
                    borderWidth: Math.max(3, size * 0.12), borderColor: colors.signRing,
                    alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ color: colors.ink, fontFamily: fonts.display, fontSize: size * (limit >= 100 ? 0.34 : 0.42),
+      <Text style={{ color: colors.ink, fontFamily: fonts.display, fontWeight: '800', letterSpacing: -0.3, fontSize: size * (limit >= 100 ? 0.34 : 0.42),
                      lineHeight: size * 0.5, includeFontPadding: false }}>{limit}</Text>
     </View>
   );
