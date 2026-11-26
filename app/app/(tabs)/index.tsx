@@ -146,6 +146,10 @@ export default function Mapa() {
     loadOnRoute(route).then((r) => { if (alive) setRouteReports(r); });
     return () => { alive = false; };
   }, [route]);
+  // navegando, o mapa mostra só os avisos em cima da rota (menos poluição, como nos apps de GPS)
+  const mapReports = useMemo(
+    () => (navigating && route && routeReports.length ? routeReports.map((o) => o.item) : reports),
+    [navigating, route, routeReports, reports]);
 
   // ---- rota que desvia do que pega no carro: o app acha e PERGUNTA (nunca troca sozinho) ----
   const [offer, setOffer] = useState<{ route: Route; points: { lat: number; lon: number }[]; extra_s: number; avoided: number; total: number } | null>(null);
@@ -263,7 +267,7 @@ export default function Mapa() {
 
         {route && <RouteLine coords={route.coords} route={route} trim={web ? glide : null} />}
 
-        <ReportsLayer reports={reports} />
+        <ReportsLayer reports={mapReports} />
 
         {/* todo mundo que o banco libera (visible_cars cuida de fantasma, equipe, zona privada e atraso) */}
         {others.map((c) => web ? (
@@ -420,8 +424,11 @@ export default function Mapa() {
       {/* ---------- embaixo ---------- */}
       {/* nome da rua em que você está (navegando) */}
       {navigating && !!street && nav.status !== 'arrived' && (
-        <View style={[s.streetPill, { bottom: NAV_H + 10 }]} pointerEvents="none">
-          <Text style={s.streetText} numberOfLines={1}>{street}</Text>
+        // entre o velocímetro e o botão de avisar, sem encostar neles em tela estreita
+        <View style={{ position: 'absolute', left: 88, right: 88, bottom: NAV_H + 10, alignItems: 'center' }} pointerEvents="none">
+          <View style={s.streetPill}>
+            <Text style={s.streetText} numberOfLines={1}>{street}</Text>
+          </View>
         </View>
       )}
 
@@ -554,7 +561,7 @@ const s = StyleSheet.create({
             borderColor: colors.warn, backgroundColor: 'rgba(28,18,6,0.95)', gap: 2 },
   bannerTitle: { color: '#FFB070', fontFamily: fonts.display, fontSize: 17 },
   bannerText: { color: colors.warnText, fontSize: 13 },
-  streetPill: { position: 'absolute', alignSelf: 'center', maxWidth: '60%', backgroundColor: chrome.banner, borderRadius: 16,
+  streetPill: { maxWidth: '100%', backgroundColor: chrome.banner, borderRadius: 16,
                 paddingHorizontal: 14, paddingVertical: 6 },
   streetText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
   speedo: { position: 'absolute', left: 14 },

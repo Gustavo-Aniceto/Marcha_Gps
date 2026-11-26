@@ -113,7 +113,7 @@ export default function EquipePagina() {
               // sem capa: fundo na cor da equipe com o nome bem grande e apagado, em vez de um quadro vazio
               <View style={{ flex: 1, backgroundColor: colors.panel, justifyContent: 'center', overflow: 'hidden' }}>
                 <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: c.color, opacity: 0.16 }} />
-                <Text numberOfLines={1} ellipsizeMode="clip" style={{ color: accent, opacity: 0.18, fontSize: 56, fontWeight: '900', marginLeft: 12,
+                <Text style={{ width: 1600, color: accent, opacity: 0.18, fontSize: 56, fontWeight: '900', marginLeft: 12,
                                                  letterSpacing: -1, transform: [{ rotate: '-6deg' }] }}>{c.name.toUpperCase()}</Text>
                 {c.i_am_admin && !editing && (
                   <Text style={{ position: 'absolute', right: 12, top: 10, color: colors.textMuted, fontSize: 12 }}>Sem capa ainda</Text>
