@@ -6,6 +6,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Body, Button, ErrorText, Field, Screen } from '../../src/components/ui';
 import { checkInvite, RoutingError } from '../../src/lib/routing';
 import { formatInviteCode, inviteStatusText, loadPendingInvite, savePendingInvite } from '../../src/lib/pendingInvite';
+import { missingInvite } from '../../src/lib/pendingInviteText.ts';
+import { NoInviteCard } from '../../src/components/NoInviteCard';
 import { colors, fonts } from '../../src/theme/tokens.ts';
 
 export default function Inicio() {
@@ -13,6 +15,7 @@ export default function Inicio() {
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [noInvite, setNoInvite] = useState(false); // tentou seguir sem código
 
   // veio do link do convite (marcha-gps.vercel.app/c/XXXX-XXXX): já preenche e confere
   const { codigo } = useLocalSearchParams<{ codigo?: string }>();
@@ -28,7 +31,9 @@ export default function Inicio() {
   useEffect(() => { if (fromLink.current && code.length === 9) { fromLink.current = false; check(); } }, [code]);
 
   async function check() {
-    setError(null); setBusy(true);
+    setError(null);
+    if (missingInvite(code)) { setNoInvite(true); return; }
+    setNoInvite(false); setBusy(true);
     let r;
     try {
       r = await checkInvite(code);
@@ -55,15 +60,16 @@ export default function Inicio() {
 
       <Text style={{ color: colors.text, fontFamily: fonts.display, fontWeight: '800', letterSpacing: -0.3, fontSize: 22 }}>Tem convite?</Text>
       <Body dim>
-        Aqui só entra quem é convidado por alguém da cena. Digite o código que você recebeu; depois você entra
-        com a conta que preferir.
+        Aqui só entra quem é convidado por alguém da cena. Recebeu o link do convite? Toque nele que o código já
+        vem preenchido. Ou digite o código abaixo.
       </Body>
 
-      <Field label="Código de convite" value={code} onChangeText={(t) => { setCode(formatInviteCode(t)); setError(null); }}
+      <Field label="Código de convite" value={code} onChangeText={(t) => { setCode(formatInviteCode(t)); setError(null); setNoInvite(false); }}
              autoCapitalize="characters" autoCorrect={false} placeholder="Ex.: 7K2Q-LF9A" maxLength={9}
-             returnKeyType="go" onSubmitEditing={() => code.length === 9 && check()} />
+             returnKeyType="go" onSubmitEditing={check} />
       <ErrorText>{error}</ErrorText>
-      <Button title="Continuar" onPress={check} loading={busy} disabled={code.length !== 9} />
+      {noInvite && <NoInviteCard />}
+      <Button title="Continuar" onPress={check} loading={busy} />
 
       <Pressable onPress={() => router.push('/(auth)/entrar')} accessibilityRole="link"
                  style={{ minHeight: 44, justifyContent: 'center', alignItems: 'center', marginTop: 8 }}>

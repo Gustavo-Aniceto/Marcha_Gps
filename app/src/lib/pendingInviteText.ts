@@ -13,3 +13,15 @@ export function inviteStatusText(status: string): string {
     default: return 'Convite não encontrado. Confira o código.';
   }
 }
+
+/** Quem tenta entrar sem código de convite. */
+export const NO_INVITE = {
+  title: 'Infelizmente a entrada é só com convite',
+  text: 'Não foi dessa vez, mas busque um membro do Marcha GPS e peça o seu convite. '
+    + 'Ele te manda um link: é só tocar que o código já vem preenchido.',
+};
+
+/** true = ainda não tem um código completo (XXXX-XXXX) pra conferir. */
+export function missingInvite(code: string): boolean {
+  return formatInviteCode(code).length !== 9;
+}

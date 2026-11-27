@@ -5,6 +5,8 @@ import { db } from '../../src/lib/db';
 import { useSession } from '../../src/lib/session';
 import { friendlyError } from '../../src/lib/errors.ts';
 import { clearPendingInvite, formatInviteCode, loadPendingInvite } from '../../src/lib/pendingInvite';
+import { missingInvite } from '../../src/lib/pendingInviteText.ts';
+import { NoInviteCard } from '../../src/components/NoInviteCard';
 
 export default function Convite() {
   const { refreshProfile, signOut } = useSession();
@@ -13,12 +15,15 @@ export default function Convite() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fromBefore, setFromBefore] = useState(false);
+  const [noInvite, setNoInvite] = useState(false); // tentou entrar sem código
 
   // convite digitado antes do login: já vem preenchido
   useEffect(() => { loadPendingInvite().then((p) => { if (p) { setCode(p.code); setFromBefore(true); } }); }, []);
 
   async function redeem() {
-    setError(null); setBusy(true);
+    setError(null);
+    if (missingInvite(code)) { setNoInvite(true); return; }
+    setNoInvite(false); setBusy(true);
     const { error: e } = await db.rpc('redeem_invite', {
       p_code: code.trim().toUpperCase(),
       p_username: username.trim().toLowerCase(),
@@ -37,15 +42,16 @@ export default function Convite() {
         Depois de entrar, você pede pra entrar na sua equipe e o fundador dela aprova.
       </Body>
       {!fromBefore && (
-        <Field label="Código de convite" value={code} onChangeText={(t) => setCode(formatInviteCode(t))} autoCapitalize="characters"
+        <Field label="Código de convite" value={code} onChangeText={(t) => { setCode(formatInviteCode(t)); setNoInvite(false); }} autoCapitalize="characters"
                placeholder="Ex.: 7K2Q-LF9A" maxLength={9} />
       )}
       <Field label="Nome de usuário" value={username} onChangeText={setUsername} autoCapitalize="none"
              placeholder="ex.: vini.fixa" maxLength={24} />
       <Body dim>De 3 a 24 letras minúsculas, números, ponto ou _. É o @ que a galera vai ver.</Body>
       <ErrorText>{error}</ErrorText>
+      {noInvite && <NoInviteCard />}
       <Button title="Entrar no Marcha GPS" onPress={redeem} loading={busy}
-              disabled={code.trim().length < 9 || username.trim().length < 3} />
+              disabled={username.trim().length < 3} />
       {fromBefore && (
         <Button title="Usar outro convite" variant="secondary" onPress={() => { setFromBefore(false); setCode(''); clearPendingInvite(); }} />
       )}

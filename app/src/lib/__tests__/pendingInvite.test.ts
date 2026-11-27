@@ -17,3 +17,12 @@ test('mensagens do convite', () => {
   assert.match(inviteStatusText('vencido'), /venceu/);
   assert.match(inviteStatusText('nao_existe'), /não encontrado/);
 });
+
+test('sem convite: aviso e quando mostrar', async () => {
+  const { NO_INVITE, missingInvite } = await import('../pendingInviteText.ts');
+  assert.equal(missingInvite(''), true);
+  assert.equal(missingInvite('7K2Q'), true);
+  assert.equal(missingInvite('7k2qlf9a'), false);
+  assert.match(NO_INVITE.title, /só com convite/);
+  assert.match(NO_INVITE.text, /busque um membro/);
+});

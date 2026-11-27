@@ -8,6 +8,7 @@ GPS com cara de videogame pra quem curte carro. Slogan: **"Carros modificados e 
 ## Acesso e confiança
 - Entrada só por **convite**; quem convida é o padrinho e responde pelo convidado.
 - **Todo convite vale uma vez só, pra sempre** (principalmente o de fundador): usou, ninguém mais usa, nem se a conta de quem usou for apagada. Se duas pessoas tentarem ao mesmo tempo, só uma entra.
+- **Quem recebeu o link do convite** já cai com o código preenchido e conferido, direto na tela de login. **Quem tenta entrar sem código** vê: "Infelizmente a entrada é só com convite. Não foi dessa vez, mas busque um membro do Marcha GPS e peça o seu convite" (na primeira tela e na de escolher o nome).
 - **Ordem do primeiro acesso:** 1) digita o código do convite (o app confere sem login); 2) entra com a conta que preferir: Google, Facebook ou e-mail (código no e-mail ou senha); 3) escolhe o nome de usuário. Quem já é membro toca em "Já sou membro · Entrar".
 - **Convite só dá acesso ao app.** Dois tipos: código de fundador (só o Adm Master gera; quem usa pode registrar uma equipe) e convite pro app (quem é verificado em alguma equipe gera, gasta 1 dos convites, vale 7 dias). Nenhum convite coloca ninguém em equipe.
 - **Entrar numa equipe = pedir.** Na página da equipe (ou na lista "Equipes da cena") a pessoa toca em "Pedir pra entrar" (mensagem opcional). Quem aprova é o fundador ou admin daquela equipe; quem aprovou vira o padrinho. Recusado só pede de novo depois de 7 dias. Um pedido aberto por equipe.
