@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="70%">
+      <stop offset="0" stop-color="#262B33"/><stop offset="0.6" stop-color="#121418"/><stop offset="1" stop-color="#070809"/>
+    </radialGradient>
+    <linearGradient id="lime" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EAFF9A"/><stop offset="0.5" stop-color="#C6FF3D"/><stop offset="1" stop-color="#86B524"/>
+    </linearGradient>
+    <linearGradient id="pin" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#D6E6FF"/><stop offset="0.45" stop-color="#8FB8F0"/><stop offset="1" stop-color="#4C78B8"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#D9F98A"/><stop offset="1" stop-color="#6E9620"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="12" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#000" flood-opacity="0.7"/></filter>
+    <path id="top" d="M 202 512 A 310 310 0 0 1 822 512"/>
+    <path id="bottom" d="M 170 512 A 342 342 0 0 0 854 512"/>
+    <pattern id="carbon" width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="10" height="20" fill="#fff" opacity="0.025"/></pattern>
+  </defs>
+  <rect width="1024" height="1024" fill="#070809"/>
+  <circle cx="512" cy="512" r="500" fill="url(#bg)"/>
+  <circle cx="512" cy="512" r="500" fill="url(#carbon)"/>
+  <!-- aros do emblema -->
+  <circle cx="512" cy="512" r="452" fill="none" stroke="url(#ring)" stroke-width="14"/>
+  <circle cx="512" cy="512" r="286" fill="#0B0D10" stroke="url(#ring)" stroke-width="8"/>
+  <circle cx="512" cy="512" r="400" fill="none" stroke="#C6FF3D" stroke-opacity="0.18" stroke-width="2"/>
+  <!-- texto em volta -->
+  <g class="arc"><text x="226.8" y="317.9" transform="rotate(-55.8 226.8 317.9)" font-family="Inter Display" font-weight="900" font-style="italic" font-size="74" fill="#EEF2E4" text-anchor="middle">E</text>
+<text x="263.9" y="272.2" transform="rotate(-46.0 263.9 272.2)" font-family="Inter Display" font-weight="900" font-style="italic" font-size="74" fill="#EEF2E4" text-anchor="middle">Q</text>
+<text x="310.6" y="231.9" transform="rotate(-35.7 310.6 231.9)" font-family="Inter Display" font-weight="900" font-style="italic" font-size="74" fill="#EEF2E4" text-anchor="middle">U</text>
+<text x="348.3" y="208.3" transform="rotate(-28.3 348.3 208.3)" font-family="Inter Display" font-weight="900" font-style="italic" font-size="74" fill="#EEF2E4" text-anchor="middle">I</text>
+<text x="386.7" y="190.6" transform="rotate(-21.3 386.7 190.6)" font-family="Inter Display" font-weight="900" font-style="italic" font-size="74" fill="#EEF2E4" text-anchor="middle">P</text>
+<text x="439.6" y="174.7" transform="rotate(-12.1 439.6 174.7)" font-family="Inter Display" font-weight="900" font-style="italic" font-size="74" fill="#EEF2E4" text-anchor="middle">E</text>
+<text x="477.2" y="168.8" transform="rotate(-5.8 477.2 168.8)" font-family="Inter Display" font-weight="900" font-style="italic" font-size="74" fill="#EEF2E4" text-anchor="middle"> </text>
+<text x="526.1" y="167.3" transform="rotate(2.3 526.1 167.3)" font-family="Inter Display" font-weight="900" font-style="italic" font-size="74" fill="#EEF2E4" text-anchor="middle">M</text>
+<text x="595.8" y="177.3" transform="rotate(14.1 595.8 177.3)" font-family="Inter Display" font-weight="900" font-style="italic" font-size="74" fill="#EEF2E4" text-anchor="middle">A</text>
+<text x="653.3" y="197.2" transform="rotate(24.2 653.3 197.2)" font-family="Inter Display" font-weight="900" font-style="italic" font-size="74" fill="#EEF2E4" text-anchor="middle">R</text>
+<text x="705.5" y="226.4" transform="rotate(34.1 705.5 226.4)" font-family="Inter Display" font-weight="900" font-style="italic" font-size="74" fill="#EEF2E4" text-anchor="middle">C</text>
+<text x="753.6" y="265.7" transform="rotate(44.4 753.6 265.7)" font-family="Inter Display" font-weight="900" font-style="italic" font-size="74" fill="#EEF2E4" text-anchor="middle">H</text>
+<text x="794.4" y="313.8" transform="rotate(54.9 794.4 313.8)" font-family="Inter Display" font-weight="900" font-style="italic" font-size="74" fill="#EEF2E4" text-anchor="middle">A</text></g>
+<g class="arc"><text x="235.2" y="793.8" transform="rotate(44.5 235.2 793.8)" font-family="Inter Display" font-weight="800" font-size="40" fill="#C6FF3D" text-anchor="middle">S</text>
+<text x="259.1" y="815.4" transform="rotate(39.8 259.1 815.4)" font-family="Inter Display" font-weight="800" font-size="40" fill="#C6FF3D" text-anchor="middle">P</text>
+<text x="277.0" y="829.5" transform="rotate(36.5 277.0 829.5)" font-family="Inter Display" font-weight="800" font-size="40" fill="#C6FF3D" text-anchor="middle"> </text>
+<text x="289.2" y="838.2" transform="rotate(34.3 289.2 838.2)" font-family="Inter Display" font-weight="800" font-size="40" fill="#C6FF3D" text-anchor="middle">·</text>
+<text x="301.9" y="846.5" transform="rotate(32.1 301.9 846.5)" font-family="Inter Display" font-weight="800" font-size="40" fill="#C6FF3D" text-anchor="middle"> </text>
+<text x="323.2" y="859.0" transform="rotate(28.6 323.2 859.0)" font-family="Inter Display" font-weight="800" font-size="40" fill="#C6FF3D" text-anchor="middle">G</text>
+<text x="354.5" y="874.2" transform="rotate(23.5 354.5 874.2)" font-family="Inter Display" font-weight="800" font-size="40" fill="#C6FF3D" text-anchor="middle">U</text>
+<text x="387.1" y="886.7" transform="rotate(18.4 387.1 886.7)" font-family="Inter Display" font-weight="800" font-size="40" fill="#C6FF3D" text-anchor="middle">A</text>
+<text x="419.6" y="896.1" transform="rotate(13.5 419.6 896.1)" font-family="Inter Display" font-weight="800" font-size="40" fill="#C6FF3D" text-anchor="middle">R</text>
+<text x="452.3" y="902.5" transform="rotate(8.7 452.3 902.5)" font-family="Inter Display" font-weight="800" font-size="40" fill="#C6FF3D" text-anchor="middle">U</text>
+<text x="483.5" y="906.0" transform="rotate(4.1 483.5 906.0)" font-family="Inter Display" font-weight="800" font-size="40" fill="#C6FF3D" text-anchor="middle">L</text>
+<text x="515.2" y="907.0" transform="rotate(-0.5 515.2 907.0)" font-family="Inter Display" font-weight="800" font-size="40" fill="#C6FF3D" text-anchor="middle">H</text>
+<text x="550.5" y="905.1" transform="rotate(-5.6 550.5 905.1)" font-family="Inter Display" font-weight="800" font-size="40" fill="#C6FF3D" text-anchor="middle">O</text>
+<text x="584.4" y="900.3" transform="rotate(-10.6 584.4 900.3)" font-family="Inter Display" font-weight="800" font-size="40" fill="#C6FF3D" text-anchor="middle">S</text>
+<text x="607.3" y="895.3" transform="rotate(-14.0 607.3 895.3)" font-family="Inter Display" font-weight="800" font-size="40" fill="#C6FF3D" text-anchor="middle"> </text>
+<text x="621.8" y="891.4" transform="rotate(-16.1 621.8 891.4)" font-family="Inter Display" font-weight="800" font-size="40" fill="#C6FF3D" text-anchor="middle">·</text>
+<text x="636.2" y="887.0" transform="rotate(-18.3 636.2 887.0)" font-family="Inter Display" font-weight="800" font-size="40" fill="#C6FF3D" text-anchor="middle"> </text>
+<text x="650.7" y="881.8" transform="rotate(-20.6 650.7 881.8)" font-family="Inter Display" font-weight="800" font-size="40" fill="#C6FF3D" text-anchor="middle">I</text>
+<text x="673.2" y="872.6" transform="rotate(-24.1 673.2 872.6)" font-family="Inter Display" font-weight="800" font-size="40" fill="#C6FF3D" text-anchor="middle">T</text>
+<text x="703.3" y="857.6" transform="rotate(-29.0 703.3 857.6)" font-family="Inter Display" font-weight="800" font-size="40" fill="#C6FF3D" text-anchor="middle">A</text>
+<text x="733.7" y="838.9" transform="rotate(-34.1 733.7 838.9)" font-family="Inter Display" font-weight="800" font-size="40" fill="#C6FF3D" text-anchor="middle">Q</text>
+<text x="761.8" y="818.0" transform="rotate(-39.2 761.8 818.0)" font-family="Inter Display" font-weight="800" font-size="40" fill="#C6FF3D" text-anchor="middle">U</text>
+<text x="787.8" y="794.8" transform="rotate(-44.3 787.8 794.8)" font-family="Inter Display" font-weight="800" font-size="40" fill="#C6FF3D" text-anchor="middle">Á</text></g>
+  <!-- estrelinhas laterais -->
+  <g fill="#C6FF3D">
+    <circle cx="140" cy="512" r="12"/><circle cx="884" cy="512" r="12"/>
+  </g>
+  <!-- câmbio + pino no miolo -->
+  <g transform="translate(512 515) scale(0.5) translate(-512 -525)">
+    <g stroke="#000" stroke-opacity="0.85" stroke-width="104" stroke-linecap="round" fill="none"><path d="M330 330 V720 M512 330 V720 M694 330 V720 M330 525 H694"/></g>
+    <g stroke="url(#lime)" stroke-width="60" stroke-linecap="round" fill="none" filter="url(#glow)"><path d="M330 330 V720 M512 330 V720 M694 368 V720 M330 525 H694"/></g>
+    <g filter="url(#shadow)">
+      <path d="M694 392 C 652 330, 600 286, 600 224 A 94 94 0 1 1 788 224 C 788 286, 736 330, 694 392 Z" fill="url(#pin)"/>
+      <circle cx="694" cy="222" r="38" fill="#0B0D10"/><circle cx="694" cy="222" r="15" fill="#C6FF3D"/>
+      <path d="M626 196 A 72 72 0 0 1 690 150" stroke="#fff" stroke-opacity="0.55" stroke-width="12" stroke-linecap="round" fill="none"/>
+    </g>
+  </g>
+  <text x="512" y="735" font-family="Inter Display" font-weight="800" font-size="30" fill="#8A9099" letter-spacing="8" text-anchor="middle">DESDE 2026</text>
+</svg>
