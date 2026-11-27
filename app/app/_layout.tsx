@@ -47,6 +47,11 @@ function Gate() {
     }
   }, [loading, inside, signedIn, segments, router]);
 
+  // acabou de entrar (login ou convite): sai das telas de entrada e vai pro mapa
+  useEffect(() => {
+    if (!loading && inside && segments[0] === '(auth)') router.replace('/');
+  }, [loading, inside, segments, router]);
+
   // membro que já tem conta e entrou com convite de outra equipe: entra nela sozinho
   useEffect(() => {
     if (!inside) return;
@@ -69,8 +74,6 @@ function Gate() {
       <Stack.Protected guard={!inside}>
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
-      <Stack.Screen name="privacidade" />
-      <Stack.Screen name="termos" />
       <Stack.Protected guard={inside}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="cena" />
@@ -92,6 +95,9 @@ function Gate() {
         <Stack.Screen name="comboio/[id]" />
         <Stack.Screen name="comboio-novo" options={{ presentation: 'modal' }} />
       </Stack.Protected>
+      {/* abertas com ou sem login; ficam por último pra o roteador nunca cair nelas sozinho ao entrar */}
+      <Stack.Screen name="privacidade" />
+      <Stack.Screen name="termos" />
     </Stack>
   );
 }
