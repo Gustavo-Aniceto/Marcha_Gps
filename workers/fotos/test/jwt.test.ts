@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { issuerList, verifyFromIssuers, verifyJwt, type Jwk } from '../src/jwt.ts';
+import { authSources, issuerList, verifyFromIssuers, verifyFromSources, verifyJwt, type Jwk } from '../src/jwt.ts';
 import { extFor, keyFor, KEY_RE, looksLikeImage } from '../src/uploads.ts';
 
 const ISS = 'https://exemplo.clerk.accounts.dev';
@@ -92,4 +92,40 @@ test('vários emissores: token de um emissor assinado com a chave de outro não 
   const PROD = 'https://clerk.marchagps.eu.org';
   const forged = await sign(dev.priv, { ...good, iss: PROD });
   await assert.rejects(verifyFromIssuers(forged, [ISS, PROD], async (i) => (i === ISS ? dev.jwks : prod.jwks), { now }), /assinatura_invalida|chave_desconhecida/);
+});
+
+// Neon Auth: EdDSA (Ed25519), emissor = origem da URL do login, aud = emissor, sub = uuid
+const NEON_URL = 'https://ep-x.neonauth.c-2.sa-east-1.aws.neon.tech/neondb/auth';
+const NEON_ISS = 'https://ep-x.neonauth.c-2.sa-east-1.aws.neon.tech';
+async function edKeys() {
+  const kp = (await crypto.subtle.generateKey({ name: 'Ed25519' }, true, ['sign', 'verify'])) as CryptoKeyPair;
+  const pub = (await crypto.subtle.exportKey('jwk', kp.publicKey)) as Jwk;
+  pub.kid = 'ed1';
+  return { priv: kp.privateKey, jwks: [pub] };
+}
+async function edSign(priv: CryptoKey, claims: object) {
+  const h = b64url(JSON.stringify({ alg: 'EdDSA', kid: 'ed1', typ: 'JWT' }));
+  const p = b64url(JSON.stringify(claims));
+  const sig = new Uint8Array(await crypto.subtle.sign({ name: 'Ed25519' }, priv, new TextEncoder().encode(`${h}.${p}`)));
+  return `${h}.${p}.${b64url(sig)}`;
+}
+const neonGood = { sub: '860dc360-609f-4b7d-9e70-ec93fe6414d3', iss: NEON_ISS, aud: NEON_ISS, exp: now + 900, iat: now, role: 'authenticated' };
+
+test('Neon Auth: token EdDSA válido passa e o emissor vem da origem da URL', async () => {
+  const { priv, jwks } = await edKeys();
+  const src = authSources(`https://exemplo.clerk.accounts.dev,${NEON_URL}`);
+  assert.deepEqual(src[1], { issuer: NEON_ISS, jwksUrl: `${NEON_URL}/.well-known/jwks.json` });
+  let pediu = '';
+  const c = await verifyFromSources(await edSign(priv, neonGood), src, async (u) => { pediu = u; return jwks; }, { now });
+  assert.equal(c.sub, neonGood.sub);
+  assert.equal(pediu, `${NEON_URL}/.well-known/jwks.json`);
+});
+
+test('Neon Auth: aud de outro lugar, assinatura trocada ou emissor fora da lista é recusado', async () => {
+  const { priv, jwks } = await edKeys();
+  const src = authSources(NEON_URL);
+  await assert.rejects(verifyFromSources(await edSign(priv, { ...neonGood, aud: 'https://outro' }), src, async () => jwks, { now }), /publico_invalido/);
+  const outro = await edKeys();
+  await assert.rejects(verifyFromSources(await edSign(outro.priv, neonGood), src, async () => jwks, { now }), /assinatura_invalida/);
+  await assert.rejects(verifyFromSources(await edSign(priv, { ...neonGood, iss: 'https://x.dev', aud: 'https://x.dev' }), src, async () => jwks, { now }), /emissor_invalido/);
 });

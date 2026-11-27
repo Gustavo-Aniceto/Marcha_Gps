@@ -113,3 +113,13 @@ test('quadrados marcados: mesmo id que area_cell() do banco e caixa de 0,2°', (
   assert.equal(cellTile('g9999_1'), null);
   assert.match(overpassQuery(t), /\[bbox:-8\.2000,-35\.0000,-8\.0000,-34\.8000\]/);
 });
+
+test('proxy do login: acha o endereço do Neon Auth e só repassa cabeçalhos do navegador', async () => {
+  const { authTarget, proxyHeaders } = await import('../src/authproxy.ts');
+  assert.equal(authTarget('https://great-aphid-3258.clerk.accounts.dev, https://ep-x.neonauth.c-2.sa-east-1.aws.neon.tech/neondb/auth/'),
+    'https://ep-x.neonauth.c-2.sa-east-1.aws.neon.tech/neondb/auth');
+  assert.equal(authTarget('https://great-aphid-3258.clerk.accounts.dev'), null);
+  const h = proxyHeaders(new Headers({ cookie: 'a=1', origin: 'https://marcha-gps.vercel.app', 'x-forwarded-host': 'marcha-gps.vercel.app',
+    'x-vercel-id': 'x', host: 'api', 'content-type': 'application/json', 'cf-connecting-ip': '1.2.3.4' }));
+  assert.deepEqual([...h.keys()].sort(), ['content-type', 'cookie', 'origin']);
+});

@@ -1,5 +1,5 @@
 // Cliente da Data API do Neon (é um PostgREST, então usa o cliente PostgREST padrão).
-// O token do Clerk vai em cada requisição; as regras de acesso ficam no banco (RLS + funções).
+// O token do login (Neon Auth) vai em cada requisição; as regras de acesso ficam no banco (RLS + funções).
 import 'react-native-url-polyfill/auto';
 import { PostgrestClient } from '@supabase/postgrest-js';
 
@@ -9,19 +9,19 @@ if (!url) throw new Error('Configure EXPO_PUBLIC_NEON_DATA_API_URL no app/.env')
 type TokenGetter = () => Promise<string | null>;
 let getToken: TokenGetter = async () => null;
 
-/** Chamado pelo SessionProvider com o getToken() do Clerk. */
+/** Quem fornece o token do login (session.tsx liga no Neon Auth). */
 export function setTokenGetter(fn: TokenGetter) {
   getToken = fn;
 }
 
-/** Token do Clerk pra outros serviços (ex.: fotos). */
+/** Token do login pra outros serviços (ex.: fotos). */
 export function authToken(): Promise<string | null> {
   return getToken();
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** Token do Clerk; logo depois de abrir o app ele pode demorar um instante: espera um pouco antes de ir sem. */
+/** Token do login; logo depois de abrir o app ele pode demorar um instante: espera um pouco antes de ir sem. */
 async function tokenSoon(): Promise<string | null> {
   for (let i = 0; i < 6; i++) {
     const t = await getToken().catch(() => null);
@@ -73,7 +73,7 @@ export interface VisibleCar {
 }
 
 export interface Profile {
-  id: string; // ID do usuário no Clerk
+  id: string; // ID do usuário no login (Neon Auth; contas antigas reconectadas ganham o id novo)
   username: string;
   is_master: boolean;
   invites_left: number;

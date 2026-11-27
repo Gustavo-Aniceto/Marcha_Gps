@@ -10,7 +10,7 @@
 // A cada minuto: manda pro celular (Web Push) as notificações novas (src/webpush.ts).
 // Agendado: importa lombadas e radares do OpenStreetMap, uma faixa por vez, e os radares oficiais
 // (CET, DER, ANTT; src/radares.ts) uma vez por semana; checa a saúde dos serviços (src/saude.ts).
-import { AuthError, issuerList, verifyFromIssuers, type Jwk } from '../../fotos/src/jwt';
+import { AuthError, authSources, issuerList, verifyFromSources, type Jwk } from '../../fotos/src/jwt';
 import { preflight, withCors } from '../../fotos/src/cors';
 import { normalizeQuery, parsePhoton, photonUrl } from './geocode';
 import { RouteError, cleanAvoid, parseValhalla, validPoint, valhallaBody, VALHALLA_URL } from './route';
@@ -22,9 +22,11 @@ import { OFFICIAL_SOURCES, OFFICIAL_URLS, anttLatestCsv, decodeText, type Offici
 import { cleanError, healthChecks } from './saude';
 import { allowedEndpoint, pushPayload, pushRequest, vapidPublicKey, type VapidJwk } from './webpush';
 import { invitePage, normalizeCode, type InvitePreview } from './convitepage';
+import { authTarget, proxyHeaders } from './authproxy';
 
 interface Env {
-  CLERK_ISSUER: string;
+  AUTH_URLS?: string; // endereços de login aceitos (Neon Auth), separados por vírgula
+  CLERK_ISSUER?: string; // antigo (Clerk); vale enquanto AUTH_URLS não existir
   IMPORT_DATABASE_URL?: string; // usuário "importador" do Neon (só pode chamar import_osm_obstacles)
   AI?: { run(model: string, input: unknown): Promise<unknown> }; // Workers AI (montar carro pela foto)
   VAPID_PRIVATE_JWK?: string; // segredo: JWK P-256 (x, y, d) das notificações push
@@ -46,16 +48,34 @@ const fipeLimit = new RateLimiter(60, 60_000);
 const errorLimit = new RateLimiter(20, 60_000); // erros do app, por IP (não precisa de login)
 const pageLimit = new RateLimiter(30, 60_000); // página do convite, por IP
 
-// chaves públicas de cada emissor (modo teste e produção do Clerk), guardadas por 10 min
+// chaves públicas de cada login aceito, guardadas por 10 min
 const jwksCache = new Map<string, { keys: Jwk[]; at: number }>();
-async function getJwks(issuer: string): Promise<Jwk[]> {
-  const hit = jwksCache.get(issuer);
+async function getJwks(jwksUrl: string): Promise<Jwk[]> {
+  const hit = jwksCache.get(jwksUrl);
   if (hit && Date.now() - hit.at < 10 * 60_000) return hit.keys;
-  const res = await fetch(`${issuer}/.well-known/jwks.json`);
+  const res = await fetch(jwksUrl);
   if (!res.ok) throw new Error('jwks_indisponivel');
   const body = (await res.json()) as { keys: Jwk[] };
-  jwksCache.set(issuer, { keys: body.keys, at: Date.now() });
+  jwksCache.set(jwksUrl, { keys: body.keys, at: Date.now() });
   return body.keys;
+}
+const authRaw = (env: { AUTH_URLS?: string; CLERK_ISSUER?: string }) => env.AUTH_URLS ?? env.CLERK_ISSUER ?? '';
+
+async function authProxy(req: Request, env: Env): Promise<Response> {
+  const target = authTarget(authRaw(env));
+  if (!target) return json({ error: 'servico_nao_configurado' }, 503);
+  const url = new URL(req.url);
+  const rest = url.pathname.slice('/auth'.length);
+  if (!/^\/[A-Za-z0-9._~\/-]*$/.test(rest) || rest.includes('..')) return json({ error: 'caminho_invalido' }, 400);
+  const res = await fetch(target + rest + url.search, {
+    method: req.method,
+    headers: proxyHeaders(req.headers),
+    body: req.method === 'GET' || req.method === 'HEAD' ? undefined : await req.arrayBuffer(),
+    redirect: 'manual',
+  });
+  const headers = new Headers(res.headers);
+  headers.set('cache-control', 'no-store');
+  return new Response(res.body, { status: res.status, headers });
 }
 
 const json = (data: unknown, status = 200, extra: Record<string, string> = {}) =>
@@ -63,12 +83,14 @@ const json = (data: unknown, status = 200, extra: Record<string, string> = {}) =
 
 async function userFrom(req: Request, env: Env): Promise<string> {
   const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '');
-  const claims = await verifyFromIssuers(token, issuerList(env.CLERK_ISSUER), getJwks);
+  const claims = await verifyFromSources(token, authSources(authRaw(env)), getJwks);
   return claims.sub;
 }
 
 export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    // login (Neon Auth) passando pelo endereço do app: a Vercel manda /api/auth/* pra cá
+    if (new URL(req.url).pathname.startsWith('/auth/')) return authProxy(req, env);
     if (req.method === 'OPTIONS') return preflight();
     return withCors(await handle(req, env, ctx));
   },
@@ -141,14 +163,14 @@ async function handle(req: Request, env: Env, ctx: ExecutionContext): Promise<Re
     const e = cleanError(body);
     if (!e) return new Response(null, { status: 204 });
     let who: string | null = null;
-    if (env.CLERK_ISSUER && req.headers.get('authorization')) who = await userFrom(req, env).catch(() => null);
+    if (authRaw(env) && req.headers.get('authorization')) who = await userFrom(req, env).catch(() => null);
     ctx.waitUntil(sql(env, 'select public.log_app_error($1, $2, $3, $4, $5, $6)',
       [e.message, e.stack, e.screen, (req.headers.get('user-agent') ?? '').slice(0, 300), e.version, who])
       .catch((err) => console.log('erro do app não gravou:', (err as Error).message)));
     return new Response(null, { status: 204 });
   }
 
-  if (!env.CLERK_ISSUER) return json({ error: 'servico_nao_configurado' }, 503);
+  if (!authRaw(env)) return json({ error: 'servico_nao_configurado' }, 503);
 
   let user: string;
   try {
@@ -327,7 +349,7 @@ async function importTile(tile: Tile, env: Env): Promise<void> {
 // De hora em hora: cada serviço que o app usa respondeu? Grava no banco; o banco avisa o master quando muda.
 async function checkHealth(env: Env): Promise<void> {
   if (!env.IMPORT_DATABASE_URL) return;
-  const checks = healthChecks(issuerList(env.CLERK_ISSUER ?? ''), photonUrl('Avenida Paulista', null, 1));
+  const checks = healthChecks(authSources(authRaw(env)), photonUrl('Avenida Paulista', null, 1));
   await Promise.all(checks.map(async (c) => {
     const t0 = Date.now();
     let ok = false, detail: string | null = null;

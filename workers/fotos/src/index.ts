@@ -2,7 +2,7 @@
 //   POST /upload?tipo=media|carro|post   (corpo = a imagem; Authorization: Bearer <token do Clerk>)
 //        -> { key }  a chave que o app grava no banco
 //   GET  /img/<key>                         -> a imagem (chave impossível de adivinhar)
-import { AuthError, issuerList, verifyFromIssuers, type Jwk } from './jwt';
+import { AuthError, authSources, verifyFromSources, type Jwk } from './jwt';
 import { preflight, withCors } from './cors';
 import { KEY_RE, KINDS, MAX_BYTES, extFor, keyFor, looksLikeImage, type Kind } from './uploads';
 
@@ -13,20 +13,22 @@ interface R2Bucket {
 }
 export interface Env {
   FOTOS: R2Bucket;
-  CLERK_ISSUER: string; // ex.: https://xxx.clerk.accounts.dev
+  AUTH_URLS?: string; // endereços de login aceitos (Neon Auth), separados por vírgula
+  CLERK_ISSUER?: string; // antigo (Clerk); vale enquanto AUTH_URLS não existir
 }
 
-// chaves públicas de cada emissor (modo teste e produção do Clerk), guardadas por 10 min
+// chaves públicas de cada login aceito, guardadas por 10 min
 const jwksCache = new Map<string, { keys: Jwk[]; at: number }>();
-async function getJwks(issuer: string): Promise<Jwk[]> {
-  const hit = jwksCache.get(issuer);
+async function getJwks(jwksUrl: string): Promise<Jwk[]> {
+  const hit = jwksCache.get(jwksUrl);
   if (hit && Date.now() - hit.at < 10 * 60_000) return hit.keys;
-  const res = await fetch(`${issuer}/.well-known/jwks.json`);
+  const res = await fetch(jwksUrl);
   if (!res.ok) throw new Error('jwks_indisponivel');
   const body = (await res.json()) as { keys: Jwk[] };
-  jwksCache.set(issuer, { keys: body.keys, at: Date.now() });
+  jwksCache.set(jwksUrl, { keys: body.keys, at: Date.now() });
   return body.keys;
 }
+const authRaw = (env: { AUTH_URLS?: string; CLERK_ISSUER?: string }) => env.AUTH_URLS ?? env.CLERK_ISSUER ?? '';
 
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json' } });
@@ -55,11 +57,11 @@ async function handle(req: Request, env: Env): Promise<Response> {
   }
 
   if (req.method === 'POST' && url.pathname === '/upload') {
-    if (!env.CLERK_ISSUER) return json({ error: 'servico_nao_configurado' }, 503);
+    if (!authRaw(env)) return json({ error: 'servico_nao_configurado' }, 503);
     const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '');
     let sub: string;
     try {
-      const claims = await verifyFromIssuers(token, issuerList(env.CLERK_ISSUER), getJwks);
+      const claims = await verifyFromSources(token, authSources(authRaw(env)), getJwks);
       sub = claims.sub;
     } catch (e) {
       return json({ error: e instanceof AuthError ? e.message : 'nao_autenticado' }, 401);

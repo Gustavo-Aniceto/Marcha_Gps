@@ -3,6 +3,10 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/api/auth/:path*",
+      "destination": "https://marcha-gps-api.guuhaniceto2.workers.dev/auth/:path*"
+    },
+    {
       "source": "/c/:code",
       "destination": "https://marcha-gps-api.guuhaniceto2.workers.dev/convite/pagina/:code"
     },

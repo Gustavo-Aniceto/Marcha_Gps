@@ -4,10 +4,7 @@ import { Stack, usePathname, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
-import { ClerkProvider } from '@clerk/expo';
 // só o português (o pacote inteiro trazia todas as línguas e deixava o app ~4 MB mais pesado)
-import { ptBR } from '@clerk/localizations/pt-BR';
-import { tokenCache } from '../src/lib/clerkTokenCache';
 import { ChakraPetch_700Bold } from '@expo-google-fonts/chakra-petch';
 import { ShareTechMono_400Regular } from '@expo-google-fonts/share-tech-mono';
 import { SessionProvider, useSession } from '../src/lib/session';
@@ -16,7 +13,6 @@ import { clearPendingInvite, loadPendingInvite } from '../src/lib/pendingInvite'
 import { db } from '../src/lib/db';
 import { MapSettingsProvider } from '../src/lib/mapSettings';
 import { colors } from '../src/theme/tokens.ts';
-import { pickClerkKey } from '../src/lib/clerkKey.ts';
 import { installErrorReporting, reportError, setErrorScreen } from '../src/lib/reportErrors';
 import { registerServiceWorker } from '../src/lib/pwa';
 
@@ -100,10 +96,6 @@ function Gate() {
   );
 }
 
-const clerkKey: string = pickClerkKey(typeof window !== 'undefined' && window.location ? window.location.hostname : null,
-  process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY, process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY_PROD) ?? '';
-if (!clerkKey) throw new Error('Configure EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY no app/.env');
-
 // Se uma tela quebrar, mostra um aviso em vez de tela branca (e o erro vai pro Adm Master)
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { failed: boolean }> {
   state = { failed: false };
@@ -136,17 +128,15 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <StatusBar style="light" />
-      <ClerkProvider publishableKey={clerkKey} tokenCache={tokenCache} localization={ptBR}>
-        <SessionProvider>
-          <MapSettingsProvider>
-            <NavigationProvider>
-              <ErrorBoundary>
-                <Gate />
-              </ErrorBoundary>
-            </NavigationProvider>
-          </MapSettingsProvider>
-        </SessionProvider>
-      </ClerkProvider>
+      <SessionProvider>
+        <MapSettingsProvider>
+          <NavigationProvider>
+            <ErrorBoundary>
+              <Gate />
+            </ErrorBoundary>
+          </NavigationProvider>
+        </MapSettingsProvider>
+      </SessionProvider>
     </SafeAreaProvider>
   );
 }

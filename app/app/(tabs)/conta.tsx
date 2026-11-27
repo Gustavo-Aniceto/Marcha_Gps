@@ -4,7 +4,6 @@ import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, Share, Switch, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { useUser } from '@clerk/expo';
 import { Body, Button, Card, ErrorText, Field, Label, Screen, Title } from '../../src/components/ui';
 import { Avatar } from '../../src/components/Avatar';
 import { Icon, IconBadge, type IconName } from '../../src/components/Icon';
@@ -35,8 +34,7 @@ function ago(iso: string): string {
 
 export default function Conta() {
   const router = useRouter();
-  const { profile, refreshProfile, signOut } = useSession();
-  const { user } = useUser();
+  const { profile, refreshProfile, signOut, email } = useSession();
   const [open, setOpen] = useState<Section>(null);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -148,14 +146,12 @@ export default function Conta() {
     setDeleting(true); setError(null);
     const { error: e } = await db.rpc('delete_my_account', { p_confirm: confirmText });
     if (e) { setDeleting(false); setError(friendlyError(e)); return; }
-    // apaga também o login (Clerk). Se não der, pelo menos sai da conta: o perfil já foi apagado.
-    try { await user?.delete(); } catch (x) { console.warn('conta: apagar login', x); }
+    // o banco já apagou o login junto (Neon Auth fica no próprio banco); aqui só sai da conta
     await signOut().catch(() => {});
     setDeleting(false);
   }
 
   if (!profile) return <Screen><Title>Conta</Title><ActivityIndicator color={colors.neon} /></Screen>;
-  const email = user?.primaryEmailAddress?.emailAddress;
 
   return (
     <Screen>

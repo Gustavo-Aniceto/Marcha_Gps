@@ -1,11 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { cleanError, healthChecks } from '../src/saude.ts';
+import { authSources } from '../../fotos/src/jwt.ts';
 
-test('saude: checagens incluem os dois logins do Clerk', () => {
-  const c = healthChecks(['https://great-aphid-3258.clerk.accounts.dev', 'https://clerk.marchagps.eu.org'], 'https://photon/x');
+test('saude: checagens incluem o login (Neon Auth) e o Clerk enquanto durar a troca', () => {
+  const c = healthChecks(authSources('https://great-aphid-3258.clerk.accounts.dev,https://ep-x.neonauth.c-2.sa-east-1.aws.neon.tech/neondb/auth'), 'https://photon/x');
   const names = c.map((x) => x.service);
-  assert.deepEqual(names.slice(-2), ['login_teste', 'login_producao']);
+  assert.deepEqual(names.slice(-2), ['login_clerk', 'login']);
+  assert.equal(c.at(-1)!.url, 'https://ep-x.neonauth.c-2.sa-east-1.aws.neon.tech/neondb/auth/.well-known/jwks.json');
   assert.ok(names.includes('dados') && names.includes('rotas') && names.includes('busca'));
   const dados = c.find((x) => x.service === 'dados')!;
   assert.equal(dados.ok(401), true);   // sem token: está no ar

@@ -11,8 +11,8 @@ export interface Check {
   ok: (status: number) => boolean;
 }
 
-/** O que a checagem olha. Login de produção entra pela lista de emissores do Clerk (CLERK_ISSUER). */
-export function healthChecks(issuers: string[], photonUrl: string): Check[] {
+/** O que a checagem olha. Login: cada endereço aceito (Neon Auth; Clerk só enquanto durar a troca). */
+export function healthChecks(sources: { issuer: string; jwksUrl: string }[], photonUrl: string): Check[] {
   const checks: Check[] = [
     // sem token a Data API responde 401: quer dizer que está de pé
     { service: 'dados', url: `${DATA_API_URL}/cities?select=id&limit=1`, ok: (s) => s < 500 },
@@ -21,9 +21,9 @@ export function healthChecks(issuers: string[], photonUrl: string): Check[] {
     { service: 'mapa', url: 'https://tiles.openfreemap.org/planet', ok: (s) => s === 200 },
     { service: 'site', url: 'https://marcha-gps.vercel.app/', ok: (s) => s === 200 },
   ];
-  for (const iss of issuers) {
-    const prod = !/\.clerk\.accounts\.dev$/.test(new URL(iss).hostname);
-    checks.push({ service: prod ? 'login_producao' : 'login_teste', url: `${iss}/.well-known/jwks.json`, ok: (s) => s === 200 });
+  for (const src of sources) {
+    const clerk = /clerk/.test(new URL(src.issuer).hostname);
+    checks.push({ service: clerk ? 'login_clerk' : 'login', url: src.jwksUrl, ok: (s) => s === 200 });
   }
   return checks;
 }
@@ -48,7 +48,7 @@ export function cleanError(body: unknown): ErrorReport | null {
   const scrub = (s: string | null) => s && s
     .replace(/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, '[token]')
     .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, '[email]')
-    .replace(/([?&](?:token|code|codigo|__clerk[^=]*)=)[^&\s]+/gi, '$1[x]');
+    .replace(/([?&](?:token|code|codigo|otp|neon_auth_session_verifier|__clerk[^=]*)=)[^&\s]+/gi, '$1[x]');
   const message = scrub(clip(b.message, 500));
   if (!message) return null;
   return {

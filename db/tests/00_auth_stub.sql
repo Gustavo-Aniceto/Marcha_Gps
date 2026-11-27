@@ -56,3 +56,12 @@ begin
   end if;
   return p_id;
 end $$;
+
+-- Neon Auth (Better Auth gerenciado): no Neon o schema neon_auth é criado ao ligar o Auth. Aqui imita só o necessário.
+create schema if not exists neon_auth;
+create table if not exists neon_auth."user" (
+  id uuid primary key, name text, email text not null, "emailVerified" boolean not null default false
+);
+create table if not exists neon_auth.session (
+  id uuid primary key default gen_random_uuid(), "userId" uuid not null references neon_auth."user" (id) on delete cascade
+);

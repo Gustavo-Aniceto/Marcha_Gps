@@ -20,7 +20,7 @@ export const PRIVACY: LegalSection[] = [
   {
     title: 'O que guardamos',
     items: [
-      'Conta: o e-mail (e nome/foto, se você entrar com Google ou Facebook) fica no serviço de login (Clerk). No nosso banco fica só o identificador da conta.',
+      'Conta: o e-mail (e nome/foto, se você entrar com Google) fica no serviço de login (Neon Auth), guardado no nosso próprio banco, separado do resto.',
       'Perfil: nome de usuário, nome, bio, foto, quem te convidou e a data em que você entrou.',
       'Carros: marca, modelo, ano, cor, medidas (altura, aro, suspensão etc.), fotos que você manda e a ficha FIPE que você escolher.',
       'Localização: só enquanto o app está aberto e você não está no modo fantasma (ou está num comboio). Guardamos a última posição e um histórico curto de 15 minutos (usado pro atraso opcional na Cena ao vivo). Ao parar de compartilhar, o histórico é apagado. A velocidade nunca vai pro servidor.',
@@ -55,7 +55,7 @@ export const PRIVACY: LegalSection[] = [
   {
     title: 'Com quem compartilhamos',
     items: [
-      'Só com os serviços que fazem o app rodar, cada um pra sua parte: Neon (banco de dados, em São Paulo), Clerk (login), Cloudflare (fotos, nosso servidor e a IA que reconhece o carro pela foto; a foto vai só pra essa análise), Vercel (site do app).',
+      'Só com os serviços que fazem o app rodar, cada um pra sua parte: Neon (banco de dados e login, em São Paulo), Cloudflare (fotos, nosso servidor e a IA que reconhece o carro pela foto; a foto vai só pra essa análise), Vercel (site do app).',
       'Busca de endereço e rotas: o lugar buscado e os pontos da rota passam pelo nosso servidor até o Photon (Komoot) e o Valhalla (FOSSGIS), sem o seu nome ou conta.',
       'Mapa: os quadradinhos do mapa vêm do OpenFreeMap (dados do OpenStreetMap), que vê o endereço de internet de quem baixa.',
       'Alguns desses serviços guardam dados fora do Brasil (por exemplo, nos Estados Unidos), com as proteções que eles oferecem.',
