@@ -29,7 +29,8 @@ test('texto dos pontos', () => {
 });
 
 test('erros do banco viram mensagem em português', () => {
-  assert.equal(friendlyError({ message: 'outside_area' }), 'Por enquanto o Marcha GPS funciona só em São Paulo, Guarulhos e Itaquá.');
+  assert.equal(friendlyError({ message: 'outside_area' }), 'Esse lugar está fora do mapa do Marcha GPS.');
+  assert.equal(friendlyError({ message: 'cidade_invalida' }), 'Escreve o nome da cidade da equipe (ex.: Campinas).');
   assert.equal(friendlyError(new Error('qualquer coisa')), 'Deu ruim. Tenta de novo. (qualquer coisa)');
   assert.equal(friendlyError(null), 'Deu ruim. Tenta de novo.');
   assert.equal(friendlyError({ code: '23514', message: 'new row for relation "cars" violates check constraint "cars_year_check"' }),

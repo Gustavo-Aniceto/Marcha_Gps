@@ -15,7 +15,7 @@ import { preflight, withCors } from '../../fotos/src/cors';
 import { normalizeQuery, parsePhoton, photonUrl } from './geocode';
 import { RouteError, cleanAvoid, parseValhalla, validPoint, valhallaBody, VALHALLA_URL } from './route';
 import { RateLimiter } from './limits';
-import { OVERPASS_URLS, TILES, neonSqlUrl, overpassQuery, type Tile } from './obstacles';
+import { OVERPASS_URLS, TILES, cellTile, neonSqlUrl, overpassQuery, type Tile } from './obstacles';
 import { VISION_MODEL, parseGuess, validPhotos, visionRequest } from './carro';
 import { fipeTarget, parseFipe } from './fipe';
 import { OFFICIAL_SOURCES, OFFICIAL_URLS, anttLatestCsv, decodeText, type OfficialSource } from './radares';
@@ -78,8 +78,12 @@ export default {
   // A cada minuto só manda as notificações push; o resto roda uma vez por hora (minuto 7).
   async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
     ctx.waitUntil(sendPushes(env));
-    if (event.cron === '* * * * *') return;
-    ctx.waitUntil(importNextTile(env));
+    if (event.cron === '* * * * *') {
+      // a cada 10 min, um quadrado marcado pela galera (o app vale em todas as regiões)
+      if (new Date(event.scheduledTime).getUTCMinutes() % 10 === 3) ctx.waitUntil(importWantedCells(env, 1));
+      return;
+    }
+    ctx.waitUntil(importNextTile(env).then(() => importWantedCells(env, 2)));
     ctx.waitUntil(importOfficialRadars(env));
     ctx.waitUntil(checkHealth(env));
   },
@@ -257,6 +261,18 @@ async function importNextTile(env: Env): Promise<void> {
   }
 }
 
+// Quadrados que o app marcou (posição e rotas da galera, em qualquer lugar): até N por vez, os nunca importados primeiro.
+async function importWantedCells(env: Env, n: number): Promise<void> {
+  if (!env.IMPORT_DATABASE_URL) return;
+  const rows = (await sql(env, 'select public.osm_cells_due($1) as tile', [n])) as { tile: string }[];
+  for (const { tile: id } of rows) {
+    const tile = cellTile(id);
+    if (!tile) continue;
+    const [row] = (await sql(env, 'select public.osm_import_due($1) as due', [id])) as { due: boolean }[];
+    if (row?.due) await importTile(tile, env);
+  }
+}
+
 // Radares oficiais (CET, DER, ANTT): cada fonte de 6 em 6 dias (mesmo controle das faixas). O banco faz a leitura.
 async function importOfficialRadars(env: Env): Promise<void> {
   if (!env.IMPORT_DATABASE_URL) return;
@@ -311,7 +327,7 @@ async function importTile(tile: Tile, env: Env): Promise<void> {
 // De hora em hora: cada serviço que o app usa respondeu? Grava no banco; o banco avisa o master quando muda.
 async function checkHealth(env: Env): Promise<void> {
   if (!env.IMPORT_DATABASE_URL) return;
-  const checks = healthChecks(issuerList(env.CLERK_ISSUER ?? ''), photonUrl('Guarulhos', null, 1));
+  const checks = healthChecks(issuerList(env.CLERK_ISSUER ?? ''), photonUrl('Avenida Paulista', null, 1));
   await Promise.all(checks.map(async (c) => {
     const t0 = Date.now();
     let ok = false, detail: string | null = null;

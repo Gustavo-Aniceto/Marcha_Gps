@@ -172,7 +172,7 @@ export default function EventoNovo() {
         ) : (
           <>
             <Body dim>Busque o endereço ou o nome do lugar. Não precisa estar lá.</Body>
-            <Field label="Endereço ou lugar" value={q} onChangeText={setQ} placeholder="Ex.: Posto Ipiranga Av. Brasil, Guarulhos"
+            <Field label="Endereço ou lugar" value={q} onChangeText={setQ} placeholder="Ex.: Posto Ipiranga Av. Brasil"
                    returnKeyType="search" onSubmitEditing={search} />
             <Button title="Buscar" variant="secondary" onPress={search} disabled={q.trim().length < 3} loading={searching} />
             {searching && <ActivityIndicator color={colors.neon} />}

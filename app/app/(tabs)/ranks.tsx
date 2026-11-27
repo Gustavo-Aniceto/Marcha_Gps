@@ -53,7 +53,7 @@ export default function Ranks() {
               <Body dim>Ranking interno: só a {crew?.name} vê. Não existe disputa entre equipes.</Body>
             </>
       )}
-      {tab === 'geral' && <Body dim>Soma de todo mundo em SP, Guarulhos e Itaquá. Só conta aviso confirmado por 3 pessoas.</Body>}
+      {tab === 'geral' && <Body dim>Soma de todo mundo que usa o app, em qualquer cidade. Só conta aviso confirmado por 3 pessoas.</Body>}
 
       {rows.map((r) => {
         const me = r.username === profile?.username;

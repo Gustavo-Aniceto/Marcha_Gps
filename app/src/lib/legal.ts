@@ -2,7 +2,7 @@
 // Linguagem simples, de propósito. Quando mudar algo que afete os dados, atualize a data.
 // Não é parecer jurídico: vale passar por um advogado antes de abrir pro público grande.
 
-export const LEGAL_UPDATED = '26 de novembro de 2026';
+export const LEGAL_UPDATED = '27 de novembro de 2026';
 
 /** E-mail de contato sobre privacidade (LGPD). Enquanto não houver, a página mostra o caminho pelo app. */
 export const CONTACT_EMAIL: string | null = null;
@@ -13,7 +13,7 @@ export const PRIVACY: LegalSection[] = [
   {
     title: 'Quem somos',
     items: [
-      'O Marcha GPS é um app pra quem curte carro, modificado ou original, de São Paulo, Guarulhos e Itaquaquecetuba: mapa, rotas que avisam o que pega no seu carro, avisos da galera, equipes e feed.',
+      'O Marcha GPS é um app pra quem curte carro, modificado ou original, de qualquer cidade do Brasil: mapa, rotas que avisam o que pega no seu carro, avisos da galera, equipes e feed.',
       'O responsável pelos seus dados é o Marcha GPS (o dono do app, chamado de Adm Master dentro do app).',
     ],
   },

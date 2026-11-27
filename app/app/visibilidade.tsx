@@ -1,4 +1,4 @@
-// Quem vê meu carro: fantasma, todas as minhas equipes, UMA equipe ou cena ao vivo (SP, Guarulhos, Itaquá).
+// Quem vê meu carro: fantasma, todas as minhas equipes, UMA equipe ou cena ao vivo.
 // As regras de verdade ficam no banco (visible_cars); aqui só se escolhe a preferência.
 import React, { useEffect, useState } from 'react';
 import * as Location from 'expo-location';
@@ -12,7 +12,7 @@ import { goBack } from '../src/lib/goBack';
 const MODES: { value: Profile['visibility']; label: string; sub: string }[] = [
   { value: 'ghost', label: 'Modo fantasma', sub: 'Ninguém te vê, nem a equipe. Você ainda vê os outros.' },
   { value: 'crew', label: 'Minhas equipes', sub: 'Aparece só pra galera verificada das suas equipes (todas ou uma só).' },
-  { value: 'scene', label: 'Cena ao vivo', sub: 'Seu carro aparece no mapa de SP, Guarulhos e Itaquá pra membros verificados.' },
+  { value: 'scene', label: 'Cena ao vivo', sub: 'Seu carro aparece no mapa da Cena ao vivo pra membros verificados.' },
 ];
 
 export default function Visibilidade() {

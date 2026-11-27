@@ -26,6 +26,20 @@ const ROWS: [number, number][] = [
   [-23.83, -23.65],
   [-24.01, -23.83],
 ];
+/** Quadrado de 0,2° (~22 km) que o app marcou por onde a galera anda: id g<linha>_<coluna> (mesma conta de area_cell() no banco). */
+export const CELL = 0.2;
+export function cellId(lat: number, lon: number): string {
+  return `g${Math.floor((lat + 90) / CELL + 1e-9)}_${Math.floor((lon + 180) / CELL + 1e-9)}`;
+}
+export function cellTile(id: string): Tile | null {
+  const m = /^g(\d{1,4})_(\d{1,4})$/.exec(id);
+  if (!m) return null;
+  const south = +(Number(m[1]) * CELL - 90).toFixed(4), west = +(Number(m[2]) * CELL - 180).toFixed(4);
+  if (south < -90 || south >= 90 || west < -180 || west >= 180) return null;
+  return { id, south, west, north: +(south + CELL).toFixed(4), east: +(west + CELL).toFixed(4) };
+}
+
+// Os 12 quadrados fixos da área onde o app começou (SP, Guarulhos, Itaquá); o resto vem dos quadrados marcados.
 export const TILES: Tile[] = ROWS.flatMap(([south, north], r) =>
   COLS.map(([name, west, east]) => ({ id: `${name}_${'abcd'[r]}`, south, west, north, east })),
 );

@@ -29,6 +29,7 @@ import { useMapSettings } from '../../src/lib/mapSettings';
 import { activeCount, filterCars, filterReports } from '../../src/lib/mapFilter.ts';
 import { MapFilterSheet } from '../../src/components/MapFilterSheet';
 import { useLocationSharing } from '../../src/lib/useLocationSharing';
+import { markAreas } from '../../src/lib/markAreas';
 import { cameraFor, gpsQuality, navZoom, resolveTheme } from '../../src/lib/mapCamera.ts';
 import { useGlides } from '../../src/lib/useGlides';
 import { clearanceFor } from '../../src/lib/fitment.ts';
@@ -134,6 +135,12 @@ export default function Mapa() {
     rememberPosition(position);
     nav.onFix(position);
   }, [position]);
+
+  // marca o quadrado (~22 km) onde a pessoa está: o servidor importa lombadas/radares de lá (qualquer região)
+  const areaKey = lat == null || lon == null ? null : `${Math.floor(lat * 5)}_${Math.floor(lon * 5)}`;
+  useEffect(() => {
+    if (lat != null && lon != null) markAreas([{ lat, lon }]).catch(() => {});
+  }, [areaKey]);
 
   // sinal do GPS: fraco (impreciso) ou perdido (sem leitura há 15 s)
   const lastFixAt = useRef(0);

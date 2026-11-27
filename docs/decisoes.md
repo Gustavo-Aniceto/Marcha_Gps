@@ -3,7 +3,7 @@
 Protótipo das telas: https://claude.ai/artifact/UYsUewuuw3KkM5jdFJ7oj2
 
 ## Conceito
-GPS com cara de videogame pra quem curte carro. Slogan: **"Carros modificados e originais"** (não usar "cena rebaixada"/"carros rebaixados" como slogan). Área de lançamento: **São Paulo, Guarulhos e Itaquaquecetuba**.
+GPS com cara de videogame pra quem curte carro. Slogan: **"Carros modificados e originais"** (não usar "cena rebaixada"/"carros rebaixados" como slogan). **Vale em todas as regiões** (não só SP, Guarulhos e Itaquá, onde começou): aviso do Radar, busca, equipes e importação de lombadas/radares funcionam em qualquer cidade.
 
 ## Acesso e confiança
 - Entrada só por **convite**; quem convida é o padrinho e responde pelo convidado.
@@ -12,6 +12,7 @@ GPS com cara de videogame pra quem curte carro. Slogan: **"Carros modificados e 
 - **Ordem do primeiro acesso:** 1) digita o código do convite (o app confere sem login); 2) entra com a conta que preferir: Google, Facebook ou e-mail (código no e-mail ou senha); 3) escolhe o nome de usuário. Quem já é membro toca em "Já sou membro · Entrar".
 - **Convite só dá acesso ao app.** Dois tipos: código de fundador (só o Adm Master gera; quem usa pode registrar uma equipe) e convite pro app (quem é verificado em alguma equipe gera, gasta 1 dos convites, vale 7 dias). Nenhum convite coloca ninguém em equipe.
 - **Entrar numa equipe = pedir.** Na página da equipe (ou na lista "Equipes da cena") a pessoa toca em "Pedir pra entrar" (mensagem opcional). Quem aprova é o fundador ou admin daquela equipe; quem aprovou vira o padrinho. Recusado só pede de novo depois de 7 dias. Um pedido aberto por equipe.
+- **Equipe de qualquer cidade:** no pedido a pessoa escreve a cidade (ex.: Campinas, Recife) e o banco cria a cidade.
 - **Registrar equipe** só quem entrou com código de fundador que ainda não virou equipe (ou o Adm Master).
 - **Página da equipe** no jeito das páginas do Facebook: capa, foto (logo), bio (até 600 letras) e Instagram, editados pelo fundador/admin. Fotos sobem pelo serviço de fotos como tipo `post`.
 - **Verificação do membro** depois de aprovado: 2 membros confirmam que conhecem + check-in presencial (QR escaneado por admin). Sem isso: não vê localização da equipe nem entra em comboio.
@@ -36,7 +37,7 @@ GPS com cara de videogame pra quem curte carro. Slogan: **"Carros modificados e 
 - Dá pra estar em **mais de uma equipe**. Visibilidade: **Fantasma** / **Minhas equipes** (todas juntas **ou uma equipe só**: as outras não te veem) / **Cena ao vivo**. Na Cena, o filtro vai de Todos / Minhas equipes / cada equipe. Na Cena ao vivo: posição aproximada (~500 m) por padrão para quem não é da equipe, atraso opcional, some ao parar 10 min, só membros verificados veem, zonas privadas (casa/trabalho) escondem até da equipe.
 
 ## Navegação
-- "Para onde?" busca endereço ou lugar (estado de SP, puxando pra perto de você) e já sai navegando: linha da rota, próxima manobra com seta e distância, "depois: …", tempo restante, distância e horário de chegada.
+- "Para onde?" busca endereço ou lugar (Brasil inteiro, puxando pra perto de você) e já sai navegando: linha da rota, próxima manobra com seta e distância, "depois: …", tempo restante, distância e horário de chegada.
 - **Recalcula sozinho** quando sai da rota (2 leituras seguidas a mais de ~40 m, com folga se o GPS estiver ruim), quando fica muito longe (120 m) ou quando anda na contramão da rota por 3 leituras. Espera pelo menos 8 s entre recálculos e, se falhar, continua mostrando a rota antiga.
 - **Voz em português** com 400 m e na hora da manobra (dá pra deixar mudo). Tela não apaga enquanto navega.
 - **Movimento liso:** o carro desliza entre as leituras do GPS e o mapa anda junto (sem trancos); navegando, o carro anda em cima da linha da rota. Os outros carros também deslizam. A linha roxa some no trecho que já ficou pra trás. Mais rápido = mapa mais afastado pra ver longe; chegando devagar numa conversão, aproxima. Aparece "GPS fraco" / "Sem sinal de GPS" quando o sinal piora. Tema **Automático** (padrão): claro do nascer ao pôr do sol, escuro à noite.
@@ -70,11 +71,11 @@ GPS com cara de videogame pra quem curte carro. Slogan: **"Carros modificados e 
 
 ## Ranks
 - **Rank de patente é interno de cada equipe** (só a equipe vê; sem disputa entre equipes). XP vem de: evento com mídia +50, rolê em comboio +30, convidado verificado +40.
-- **Radar é soma geral** de todo mundo nas 3 cidades: pontos só por aviso confirmado por 3 pessoas. Buraco/Lombada alta/Valeta +15, Blitz/Rua ruim/Alagamento +10, Radar +5, confirmar aviso de outro +3. Aviso falso tira pontos. Blitz expira em 1 h, alagamento em 6 h, o resto em 7 dias sem confirmação.
+- **Radar é soma geral** de todo mundo que usa o app, em qualquer cidade: pontos só por aviso confirmado por 3 pessoas. Buraco/Lombada alta/Valeta +15, Blitz/Rua ruim/Alagamento +10, Radar +5, confirmar aviso de outro +3. Aviso falso tira pontos. Blitz expira em 1 h, alagamento em 6 h, o resto em 7 dias sem confirmação.
 
 ## Dados de obstáculos
-- Importação **automática toda semana** (o serviço de rotas tenta de hora em hora; cada pedaço do mapa (12 quadrados) só é baixado de novo depois de 6 dias; se o Overpass estiver fora, tenta outro servidor e de novo depois) + script manual. OpenStreetMap (traffic_calming, highway=speed_camera) + radares da ANTT (rodovias concedidas, ex.: Dutra, Ayrton Senna). Duplicados a menos de 15 m são juntados; cada ponto leva a cidade; tudo entra como "não confirmado". Script: `scripts/import_obstacles.py`.
-- **Radares oficiais** (com a velocidade da placa), atualizados sozinhos a cada 6 dias: CET-SP (todos os radares da cidade de São Paulo), DER-SP (rodovias estaduais em SP, Guarulhos e Itaquá) e ANTT (rodovias federais concedidas). Entram já confirmados. Guarulhos não publica a lista dos radares municipais em dados abertos: lá valem os do DER/ANTT, os do OpenStreetMap e os avisos da galera.
+- Importação **automática toda semana** (o serviço de rotas tenta de hora em hora; os 12 quadrados da área onde o app começou e, em qualquer outra região, os quadrados de ~22 km por onde a galera anda ou traça rota (o app marca sozinho; sem guardar quem marcou); cada quadrado só é baixado de novo depois de 6 dias; se o Overpass estiver fora, tenta outro servidor e de novo depois) + script manual. OpenStreetMap (traffic_calming, highway=speed_camera) + radares da ANTT (rodovias concedidas, ex.: Dutra, Ayrton Senna). Duplicados a menos de 15 m são juntados; cada ponto leva a cidade; tudo entra como "não confirmado". Script: `scripts/import_obstacles.py`.
+- **Radares oficiais** (com a velocidade da placa), atualizados sozinhos a cada 6 dias: CET-SP (todos os radares da cidade de São Paulo), DER-SP (rodovias estaduais de SP) e ANTT (rodovias federais concedidas, no Brasil todo). Entram já confirmados. Nas cidades sem lista aberta de radares valem os do OpenStreetMap e os avisos da galera.
 - Não usar dados do Waze/Google (termos de uso).
 
 ## Adm Master

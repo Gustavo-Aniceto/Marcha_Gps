@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Marcha GPS — importa lombadas, valetas e radares de São Paulo, Guarulhos e Itaquaquecetuba.
+Marcha GPS — importa lombadas, valetas e radares das cidades da área inicial (SP, Guarulhos, Itaquá). O resto do Brasil é importado sozinho pelo Worker (quadrados marcados pelo app).
 
 Fontes:
   1. OpenStreetMap (via Overpass API): traffic_calming=* e highway=speed_camera

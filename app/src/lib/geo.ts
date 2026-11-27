@@ -5,8 +5,3 @@ export function haversineM(lat1: number, lon1: number, lat2: number, lon2: numbe
   return 2 * 6371000 * Math.asin(Math.sqrt(a));
 }
 
-export const LAUNCH_CITIES = [
-  { id: 'sao_paulo', name: 'São Paulo' },
-  { id: 'guarulhos', name: 'Guarulhos' },
-  { id: 'itaquaquecetuba', name: 'Itaquá' },
-] as const;

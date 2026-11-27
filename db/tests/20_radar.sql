@@ -9,8 +9,8 @@ select t.user(:'a', 'membro.a'), t.user(:'b', 'membro.b'), t.user(:'c', 'membro.
 set local role authenticated;
 
 select t.login(:'a');
--- fora de SP / Guarulhos / Itaquá não pode
-select t.throws($$ select public.create_report('lombada', -22.90, -43.20) $$, 'outside_area');
+-- vale em qualquer lugar (Rio cai em "geral")
+select t.ok(public.create_report('lombada', -22.90, -43.20) is not null, 'aviso no Rio também vale');
 select public.create_report('lombada', -23.5500, -46.6300) as lomb \gset
 select t.ok((select city_id from public.reports where id = :'lomb') = 'sao_paulo', 'cidade detectada');
 select public.create_report('buraco', -23.45, -46.35) as itaqua \gset

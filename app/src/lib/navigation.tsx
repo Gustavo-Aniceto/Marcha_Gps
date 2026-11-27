@@ -6,6 +6,7 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { buildRoute, initialNavState, navStep, routeErrorText, type Fix, type NavState, type NavUpdate, type Route } from './nav.ts';
 import { fetchRoute, RoutingError, type Place } from './routing';
 import { isOnline, saveRouteForOffline } from './pwa';
+import { markAreas } from './markAreas';
 
 export type NavStatus = 'idle' | 'routing' | 'navigating' | 'rerouting' | 'arrived';
 
@@ -46,6 +47,7 @@ function keepRoute(dest: Place, route: Route, avoidPts: { lat: number; lon: numb
   const v: SavedNav = { dest, route, avoid: avoidPts, at: Date.now() };
   AsyncStorage.setItem(ACTIVE_KEY, JSON.stringify(v)).catch(() => {});
   saveRouteForOffline(route.coords);
+  markAreas(route.coords).catch(() => {});  // avisos do OpenStreetMap chegam no caminho todo, em qualquer região
 }
 function forgetRoute() { AsyncStorage.removeItem(ACTIVE_KEY).catch(() => {}); }
 

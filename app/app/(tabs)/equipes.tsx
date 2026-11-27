@@ -9,7 +9,6 @@ import { db } from '../../src/lib/db';
 import { useSession } from '../../src/lib/session';
 import { friendlyError } from '../../src/lib/errors.ts';
 import { readableAccent } from '../../src/lib/contrast.ts';
-import { LAUNCH_CITIES } from '../../src/lib/geo.ts';
 import { colors, type ButtonShape } from '../../src/theme/tokens.ts';
 import { InviteCard } from '../../src/components/InviteCard';
 import { Avatar } from '../../src/components/Avatar';
@@ -25,7 +24,7 @@ interface JoinRequest {
   id: string; crew_id: string; crew_name: string; username: string; avatar_key: string | null;
   message: string | null; created_at: string; car: string | null; crews_in: number;
 }
-interface Request { id: string; requester_id: string; name: string; city_id: string; instagram: string | null; member_count: number; status: string }
+interface Request { id: string; requester_id: string; name: string; city_id: string; city?: { name: string } | null; instagram: string | null; member_count: number; status: string }
 interface FounderCode {
   code: string; created_at: string; used_at: string | null; used_by: string | null;
   crew_id: string | null; crew_name: string | null; crew_status: string | null;
@@ -45,7 +44,7 @@ export default function Equipes() {
   const [invite, setInvite] = useState<string | null>(null);
   const [requests, setRequests] = useState<Request[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: '', city: 'sao_paulo', instagram: '', count: '' });
+  const [form, setForm] = useState({ name: '', city: '', instagram: '', count: '' });
   const [formSent, setFormSent] = useState(false);
   const [master, setMaster] = useState<string | null>(null);
   const [openInvites, setOpenInvites] = useState<OpenInvite[]>([]);
@@ -73,7 +72,7 @@ export default function Equipes() {
       setMembers((m ?? []) as unknown as Member[]);
     }
     const { data: r } = await db.from('crew_requests')
-      .select('id, requester_id, name, city_id, instagram, member_count, status').order('created_at', { ascending: false });
+      .select('id, requester_id, name, city_id, city:cities(name), instagram, member_count, status').order('created_at', { ascending: false });
     setRequests((r ?? []) as Request[]);
     // meus convites pro app ainda não usados
     const { data: inv } = await db.from('invites').select('code, expires_at')
@@ -131,7 +130,7 @@ export default function Equipes() {
     if (!profile) return;
     setError(null);
     const { error: e } = await db.from('crew_requests').insert({
-      requester_id: profile.id, name: form.name.trim(), city_id: form.city,
+      requester_id: profile.id, name: form.name.trim(), city_name: form.city.trim(),
       instagram: form.instagram.trim() || null, member_count: Number(form.count) || 1, accepts_video_call: true,
     });
     if (e) setError(friendlyError(e)); else { setFormSent(true); load(); }
@@ -354,7 +353,7 @@ export default function Equipes() {
           {requests.filter((r) => r.status === 'pending' || r.status === 'more_info').map((r) => (
             <Card key={r.id}>
               <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700' }}>{r.name}</Text>
-              <Body dim>{LAUNCH_CITIES.find((c) => c.id === r.city_id)?.name} · {r.member_count} membros · {r.instagram ?? 'sem Instagram'}</Body>
+              <Body dim>{r.city?.name ?? r.city_id} · {r.member_count} membros · {r.instagram ?? 'sem Instagram'}</Body>
               <Button title="Aprovar" onPress={() => call('review_crew_request', { p_request: r.id, p_decision: 'approved', p_note: null })} />
               <Button title="Pedir mais provas" variant="secondary" onPress={() => call('review_crew_request', { p_request: r.id, p_decision: 'more_info', p_note: null })} />
               <Button title="Recusar" variant="secondary" color={colors.danger} onPress={() => call('review_crew_request', { p_request: r.id, p_decision: 'rejected', p_note: null })} />
@@ -371,13 +370,13 @@ export default function Equipes() {
             : <>
                 <Body dim>Toda equipe é liberada pelo Adm Master. Mostra que ela existe de verdade.</Body>
                 <Field label="Nome da equipe" value={form.name} onChangeText={(v) => setForm({ ...form, name: v })} />
-                <Pills options={LAUNCH_CITIES.map((c) => ({ value: c.id as string, label: c.name }))}
-                       value={form.city} onChange={(v) => setForm({ ...form, city: v })} />
+                <Field label="Cidade" value={form.city} placeholder="Ex.: Campinas, Recife, Curitiba…"
+                       onChangeText={(v) => setForm({ ...form, city: v })} />
                 <Field label="Instagram da equipe" value={form.instagram} autoCapitalize="none"
                        onChangeText={(v) => setForm({ ...form, instagram: v })} />
                 <Field label="Quantos membros" value={form.count} keyboardType="number-pad"
                        onChangeText={(v) => setForm({ ...form, count: v.replace(/\D/g, '') })} />
-                <Button title="Enviar pro Adm Master" onPress={sendRequest} disabled={form.name.trim().length < 2} />
+                <Button title="Enviar pro Adm Master" onPress={sendRequest} disabled={form.name.trim().length < 2 || form.city.trim().length < 2} />
               </>}
         </Card>
       )}

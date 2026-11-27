@@ -3,8 +3,8 @@
 
 export const PHOTON_URL = 'https://photon.komoot.io/api/';
 
-// Estado de São Paulo inteiro (dá pra ir pra praia, interior etc.); o lançamento é SP/Guarulhos/Itaquá.
-export const SP_STATE_BBOX = [-53.2, -25.4, -44.1, -19.7] as const; // minLon, minLat, maxLon, maxLat
+// Brasil inteiro (o app vale em todas as regiões); a posição da pessoa puxa os resultados pra perto.
+export const SEARCH_BBOX = [-74.1, -33.9, -28.8, 5.4] as const; // minLon, minLat, maxLon, maxLat
 
 export interface Place {
   id: string;
@@ -22,7 +22,7 @@ export function photonUrl(q: string, bias?: { lat: number; lon: number } | null,
   const u = new URL(PHOTON_URL);
   u.searchParams.set('q', normalizeQuery(q));
   u.searchParams.set('limit', String(limit));
-  u.searchParams.set('bbox', SP_STATE_BBOX.join(','));
+  u.searchParams.set('bbox', SEARCH_BBOX.join(','));
   if (bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lon)) {
     // 2 casas (~1 km) basta pra puxar resultados perto e ajuda o cache
     u.searchParams.set('lat', bias.lat.toFixed(2));

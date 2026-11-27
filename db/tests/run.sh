@@ -15,7 +15,7 @@ fi
 cleanup() { $AS pg_ctl -D "$WORK/data" -m immediate stop >/dev/null 2>&1 || true; rm -rf "$WORK"; }
 trap cleanup EXIT
 
-$AS initdb -D "$WORK/data" -U postgres --auth=trust >/dev/null
+$AS initdb -D "$WORK/data" -U postgres --auth=trust -E UTF8 --locale=C.UTF-8 >/dev/null
 $AS pg_ctl -D "$WORK/data" -o "-p $PORT -k $WORK -c listen_addresses=''" -l "$WORK/log" -w start >/dev/null
 PSQL=(psql -h "$WORK" -p "$PORT" -U postgres -d postgres -v ON_ERROR_STOP=1 -q -X)
 

@@ -1,6 +1,6 @@
 # Marcha GPS
 
-GPS com cara de videogame pra quem curte carro: **carros modificados e originais**. Começa em **São Paulo, Guarulhos e Itaquaquecetuba**.
+GPS com cara de videogame pra quem curte carro: **carros modificados e originais**. Vale em **todas as regiões**.
 
 - Entrada só por convite, com verificação dos membros pela própria equipe.
 - Cada usuário monta o seu carro (por fotos + garagem 3D) e é ele que aparece no mapa.
@@ -117,7 +117,7 @@ npm test           # lógica pura
 
 - Cadastro do carro por fotos (reconhecimento por IA) e garagem em 3D.
 - Modelo 3D do carro no lugar do ícone.
-- Mapas próprios: gerar um arquivo PMTiles só de SP, Guarulhos e Itaquá e hospedar no nosso armazenamento (deixa de depender do OpenFreeMap; o estilo continua o mesmo, só muda `TILES_URL`).
+- Mapas próprios: gerar arquivos PMTiles das regiões com mais uso e hospedar no nosso armazenamento (deixa de depender do OpenFreeMap; o estilo continua o mesmo, só muda `TILES_URL`).
 - Rotina chamando `expire_reports()` a cada 5 minutos (pg_cron no Neon ou função agendada).
 - Fotos (carro e mídia) no Neon Object Storage.
 - Trocar as caixas das cidades por polígonos oficiais do IBGE.

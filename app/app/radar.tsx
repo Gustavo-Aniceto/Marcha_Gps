@@ -9,7 +9,7 @@ import { REPORT_KINDS, pointsText, type ReportKind } from '../src/lib/reports.ts
 import { lastKnownPosition } from '../src/lib/lastPosition';
 import { goBack } from '../src/lib/goBack';
 
-// velocidades de placa mais comuns em SP (0 = não sei)
+// velocidades de placa mais comuns no Brasil (0 = não sei)
 const SPEEDS = [0, 30, 40, 50, 60, 70, 80, 90, 100, 110];
 
 export default function Radar() {

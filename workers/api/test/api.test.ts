@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import { parsePhoton, photonUrl, normalizeQuery } from '../src/geocode.ts';
 import { cleanAvoid, MAX_AVOID, parseValhalla, valhallaBody, validPoint, RouteError } from '../src/route.ts';
 import { RateLimiter } from '../src/limits.ts';
-import { overpassQuery, neonSqlUrl, TILES } from '../src/obstacles.ts';
+import { overpassQuery, neonSqlUrl, TILES, cellId, cellTile } from '../src/obstacles.ts';
 
 test('busca: monta o endereço do Photon com SP e perto de mim', () => {
   const u = new URL(photonUrl('  av   paulista  ', { lat: -23.5613, lon: -46.6565 }));
   assert.equal(u.searchParams.get('q'), 'av paulista');
   assert.equal(u.searchParams.get('lat'), '-23.56');
   assert.equal(u.searchParams.get('lon'), '-46.66');
-  assert.equal(u.searchParams.get('bbox'), '-53.2,-25.4,-44.1,-19.7');
+  assert.equal(u.searchParams.get('bbox'), '-74.1,-33.9,-28.8,5.4');
   assert.equal(normalizeQuery('a'.repeat(500)).length, 120);
 });
 
@@ -102,4 +102,14 @@ test('rota desviando: no máximo 40 pontos', () => {
   const muitos = Array.from({ length: 100 }, (_, i) => ({ lat: -23.52 + i * 0.001, lon: -46.55 }));
   assert.equal(cleanAvoid(muitos, de, para).length, MAX_AVOID);
   assert.deepEqual(cleanAvoid('nada', de, para), []);
+});
+
+test('quadrados marcados: mesmo id que area_cell() do banco e caixa de 0,2°', () => {
+  assert.equal(cellId(-8.05, -34.90), 'g409_725');
+  const t = cellTile('g409_725')!;
+  assert.deepEqual([t.south, t.west, t.north, t.east], [-8.2, -35, -8, -34.8]);
+  assert.ok(-8.05 >= t.south && -8.05 < t.north && -34.90 >= t.west && -34.90 < t.east);
+  assert.equal(cellTile('oeste_a'), null);
+  assert.equal(cellTile('g9999_1'), null);
+  assert.match(overpassQuery(t), /\[bbox:-8\.2000,-35\.0000,-8\.0000,-34\.8000\]/);
 });
