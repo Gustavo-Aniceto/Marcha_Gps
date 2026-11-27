@@ -73,7 +73,7 @@ export default function Equipes() {
     }
     const { data: r } = await db.from('crew_requests')
       .select('id, requester_id, name, city_id, city:cities(name), instagram, member_count, status').order('created_at', { ascending: false });
-    setRequests((r ?? []) as Request[]);
+    setRequests((r ?? []) as unknown as Request[]);
     // meus convites pro app ainda não usados
     const { data: inv } = await db.from('invites').select('code, expires_at')
       .eq('created_by', profile.id).eq('kind', 'app').is('used_at', null).gt('expires_at', new Date().toISOString())
