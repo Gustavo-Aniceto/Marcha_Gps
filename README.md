@@ -16,7 +16,7 @@ Decisões do produto: [docs/decisoes.md](docs/decisoes.md)
 app/            App mobile (Expo + React Native + TypeScript)
 db/migrations/  Banco (Postgres no Neon): tabelas, regras de acesso (RLS) e funções
 db/tests/       Testes do banco (rodam num Postgres local)
-workers/fotos/  Serviço de fotos (Cloudflare Worker + R2): confere o login do Clerk e guarda a imagem
+workers/fotos/  Serviço de fotos (Cloudflare Worker + R2): confere o login e guarda a imagem
 workers/api/    Serviço de rotas: busca de lugares, rota em português e importação semanal de lombadas/radares
 scripts/        Importação de lombadas/radares (OpenStreetMap + ANTT)
 docs/           Decisões e notas do produto
@@ -25,33 +25,25 @@ docs/           Decisões e notas do produto
 ## Serviços
 
 - **Neon**: banco Postgres + Data API (REST). Projeto `marcha-gps`, região São Paulo.
-- **Clerk**: login por código no e-mail. O token dele é o que a Data API usa pra saber quem é o usuário.
+- **Neon Auth**: login (Google ou código no e-mail), usuários no próprio banco. O token dele é o que a Data API usa pra saber quem é o usuário. O app fala com ele por `/api/auth` no próprio site.
 - **Fotos**: Cloudflare R2 (10 GB grátis, sem custo de download) via `workers/fotos`. O armazenamento do Neon ainda não existe na região de São Paulo.
 - **Mapa**: MapLibre (biblioteca aberta) com os mapas gratuitos do **OpenFreeMap** (dados do OpenStreetMap). Sem conta, sem chave e sem cobrança. Estilos próprios em `app/src/lib/mapStyle.ts`: **noite** (3D azul), **dia** (3D claro) e **cena** (2D cinza-escuro, pra ver a galera).
 
 ## Configurando
 
-**Já configurado (24/11/2026):**
-- Clerk: aplicação "Marcha GPS" (desenvolvimento, domínio `great-aphid-3258.clerk.accounts.dev`), token com `{ "role": "authenticated" }`, Native API ligada, app Android `br.com.marchagps.app` registrado. Falta registrar o iOS (precisa do Team ID da Apple).
-- Neon: Data API ligada com o JWKS do Clerk; migrations 0001–0004 aplicadas; cache atualizado.
+**Já configurado:**
+- Neon: Data API ligada; **Neon Auth** ligado no branch `main` (Google com as credenciais do Neon por enquanto, código no e-mail); domínios confiáveis do Auth: `https://marcha-gps.vercel.app`. Migrations aplicadas; cache atualizado.
 
 Pra recriar do zero em outro ambiente:
 
-### 1. Clerk
+### 1. Neon (banco e login)
 
-1. Crie uma aplicação em [clerk.com](https://clerk.com).
-2. **User & authentication**: e-mail com **Email verification code**.
-3. **Native applications**: ligue a **Native API**.
-4. **Sessions > Customize session token**: `{ "role": "authenticated" }` (obrigatório: sem isso o banco trata todo mundo como visitante).
-
-### 2. Neon
-
-1. Data API ligada com provedor externo, JWKS do Clerk: `https://<seu-dominio-clerk>/.well-known/jwks.json`.
+1. Ligue a Data API e o **Neon Auth** no branch (Console > Auth). Adicione o endereço do app em **trusted domains**.
 2. Rode as migrations de `db/migrations/` em ordem (SQL Editor do Neon ou `psql`).
 3. **Refresh schema cache** na página da Data API.
-4. Entre uma vez no app e se marque como Adm Master (o ID é o do Clerk, `user_...`):
+4. Entre uma vez no app e se marque como Adm Master (o ID é o `id` do `neon_auth.user`):
    ```sql
-   insert into public.profiles (id, username, is_master) values ('user_...', 'seu.nome', true);
+   update public.profiles set is_master = true where username = 'seu.nome';
    ```
 
 Testes do banco num Postgres local:
@@ -62,8 +54,8 @@ Testes do banco num Postgres local:
 
 ### 3. Fotos (Cloudflare)
 
-1. Já feito: bucket R2 `marcha-gps-fotos` e Worker publicado em `https://marcha-gps-fotos.guuhaniceto2.workers.dev`, aceitando só o login do Clerk.
-2. `CLERK_ISSUER` em `workers/fotos/wrangler.toml` é o domínio do Clerk.
+1. Já feito: bucket R2 `marcha-gps-fotos` e Worker publicado em `https://marcha-gps-fotos.guuhaniceto2.workers.dev`, aceitando só quem está logado.
+2. `AUTH_URLS` em `workers/fotos/wrangler.toml` (e no `workers/api`) é o endereço do Neon Auth.
 3. `cd workers/fotos && npm install && npm test && npx wrangler deploy`
 4. Coloque a URL do Worker em `EXPO_PUBLIC_FOTOS_URL` no `app/.env`.
 5. O app reduz as fotos (lado maior 1600 px, JPEG 70%) antes de enviar, pra caber folgado na cota grátis.
