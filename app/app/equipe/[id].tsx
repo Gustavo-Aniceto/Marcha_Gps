@@ -138,7 +138,7 @@ export default function EquipePagina() {
             )}
           </Pressable>
           <View style={{ flex: 1, paddingBottom: 6 }}>
-            <Mono color={accent}>{c.status === 'suspended' ? 'EQUIPE SUSPENSA' : 'EQUIPE'}</Mono>
+            {c.status === 'suspended' && <Mono color={colors.danger}>EQUIPE SUSPENSA</Mono>}
           </View>
         </View>
       </View>

@@ -30,7 +30,7 @@ export function CrewCover({ name, color, accent, uri, height, fontSize = 50 }:
               <View key={i} style={{ position: 'absolute', right: 30 + i * 34, top: -40, width: 16, height: height + 80,
                                      backgroundColor: accent, opacity: 0.1, transform: [{ rotate: '20deg' }] }} />
             ))}
-            <Text numberOfLines={1} style={{ width: 1600, color: accent, opacity: 0.2, fontSize, fontWeight: '900', marginLeft: 12,
+            <Text style={{ width: 1600, color: accent, opacity: 0.2, fontSize, fontWeight: '900', marginLeft: 12,
                                              letterSpacing: -1, transform: [{ rotate: '-6deg' }] }}>{name.toUpperCase()}</Text>
           </View>
         )}
