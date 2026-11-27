@@ -13,7 +13,7 @@ export const PRIVACY: LegalSection[] = [
   {
     title: 'Quem somos',
     items: [
-      'O Marcha GPS é um app da cena de carro rebaixado de São Paulo, Guarulhos e Itaquaquecetuba: mapa, rotas que avisam o que pega no seu carro, avisos da galera, equipes e feed.',
+      'O Marcha GPS é um app pra quem curte carro, modificado ou original, de São Paulo, Guarulhos e Itaquaquecetuba: mapa, rotas que avisam o que pega no seu carro, avisos da galera, equipes e feed.',
       'O responsável pelos seus dados é o Marcha GPS (o dono do app, chamado de Adm Master dentro do app).',
     ],
   },

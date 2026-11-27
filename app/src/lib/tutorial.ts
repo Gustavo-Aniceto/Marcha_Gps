@@ -19,7 +19,7 @@ export const TUTORIAL: TutorialStep[] = [
   {
     id: 'boas-vindas', tone: 'neon', where: 'Leva 1 minuto',
     title: 'Bem-vindo ao Marcha GPS',
-    text: 'O GPS da cena rebaixada: rota que conhece o seu carro, avisos de lombada e valeta, e a sua equipe no mapa.',
+    text: 'O GPS dos carros modificados e originais: rota que conhece o seu carro, avisos de lombada e valeta, e a sua equipe no mapa.',
     icon: 'M12 3a7 7 0 0 0-7 7c0 5 7 11 7 11s7-6 7-11a7 7 0 0 0-7-7Z M12 7.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z',
   },
   {

@@ -1,6 +1,6 @@
 # Marcha GPS
 
-GPS com cara de videogame para a cena de carro rebaixado. Começa em **São Paulo, Guarulhos e Itaquaquecetuba**.
+GPS com cara de videogame pra quem curte carro: **carros modificados e originais**. Começa em **São Paulo, Guarulhos e Itaquaquecetuba**.
 
 - Entrada só por convite, com verificação dos membros pela própria equipe.
 - Cada usuário monta o seu carro (por fotos + garagem 3D) e é ele que aparece no mapa.

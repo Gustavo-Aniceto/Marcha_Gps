@@ -13,7 +13,7 @@ export default function Entrar() {
         <Text style={{ fontFamily: fonts.brand, fontSize: 36, color: colors.neon, letterSpacing: 1.5 }}>
           MARCHA <Text style={{ color: colors.text }}>GPS</Text>
         </Text>
-        <Text style={{ color: colors.textMuted, fontSize: 14 }}>O GPS da cena rebaixada. Aqui só entra quem é convidado.</Text>
+        <Text style={{ color: colors.textMuted, fontSize: 14 }}>Carros modificados e originais. Aqui só entra quem é convidado.</Text>
       </View>
       <View style={{ width: '100%', maxWidth: 420 }}><InviteBadge /></View>
       {/* Depois do login, o Gate do _layout leva pro convite ou pro mapa */}

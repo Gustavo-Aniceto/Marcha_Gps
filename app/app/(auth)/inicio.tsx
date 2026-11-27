@@ -50,7 +50,7 @@ export default function Inicio() {
         <Text style={{ fontFamily: fonts.brand, fontSize: 40, color: colors.neon, letterSpacing: 1.5 }}>
           MARCHA <Text style={{ color: colors.text }}>GPS</Text>
         </Text>
-        <Text style={{ color: colors.textMuted, fontSize: 14 }}>O GPS da cena rebaixada.</Text>
+        <Text style={{ color: colors.textMuted, fontSize: 14 }}>Carros modificados e originais.</Text>
       </View>
 
       <Text style={{ color: colors.text, fontFamily: fonts.display, fontWeight: '800', letterSpacing: -0.3, fontSize: 22 }}>Tem convite?</Text>

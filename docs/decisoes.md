@@ -3,7 +3,7 @@
 Protótipo das telas: https://claude.ai/artifact/UYsUewuuw3KkM5jdFJ7oj2
 
 ## Conceito
-GPS com cara de videogame para a cena de carro rebaixado. Área de lançamento: **São Paulo, Guarulhos e Itaquaquecetuba**.
+GPS com cara de videogame pra quem curte carro. Slogan: **"Carros modificados e originais"** (não usar "cena rebaixada"/"carros rebaixados" como slogan). Área de lançamento: **São Paulo, Guarulhos e Itaquaquecetuba**.
 
 ## Acesso e confiança
 - Entrada só por **convite**; quem convida é o padrinho e responde pelo convidado.

@@ -26,7 +26,7 @@ export function inviteTexts(p: InvitePreview | null): { title: string; descripti
   if (p.kind === 'fundador') {
     return {
       title: 'Marcha GPS · código de fundador',
-      description: 'Você recebeu um código de fundador: registre sua equipe no GPS da cena rebaixada.',
+      description: 'Você recebeu um código de fundador: registre sua equipe no Marcha GPS. Carros modificados e originais.',
       headline: 'Código de fundador pra registrar sua equipe',
     };
   }
@@ -34,7 +34,7 @@ export function inviteTexts(p: InvitePreview | null): { title: string; descripti
   const crew = p.crew_name ? ` da ${p.crew_name}` : '';
   return {
     title: `${who}${crew} te convidou pro Marcha GPS`,
-    description: 'O GPS da cena rebaixada: rota que desvia de lombada, avisos da galera, equipes e eventos. Entra com o código.',
+    description: 'Carros modificados e originais: rota que desvia de lombada, avisos da galera, equipes e eventos. Entra com o código.',
     headline: `${who}${crew} te convidou`,
   };
 }
