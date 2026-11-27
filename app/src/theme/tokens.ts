@@ -12,6 +12,7 @@ export const colors = {
   textDim: '#B5B9C1',
   textMuted: '#7F848D',
   holo: '#B9C8E4',   // links e detalhes (azul acinzentado, discreto)
+  scrim: 'rgba(10,11,13,0.72)', // fundo de botão em cima de foto
   neon: '#C9EE62',   // cor padrão (e da equipe, se ela não escolher outra)
   ink: '#0B0D08',    // texto em cima do neon
   // avisos de segurança: sempre essas cores, o tema da equipe não muda
