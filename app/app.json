@@ -26,7 +26,6 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "@clerk/expo",
       "@maplibre/maplibre-react-native",
       "expo-location",
       "expo-camera",
