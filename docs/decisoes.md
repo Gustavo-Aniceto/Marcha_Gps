@@ -87,7 +87,8 @@ GPS com cara de videogame pra quem curte carro. Slogan: **"Carros modificados e 
 
 ## Eventos e equipes
 - Painel de eventos com capa, data, equipe, cidade, local e descrição; **Confirmar presença** e, se a pessoa não é da equipe, **Pedir pra entrar** (o fundador aprova). Evento "aberto pra cena" aparece pra todo mundo; "só a equipe" só pros membros.
-- **Descobrir equipes**: capa, foto, bio, Instagram, fundador, cidade, membros e próximo evento, com botão de pedir pra entrar.
+- **Descobrir equipes**: capa grande com a logo por cima, nome, fundador, cidade, membros, próximo evento e bio. "Pedir pra entrar" abre a página da equipe já no pedido, com recado opcional pro fundador e os 3 passos (você pede → a equipe aprova → verificação no rolê).
+- **Foto e capa da equipe**: fundador, admin e staff trocam direto pelo botão de câmera na capa e na logo (salva na hora, sem precisar entrar em "Editar página"). Sem foto, aparece um cartão chamando pra pôr logo e capa.
 
 ## Garagem: ficha FIPE e carro 3D
 - Depois da foto, a IA diz marca/modelo e o app abre a **ficha da tabela FIPE** já no modelo certo: a pessoa escolhe versão e ano e confirma. A ficha (código FIPE, versão, ano, combustível, preço médio) fica no carro e aparece no perfil.
